@@ -58,6 +58,10 @@ export default async function TopicsPage() {
           ) : null}
 
           <section className="feed-section">
+            <div className="section-header">
+              <p className="section-kicker">전체 토픽</p>
+              <h2>토픽 목록</h2>
+            </div>
             <div className="feed-list">
               {topics.map((topic) => (
                 <FeedCard

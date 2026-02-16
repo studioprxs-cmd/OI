@@ -67,8 +67,8 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
         <div className="top-nav-actions">
           <label className="search-field" aria-label="검색">
-            <span>🔎</span>
-            <input placeholder="이슈 검색" aria-label="이슈 검색" />
+            <span aria-hidden>🔎</span>
+            <input type="search" placeholder="이슈 검색" aria-label="이슈 검색" autoComplete="off" />
           </label>
 
           {viewer ? (

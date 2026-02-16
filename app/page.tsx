@@ -78,8 +78,11 @@ export default async function HomePage() {
           </section>
 
           <section className="feed-section">
-            <div className="section-heading-row">
-              <h2>인기 토픽</h2>
+            <div className="section-heading-row section-header">
+              <div>
+                <p className="section-kicker">지금 가장 많이 보는 주제</p>
+                <h2>인기 토픽</h2>
+              </div>
               <Link href="/topics" className="text-link">전체 보기</Link>
             </div>
             <div className="feed-list">
@@ -96,7 +99,10 @@ export default async function HomePage() {
           </section>
 
           <section className="feed-section">
-            <h2>최신 이슈</h2>
+            <div className="section-header">
+              <p className="section-kicker">업데이트</p>
+              <h2>최신 이슈</h2>
+            </div>
             <div className="feed-list">
               {latest.map((topic) => (
                 <FeedCard

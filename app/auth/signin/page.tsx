@@ -45,7 +45,10 @@ export default function SignInPage() {
     <PageContainer>
       <section className="auth-layout">
         <Card>
-          <OiBadge label="OI Auth" />
+          <div className="auth-card-head">
+            <OiBadge label="OI Auth" />
+            <span className="auth-step">Sign in</span>
+          </div>
           <div className="auth-logo-wrap" aria-hidden>
             <Image src="/oi-logo.jpg" alt="" width={220} height={72} className="auth-logo" priority />
           </div>
@@ -58,8 +61,9 @@ export default function SignInPage() {
             <Field label="비밀번호" htmlFor="password">
               <InputField id="password" name="password" type="password" value={password} onChange={setPassword} required />
             </Field>
+            <p className="helper-text">공용 기기에서는 자동 로그인 사용을 피해주세요.</p>
             <Button type="submit" disabled={isLoading}>{isLoading ? "로그인 중..." : "로그인"}</Button>
-            {message ? <Message text={message} tone="error" /> : null}
+            {message ? <Message text={message} tone="error" /> : <Message text="로그인 후 홈에서 바로 참여할 수 있어요." tone="info" />}
           </form>
           <p className="message message-info" style={{ marginTop: 12 }}>
             계정이 없다면 <Link href="/auth/signup">회원가입</Link>

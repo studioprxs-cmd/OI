@@ -51,7 +51,10 @@ export default function SignUpPage() {
     <PageContainer>
       <section className="auth-layout">
         <Card>
-          <OiBadge label="OI Auth" />
+          <div className="auth-card-head">
+            <OiBadge label="OI Auth" />
+            <span className="auth-step">Create account</span>
+          </div>
           <div className="auth-logo-wrap" aria-hidden>
             <Image src="/oi-logo.jpg" alt="" width={220} height={72} className="auth-logo" priority />
           </div>
@@ -67,8 +70,9 @@ export default function SignUpPage() {
             <Field label="비밀번호" htmlFor="password">
               <InputField id="password" name="password" type="password" value={password} onChange={setPassword} required />
             </Field>
+            <p className="helper-text">8자 이상, 영문/숫자 조합을 권장해요.</p>
             <Button type="submit" disabled={isLoading}>{isLoading ? "가입 중..." : "회원가입"}</Button>
-            {message ? <Message text={message} tone="error" /> : null}
+            {message ? <Message text={message} tone="error" /> : <Message text="가입 후 즉시 토픽 피드 참여가 가능합니다." tone="info" />}
           </form>
           <p className="message message-info" style={{ marginTop: 12 }}>
             이미 계정이 있다면 <Link href="/auth/signin">로그인</Link>

@@ -1,22 +1,23 @@
 * { box-sizing: border-box; }
 
 :root {
-  --bg: #f4f8f5;
+  --bg: #f5f8f6;
   --panel: #ffffff;
   --panel-soft: #f8fbf8;
   --text: #132018;
-  --muted: #5f6f64;
+  --muted: #4f6156;
   --line: #d9e4dc;
   --line-strong: #bfd1c5;
   --primary: #04b35c;
-  --primary-strong: #038746;
+  --primary-strong: #03763d;
   --mint: #32d276;
   --lime: #b7f5cb;
-  --danger: #c13a2a;
+  --danger: #b33225;
   --success: #0d8e4a;
-  --radius-lg: 22px;
+  --focus: #0b9a4a;
+  --radius-lg: 20px;
   --radius-md: 14px;
-  --shadow-soft: 0 10px 28px rgba(13, 41, 24, 0.08);
+  --shadow-soft: 0 10px 26px rgba(13, 41, 24, 0.08);
   --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.06);
 }
 
@@ -24,11 +25,12 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: "Pretendard Variable", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: radial-gradient(1200px 620px at 95% -20%, rgba(46, 208, 110, 0.18), transparent 52%),
-    radial-gradient(900px 520px at -15% 10%, rgba(167, 243, 184, 0.16), transparent 48%),
+  background: radial-gradient(980px 560px at 92% -18%, rgba(46, 208, 110, 0.12), transparent 52%),
+    radial-gradient(760px 420px at -10% 8%, rgba(167, 243, 184, 0.1), transparent 48%),
     var(--bg);
   color: var(--text);
   line-height: 1.5;
+  font-size: 16px;
 }
 
 a { color: inherit; }
@@ -38,9 +40,9 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(8, 24, 13, 0.1) 0.7px, transparent 0.7px);
+  background-image: radial-gradient(rgba(8, 24, 13, 0.08) 0.7px, transparent 0.7px);
   background-size: 3px 3px;
-  opacity: 0.04;
+  opacity: 0.022;
   z-index: -1;
 }
 
@@ -57,13 +59,13 @@ body::before {
 }
 
 .top-nav-inner {
-  width: min(1320px, 100% - 1.8rem);
+  width: min(1320px, 100% - 1.4rem);
   margin: 0 auto;
-  min-height: 74px;
+  min-height: 72px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .brand-lockup {
@@ -302,6 +304,20 @@ body::before {
   align-items: center;
 }
 
+.section-header {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.section-kicker {
+  margin: 0;
+  color: #4e7762;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
 .feed-card,
 .widget-card,
 .card {
@@ -310,6 +326,10 @@ body::before {
   border-radius: 17px;
   box-shadow: var(--shadow-card);
   padding: 1rem;
+}
+
+.widget-card {
+  border-color: #dde8e0;
 }
 
 .auth-layout {
@@ -327,6 +347,21 @@ body::before {
   width: min(196px, 64vw);
   height: auto;
   border-radius: 10px;
+}
+
+.auth-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.auth-step {
+  font-size: 0.78rem;
+  color: #4f6558;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .auth-sub {
@@ -441,9 +476,16 @@ body::before {
 .btn:focus-visible,
 .top-nav-link:focus-visible,
 .text-link:focus-visible,
-.rail-item:focus-visible {
-  outline: 2px solid #3ad57b;
+.rail-item:focus-visible,
+.search-field:focus-within,
+.profile-chip:focus-visible,
+.title-link:focus-visible {
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .btn {
@@ -467,9 +509,26 @@ body::before {
   cursor: default;
 }
 
-.message { margin: 0; font-size: 0.9rem; }
-.message-info { color: var(--muted); }
-.message-error { color: var(--danger); }
+.helper-text {
+  margin: 0.1rem 0 0;
+  color: #4f6257;
+  font-size: 0.84rem;
+}
+
+.message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.message-info {
+  color: #3f6552;
+}
+
+.message-error {
+  color: var(--danger);
+  font-weight: 600;
+}
 
 .pill {
   display: inline-flex;
@@ -561,6 +620,17 @@ body::before {
   font-weight: 700;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @media (max-width: 1080px) {
   .content-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -602,12 +672,14 @@ body::before {
 
 @media (max-width: 640px) {
   .top-nav-link {
-    padding: 0.54rem 0.78rem;
+    min-height: 44px;
+    padding: 0.58rem 0.82rem;
     font-size: 0.92rem;
   }
 
   .search-field {
     width: 100%;
+    min-height: 46px;
     order: 3;
   }
 
@@ -625,22 +697,28 @@ body::before {
 
   .hero-block {
     border-radius: 18px;
-    padding: 1.06rem;
+    padding: 1rem;
   }
 
   .hero-block.compact {
-    padding: 0.98rem;
+    padding: 0.95rem;
   }
 
   .hero-kpis {
     grid-template-columns: 1fr;
+    gap: 0.48rem;
   }
 
   .feed-card,
   .widget-card,
   .card {
     border-radius: 14px;
-    padding: 0.9rem;
+    padding: 0.88rem;
+  }
+
+  .feed-card-title {
+    font-size: 1rem;
+    line-height: 1.4;
   }
 
   .feed-card-head {
@@ -657,29 +735,60 @@ body::before {
 @media (max-width: 390px) {
   .top-nav-inner,
   .app-body {
-    width: calc(100% - 0.8rem);
+    width: calc(100% - 0.7rem);
+  }
+
+  .app-body {
+    gap: 0.65rem;
+    padding-bottom: 1.3rem;
   }
 
   .brand-logo {
-    width: min(148px, 52vw);
+    width: min(142px, 50vw);
+    max-height: 40px;
   }
 
   .top-nav-links {
     width: 100%;
     justify-content: space-between;
+    gap: 0.35rem;
   }
 
   .top-nav-link {
-    min-height: 42px;
-    padding-inline: 0.7rem;
+    min-height: 44px;
+    padding-inline: 0.68rem;
+    font-size: 0.89rem;
   }
 
-  .feed-card-title {
-    font-size: 1rem;
+  .hero-block {
+    padding: 0.92rem;
   }
 
   .hero-block h1 {
-    font-size: clamp(1.28rem, 6.3vw, 1.52rem);
+    margin-top: 0.12rem;
+    font-size: clamp(1.2rem, 6vw, 1.45rem);
+  }
+
+  .hero-block p,
+  .feed-card-description,
+  .feed-card-meta {
+    font-size: 0.9rem;
+  }
+
+  .feed-card,
+  .widget-card,
+  .card {
+    padding: 0.8rem;
+  }
+
+  .pill {
+    min-height: 30px;
+    font-size: 0.76rem;
+  }
+
+  .input,
+  .btn {
+    min-height: 48px;
   }
 
   .auth-layout {
@@ -687,10 +796,10 @@ body::before {
   }
 
   .auth-logo {
-    width: min(174px, 58vw);
+    width: min(164px, 54vw);
   }
 
   .list {
-    gap: 0.68rem;
+    gap: 0.62rem;
   }
 }

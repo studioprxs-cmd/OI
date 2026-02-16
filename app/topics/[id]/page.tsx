@@ -92,7 +92,12 @@ export default async function TopicDetailPage({ params }: Props) {
             </div>
           </section>
 
-          <section className="stats-grid">
+          <section className="feed-section">
+            <div className="section-header">
+              <p className="section-kicker">실시간 현황</p>
+              <h2>투표 · 베팅 지표</h2>
+            </div>
+            <div className="stats-grid">
             <FeedCard title="YES 투표" meta={`${yesVotes}표 (${percent(yesVotes, totalVotes)}%)`}>
               <div className="meter"><span style={{ width: `${percent(yesVotes, totalVotes)}%` }} /></div>
             </FeedCard>
@@ -102,6 +107,7 @@ export default async function TopicDetailPage({ params }: Props) {
             <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
               <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
             </FeedCard>
+            </div>
           </section>
 
           <FeedCard

@@ -135,7 +135,15 @@ export function Pill({ children, tone = "neutral" }: PillProps) {
 type MessageProps = { text: string; tone?: "info" | "error" };
 
 export function Message({ text, tone = "info" }: MessageProps) {
-  return <p className={`message message-${tone}`}>{text}</p>;
+  return (
+    <p
+      className={`message message-${tone}`}
+      role={tone === "error" ? "alert" : "status"}
+      aria-live={tone === "error" ? "assertive" : "polite"}
+    >
+      {text}
+    </p>
+  );
 }
 
 type TextLinkProps = { href: string; children: ReactNode };
