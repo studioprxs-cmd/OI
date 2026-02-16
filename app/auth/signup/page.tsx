@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -48,25 +49,30 @@ export default function SignUpPage() {
 
   return (
     <PageContainer>
-      <Card>
-        <h1 className="section-title">회원가입</h1>
-        <form className="list" onSubmit={onSubmit}>
-          <Field label="이메일" htmlFor="email">
-            <InputField id="email" name="email" type="email" value={email} onChange={setEmail} required />
-          </Field>
-          <Field label="닉네임 (선택)" htmlFor="nickname">
-            <InputField id="nickname" name="nickname" value={nickname} onChange={setNickname} />
-          </Field>
-          <Field label="비밀번호" htmlFor="password">
-            <InputField id="password" name="password" type="password" value={password} onChange={setPassword} required />
-          </Field>
-          <Button type="submit" disabled={isLoading}>{isLoading ? "가입 중..." : "회원가입"}</Button>
-          {message ? <Message text={message} tone="error" /> : null}
-        </form>
-        <p className="message message-info" style={{ marginTop: 12 }}>
-          이미 계정이 있다면 <Link href="/auth/signin">로그인</Link>
-        </p>
-      </Card>
+      <section className="auth-layout">
+        <Card>
+          <div className="auth-logo-wrap" aria-hidden>
+            <Image src="/oi-logo.jpg" alt="" width={220} height={72} className="auth-logo" priority />
+          </div>
+          <h1 className="section-title">회원가입</h1>
+          <form className="list" onSubmit={onSubmit}>
+            <Field label="이메일" htmlFor="email">
+              <InputField id="email" name="email" type="email" value={email} onChange={setEmail} required />
+            </Field>
+            <Field label="닉네임 (선택)" htmlFor="nickname">
+              <InputField id="nickname" name="nickname" value={nickname} onChange={setNickname} />
+            </Field>
+            <Field label="비밀번호" htmlFor="password">
+              <InputField id="password" name="password" type="password" value={password} onChange={setPassword} required />
+            </Field>
+            <Button type="submit" disabled={isLoading}>{isLoading ? "가입 중..." : "회원가입"}</Button>
+            {message ? <Message text={message} tone="error" /> : null}
+          </form>
+          <p className="message message-info" style={{ marginTop: 12 }}>
+            이미 계정이 있다면 <Link href="/auth/signin">로그인</Link>
+          </p>
+        </Card>
+      </section>
     </PageContainer>
   );
 }

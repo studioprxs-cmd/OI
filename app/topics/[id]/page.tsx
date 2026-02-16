@@ -7,6 +7,7 @@ import { CommentForm } from "./CommentForm";
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
 import { PageContainer, Pill } from "@/components/ui";
+import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findMockTopic } from "@/lib/mock-data";
 
@@ -26,6 +27,8 @@ function statusTone(status: string): "neutral" | "success" | "danger" {
 export default async function TopicDetailPage({ params }: Props) {
   const { id } = await params;
   const canUseDb = Boolean(process.env.DATABASE_URL);
+  const viewer = await getSessionUser();
+  const canManage = viewer?.role === "ADMIN";
 
   const dbTopic = canUseDb ? await db.topic
     .findUnique({
@@ -105,7 +108,7 @@ export default async function TopicDetailPage({ params }: Props) {
             footer={
               <div className="row">
                 <Link className="text-link" href="/topics">← 토픽 목록</Link>
-                <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>관리자 Resolve</Link>
+                {canManage ? <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>관리자 Resolve</Link> : null}
                 <Link className="text-link" href={`/api/topics/${topic.id}`}>Topic API</Link>
               </div>
             }

@@ -6,7 +6,7 @@
 - `docs/` : PRD, 운영정책, API 계약
 - `app/` : Next.js App Router
 - `components/` : 재사용 UI 컴포넌트
-- `lib/` : 공통 유틸/도메인 로직 (Prisma, auth stub)
+- `lib/` : 공통 유틸/도메인 로직 (Prisma, session auth)
 - `prisma/` : DB 스키마/시드
 
 ## 실행
@@ -61,10 +61,10 @@
 - [x] Prisma 스키마 초안 작성
 - [x] 기본 미니멀 UI 스타일/재사용 컴포넌트 적용
 - [x] Admin Topic Create 페이지(`/admin/topics/new`) + BETTING/POLL 검증
-- [x] Resolution workflow stub (resolve page + API)
+- [x] Resolution workflow (resolve page + API)
 - [x] Topic 상세 통계(YES/NO 비율 + 총 베팅 풀)
 - [x] Topics 페이지/폼 로딩 및 에러 상태 추가
-- [ ] Auth(로그인) 구현
+- [x] Auth(회원가입/로그인/로그아웃) 구현
 - [x] Topic 목록/상세 API 구현
 - [x] Vote/Bet API + 포인트 차감 최소 검증
 - [ ] Comment/Report 모더레이션 플로우

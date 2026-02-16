@@ -34,7 +34,6 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "amount must be a positive integer" }, { status: 400 });
   }
 
-  // TODO(real-auth): pointBalance should come from authenticated wallet/account service.
   const dbUser = await db.user.findUnique({ where: { id: authUser.id } });
   if (!dbUser) {
     return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });

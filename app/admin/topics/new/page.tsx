@@ -1,8 +1,15 @@
+import { redirect } from "next/navigation";
+
 import { Card, PageContainer, SectionTitle, TextLink } from "@/components/ui";
+import { getSessionUser } from "@/lib/auth";
 
 import { TopicCreateForm } from "./TopicCreateForm";
 
-export default function AdminTopicCreatePage() {
+export default async function AdminTopicCreatePage() {
+  const viewer = await getSessionUser();
+  if (!viewer) redirect("/auth/signin");
+  if (viewer.role !== "ADMIN") redirect("/");
+
   return (
     <PageContainer>
       <TextLink href="/admin/topics">← Admin Topics</TextLink>

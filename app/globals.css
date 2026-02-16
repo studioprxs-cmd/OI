@@ -56,8 +56,9 @@ a { color: inherit; }
 }
 
 .brand-logo {
-  width: auto;
-  height: 48px;
+  width: clamp(120px, 30vw, 168px);
+  height: auto;
+  max-height: 48px;
   object-fit: contain;
   border-radius: 8px;
 }
@@ -247,6 +248,23 @@ a { color: inherit; }
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(17, 24, 39, 0.05);
   padding: 1rem;
+}
+
+.auth-layout {
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+.auth-logo-wrap {
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.auth-logo {
+  width: min(220px, 68vw);
+  height: auto;
+  border-radius: 10px;
 }
 
 .feed-card {
@@ -463,16 +481,22 @@ a { color: inherit; }
 @media (max-width: 900px) {
   .top-nav-inner {
     grid-template-columns: 1fr;
+    width: min(100%, 100% - 1.2rem);
     padding: 0.65rem 0;
+    gap: 0.6rem;
   }
 
   .top-nav-links,
   .top-nav-actions {
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .app-body {
+    width: min(100%, 100% - 1.2rem);
     grid-template-columns: 1fr;
+    gap: 0.8rem;
+    padding-top: 0.8rem;
   }
 
   .side-rail {
@@ -484,9 +508,74 @@ a { color: inherit; }
 }
 
 @media (max-width: 640px) {
-  .search-field input { min-width: 112px; }
+  .top-nav-link {
+    padding: 0.44rem 0.72rem;
+    font-size: 0.92rem;
+  }
+
+  .search-field {
+    width: 100%;
+    order: 3;
+  }
+
+  .search-field input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .content-grid,
+  .main-column,
+  .widget-column,
+  .stats-grid {
+    gap: 0.7rem;
+  }
+
+  .hero-block {
+    border-radius: 18px;
+    padding: 1rem;
+  }
+
+  .hero-block.compact {
+    padding: 0.95rem;
+  }
 
   .hero-kpis {
     grid-template-columns: 1fr;
+  }
+
+  .feed-card,
+  .widget-card,
+  .card {
+    border-radius: 14px;
+    padding: 0.85rem;
+  }
+
+  .feed-card-head {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .section-heading-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 390px) {
+  .top-nav-inner,
+  .app-body {
+    width: calc(100% - 0.8rem);
+  }
+
+  .brand-logo {
+    width: min(150px, 52vw);
+  }
+
+  .auth-layout {
+    width: 100%;
+  }
+
+  .auth-logo {
+    width: min(180px, 62vw);
   }
 }

@@ -1,10 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { Card, PageContainer, SectionTitle } from "@/components/ui";
+import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 
 export default async function AdminTopicsPage() {
+  const viewer = await getSessionUser();
+  if (!viewer) redirect("/auth/signin");
+  if (viewer.role !== "ADMIN") redirect("/");
+
   const canUseDb = Boolean(process.env.DATABASE_URL);
 
   const dbTopics = canUseDb ? await db.topic

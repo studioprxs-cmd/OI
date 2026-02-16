@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { Card, PageContainer, Pill, SectionTitle, TextLink } from "@/components/ui";
+import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findMockTopic } from "@/lib/mock-data";
 
@@ -9,6 +10,10 @@ import { ResolveForm } from "./ResolveForm";
 type Props = { params: Promise<{ id: string }> };
 
 export default async function TopicResolvePage({ params }: Props) {
+  const viewer = await getSessionUser();
+  if (!viewer) redirect("/auth/signin");
+  if (viewer.role !== "ADMIN") redirect("/");
+
   const { id } = await params;
   const canUseDb = Boolean(process.env.DATABASE_URL);
 
