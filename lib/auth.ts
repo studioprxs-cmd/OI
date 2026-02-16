@@ -2,6 +2,7 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "crypto";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
+import { localFindUserById } from "@/lib/auth-local";
 import { db } from "@/lib/db";
 
 const SESSION_COOKIE_NAME = "oi_session";
@@ -21,10 +22,13 @@ export type AuthUser = {
 
 function getAuthSecret() {
   const secret = process.env.AUTH_SECRET;
-  if (!secret) {
-    throw new Error("AUTH_SECRET is not configured");
+  if (secret) return secret;
+
+  if (process.env.NODE_ENV !== "production") {
+    return "oi-dev-auth-secret-change-me";
   }
-  return secret;
+
+  throw new Error("AUTH_SECRET is not configured");
 }
 
 function toBase64Url(input: string) {
@@ -99,6 +103,13 @@ async function resolveAuthUserFromToken(token: string | undefined): Promise<Auth
 
   const payload = decodeSessionToken(token);
   if (!payload) return null;
+
+  const useLocalAuth = !process.env.DATABASE_URL;
+  if (useLocalAuth) {
+    const user = await localFindUserById(payload.userId);
+    if (!user) return null;
+    return { id: user.id, email: user.email, nickname: user.nickname, role: user.role };
+  }
 
   const user = await db.user.findUnique({
     where: { id: payload.userId },

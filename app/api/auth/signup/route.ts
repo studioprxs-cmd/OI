@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { applySessionCookie, createPasswordHash } from "@/lib/auth";
+import { localCreateUser, localFindUserByEmail } from "@/lib/auth-local";
 import { db } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
@@ -15,6 +16,28 @@ export async function POST(req: NextRequest) {
 
   if (password.length < 8) {
     return NextResponse.json({ ok: false, data: null, error: "password must be at least 8 chars" }, { status: 400 });
+  }
+
+  const useLocalAuth = !process.env.DATABASE_URL;
+
+  if (useLocalAuth) {
+    const exists = await localFindUserByEmail(email);
+    if (exists) {
+      return NextResponse.json({ ok: false, data: null, error: "email already exists" }, { status: 409 });
+    }
+
+    const user = await localCreateUser({
+      email,
+      nickname: nickname || email.split("@")[0],
+      passwordHash: createPasswordHash(password),
+    });
+
+    const response = NextResponse.json(
+      { ok: true, data: { id: user.id, email: user.email, nickname: user.nickname, role: user.role }, error: null },
+      { status: 201 },
+    );
+    applySessionCookie(response, user.id);
+    return response;
   }
 
   const exists = await db.user.findUnique({ where: { email }, select: { id: true } });
