@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { CommentForm } from "./CommentForm";
 import { CommentReportButton } from "./CommentReportButton";
+import { TopicReportButton } from "./TopicReportButton";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
@@ -88,9 +89,12 @@ export default async function TopicDetailPage({ params }: Props) {
             <p className="hero-eyebrow">Topic Detail</p>
             <h1>{topic.title}</h1>
             <p>{topic.description}</p>
-            <div className="row" style={{ marginTop: "0.6rem" }}>
-              <Pill tone={statusTone(topic.status)}>{topic.status}</Pill>
-              <span className="muted-inline">투표 {topic.counts.votes} · 베팅 {topic.counts.bets} · 댓글 {topic.counts.comments}</span>
+            <div className="row" style={{ marginTop: "0.6rem", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+              <div className="row">
+                <Pill tone={statusTone(topic.status)}>{topic.status}</Pill>
+                <span className="muted-inline">투표 {topic.counts.votes} · 베팅 {topic.counts.bets} · 댓글 {topic.counts.comments}</span>
+              </div>
+              {canReport ? <TopicReportButton topicId={topic.id} /> : null}
             </div>
           </section>
 

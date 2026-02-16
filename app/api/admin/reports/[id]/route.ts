@@ -19,14 +19,22 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const body = await req.json();
   const status = String(body.status ?? "").toUpperCase() as ReportStatus;
-  const hideComment = Boolean(body.hideComment);
+  const commentVisibility = String(body.commentVisibility ?? "KEEP").toUpperCase() as "KEEP" | "HIDE" | "UNHIDE";
 
   if (!ALLOWED_STATUSES.includes(status)) {
     return NextResponse.json({ ok: false, data: null, error: "invalid status" }, { status: 400 });
   }
 
+  if (!["KEEP", "HIDE", "UNHIDE"].includes(commentVisibility)) {
+    return NextResponse.json({ ok: false, data: null, error: "invalid commentVisibility" }, { status: 400 });
+  }
+
   if (!process.env.DATABASE_URL) {
-    const report = await localUpdateReportStatus({ id, status: status as LocalReportStatus, hideComment });
+    const report = await localUpdateReportStatus({
+      id,
+      status: status as LocalReportStatus,
+      hideComment: commentVisibility === "HIDE",
+    });
     if (!report) {
       return NextResponse.json({ ok: false, data: null, error: "Report not found" }, { status: 404 });
     }
@@ -37,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const report = await tx.report.findUnique({ where: { id } });
     if (!report) return null;
 
-    const nextReport = await tx.report.update({
+    await tx.report.update({
       where: { id },
       data: {
         status,
@@ -45,14 +53,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       },
     });
 
-    if (hideComment && report.commentId) {
+    if (report.commentId && commentVisibility !== "KEEP") {
       await tx.comment.update({
         where: { id: report.commentId },
-        data: { isHidden: true },
+        data: { isHidden: commentVisibility === "HIDE" },
       });
     }
 
-    return nextReport;
+    return tx.report.findUnique({
+      where: { id },
+      include: {
+        comment: { select: { id: true, isHidden: true } },
+      },
+    });
   });
 
   if (!updated) {

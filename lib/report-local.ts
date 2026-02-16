@@ -83,6 +83,10 @@ export async function localListReports(status?: LocalReportStatus) {
   return data.reports.filter((report) => (status ? report.status === status : true));
 }
 
+function isActiveReportStatus(status: LocalReportStatus) {
+  return status === "OPEN" || status === "REVIEWING";
+}
+
 export async function localHasActiveCommentReport(input: {
   reporterId: string;
   commentId: string;
@@ -92,7 +96,21 @@ export async function localHasActiveCommentReport(input: {
     (report) =>
       report.reporterId === input.reporterId
       && report.commentId === input.commentId
-      && (report.status === "OPEN" || report.status === "REVIEWING"),
+      && isActiveReportStatus(report.status),
+  );
+}
+
+export async function localHasActiveTopicReport(input: {
+  reporterId: string;
+  topicId: string;
+}) {
+  const data = await readData();
+  return data.reports.some(
+    (report) =>
+      report.reporterId === input.reporterId
+      && report.topicId === input.topicId
+      && report.commentId === null
+      && isActiveReportStatus(report.status),
   );
 }
 

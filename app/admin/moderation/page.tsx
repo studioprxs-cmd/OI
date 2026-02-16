@@ -16,9 +16,11 @@ type ReportView = {
   id: string;
   reason: string;
   detail: string | null;
-  status: string;
+  status: StatusType;
   createdAt: Date | string;
   commentId: string | null;
+  reporterNickname?: string;
+  reporterEmail?: string;
   commentContent?: string;
   commentHidden?: boolean;
   topicId?: string | null;
@@ -43,6 +45,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .findMany({
         orderBy: { createdAt: "desc" },
         include: {
+          reporter: { select: { id: true, nickname: true, email: true } },
           topic: { select: { id: true, title: true } },
           comment: { select: { id: true, content: true, isHidden: true } },
         },
@@ -53,9 +56,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           id: report.id,
           reason: report.reason,
           detail: report.detail,
-          status: report.status,
+          status: report.status as StatusType,
           createdAt: report.createdAt,
           commentId: report.commentId,
+          reporterNickname: report.reporter.nickname,
+          reporterEmail: report.reporter.email,
           commentContent: report.comment?.content,
           commentHidden: report.comment?.isHidden,
           topicId: report.topicId,
@@ -67,7 +72,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       id: report.id,
       reason: report.reason,
       detail: report.detail,
-      status: report.status,
+      status: report.status as StatusType,
       createdAt: report.createdAt,
       commentId: report.commentId,
       topicId: report.topicId,
@@ -138,6 +143,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                 <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
                 <small style={{ color: "#6b7280" }}>
                   {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
+                  {report.reporterNickname ? ` · 신고자 ${report.reporterNickname}` : ""}
+                  {report.reporterEmail ? ` (${report.reporterEmail})` : ""}
                 </small>
                 {report.topicId ? (
                   <p style={{ margin: "0.3rem 0 0" }}>
@@ -158,7 +165,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             ) : null}
 
             <div style={{ marginTop: "0.6rem" }}>
-              <ReportActions reportId={report.id} />
+              <ReportActions reportId={report.id} initialStatus={report.status} hasComment={Boolean(report.commentId)} />
             </div>
           </Card>
         ))}
