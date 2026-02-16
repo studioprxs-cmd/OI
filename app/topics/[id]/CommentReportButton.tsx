@@ -93,7 +93,7 @@ export function CommentReportButton({ commentId }: Props) {
             />
           </Field>
           <div className="row" style={{ gap: "0.45rem", justifyContent: "flex-end", width: "100%" }}>
-            <Button type="button" onClick={() => setIsOpen(false)} disabled={isLoading}>
+            <Button type="button" variant="secondary" onClick={() => setIsOpen(false)} disabled={isLoading}>
               취소
             </Button>
             <Button type="submit" disabled={isLoading}>{isLoading ? "신고 중..." : "신고 제출"}</Button>

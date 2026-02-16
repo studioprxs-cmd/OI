@@ -38,12 +38,13 @@ export default async function TopicDetailPage({ params }: Props) {
       where: { id },
       include: {
         votes: { select: { choice: true } },
-        bets: { select: { choice: true, amount: true } },
+        bets: { select: { choice: true, amount: true, settled: true, payoutAmount: true } },
         comments: {
           where: { isHidden: false },
           orderBy: { createdAt: "desc" },
           take: 20,
         },
+        resolution: { select: { result: true, summary: true, resolvedAt: true } },
         _count: { select: { votes: true, bets: true, comments: true } },
       },
     })
@@ -68,6 +69,19 @@ export default async function TopicDetailPage({ params }: Props) {
     ? dbTopic.bets.filter((bet) => bet.choice === Choice.NO).reduce((sum, bet) => sum + bet.amount, 0)
     : (mockTopic?.noPool ?? 0);
   const totalPool = yesPool + noPool;
+
+  const settledBetCount = dbTopic ? dbTopic.bets.filter((bet) => bet.settled).length : 0;
+  const totalPayout = dbTopic
+    ? dbTopic.bets.reduce((sum, bet) => sum + Number(bet.payoutAmount ?? 0), 0)
+    : 0;
+
+  const resolution = dbTopic?.resolution
+    ? {
+      result: dbTopic.resolution.result,
+      summary: dbTopic.resolution.summary,
+      resolvedAt: dbTopic.resolution.resolvedAt,
+    }
+    : null;
 
   const topic = {
     id: dbTopic?.id ?? mockTopic!.id,
@@ -115,6 +129,21 @@ export default async function TopicDetailPage({ params }: Props) {
             </FeedCard>
             </div>
           </section>
+
+          {resolution ? (
+            <FeedCard title="결과 확정">
+              <div className="list" style={{ gap: "0.5rem" }}>
+                <div className="row" style={{ gap: "0.5rem" }}>
+                  <Pill tone="danger">결과 {resolution.result}</Pill>
+                  <small style={{ color: "#6b7280" }}>{new Date(resolution.resolvedAt).toLocaleString("ko-KR")} 확정</small>
+                </div>
+                <p style={{ margin: 0 }}>{resolution.summary}</p>
+                <small style={{ color: "#6b7280" }}>
+                  정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt
+                </small>
+              </div>
+            </FeedCard>
+          ) : null}
 
           <FeedCard
             title="빠른 이동"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button, Message, SelectField } from "@/components/ui";
 
@@ -30,6 +31,7 @@ type Props = {
 };
 
 export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }: Props) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<StatusValue>(initialStatus);
@@ -37,6 +39,11 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
   const [topicAction, setTopicAction] = useState<TopicActionValue>("KEEP");
 
   async function submit() {
+    if (topicAction === "CANCEL") {
+      const agreed = window.confirm("토픽을 CANCELED 상태로 변경하시겠습니까? 이미 참여한 사용자에게 영향이 있을 수 있습니다.");
+      if (!agreed) return;
+    }
+
     setIsLoading(true);
     setMessage("");
 
@@ -56,7 +63,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
         return;
       }
       setMessage("신고 상태/연관 조치가 업데이트되었습니다.");
-      setTimeout(() => window.location.reload(), 300);
+      router.refresh();
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
     } finally {

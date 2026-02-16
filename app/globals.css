@@ -493,15 +493,36 @@ body::before {
   min-height: 46px;
   border-radius: 11px;
   padding: 0.68rem 1rem;
-  background: linear-gradient(135deg, #03c75a 0%, #04ab52 100%);
   color: #fff;
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
-.btn:hover {
+.btn-primary {
+  background: linear-gradient(135deg, #03c75a 0%, #04ab52 100%);
+}
+
+.btn-primary:hover {
   background: linear-gradient(135deg, #02b451 0%, #039547 100%);
+}
+
+.btn-secondary {
+  background: #f3f6f4;
+  color: #2f4c3d;
+  border: 1px solid #cfddd3;
+}
+
+.btn-secondary:hover {
+  background: #e7eeea;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #d94841 0%, #b33225 100%);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #c63f38 0%, #9f281d 100%);
 }
 
 .btn:disabled {

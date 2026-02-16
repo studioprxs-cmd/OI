@@ -29,11 +29,12 @@ type ButtonProps = {
   children: ReactNode;
   disabled?: boolean;
   onClick?: () => void;
+  variant?: "primary" | "secondary" | "danger";
 };
 
-export function Button({ type = "button", children, disabled, onClick }: ButtonProps) {
+export function Button({ type = "button", children, disabled, onClick, variant = "primary" }: ButtonProps) {
   return (
-    <button type={type} className="btn" disabled={disabled} onClick={onClick}>
+    <button type={type} className={`btn btn-${variant}`} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );
