@@ -3,18 +3,79 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { calculateSettlement } from "@/lib/settlement";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function POST(req: NextRequest, { params }: Params) {
-  const { id } = await params;
-
+async function requireAdminUser(req: NextRequest) {
   const user = await getAuthUser(req);
   const guard = requireAdmin(user);
 
   if (!guard.ok) {
-    return NextResponse.json({ ok: false, data: null, error: guard.error }, { status: guard.status });
+    return {
+      ok: false as const,
+      response: NextResponse.json({ ok: false, data: null, error: guard.error }, { status: guard.status }),
+    };
   }
+
+  return { ok: true as const, user: user! };
+}
+
+export async function GET(req: NextRequest, { params }: Params) {
+  const auth = await requireAdminUser(req);
+  if (!auth.ok) return auth.response;
+
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "DB is not configured in local mode. resolve/settlement preview is disabled." },
+      { status: 503 },
+    );
+  }
+
+  const { id } = await params;
+
+  const topic = await db.topic.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      resolution: { select: { id: true, result: true, resolvedAt: true } },
+    },
+  });
+
+  if (!topic) {
+    return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+  }
+
+  const bets = await db.bet.findMany({
+    where: { topicId: id, settled: false },
+    select: { id: true, userId: true, choice: true, amount: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const yesPreview = calculateSettlement(bets, "YES");
+  const noPreview = calculateSettlement(bets, "NO");
+
+  return NextResponse.json({
+    ok: true,
+    data: {
+      topic,
+      unsettledBetCount: bets.length,
+      preview: {
+        YES: yesPreview.summary,
+        NO: noPreview.summary,
+      },
+    },
+    error: null,
+  });
+}
+
+export async function POST(req: NextRequest, { params }: Params) {
+  const { id } = await params;
+
+  const auth = await requireAdminUser(req);
+  if (!auth.ok) return auth.response;
 
   if (!process.env.DATABASE_URL) {
     return NextResponse.json(
@@ -22,8 +83,6 @@ export async function POST(req: NextRequest, { params }: Params) {
       { status: 503 },
     );
   }
-
-  const authUser = user!;
 
   const topic = await db.topic.findUnique({ where: { id } });
   if (!topic) {
@@ -42,66 +101,64 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "summary is required" }, { status: 400 });
   }
 
-  const hasSettledBet = await db.bet.findFirst({
-    where: { topicId: id, settled: true },
-    select: { id: true },
-  });
-
-  if (hasSettledBet) {
-    return NextResponse.json(
-      { ok: false, data: null, error: "Settlement already processed for this topic" },
-      { status: 409 },
-    );
-  }
-
-  const resolved = await db.$transaction(async (tx) => {
-    const resolution = await tx.resolution.upsert({
-      where: { topicId: id },
-      update: {
-        result,
-        summary,
-        resolverId: authUser.id,
-        resolvedAt: new Date(),
-      },
-      create: {
-        topicId: id,
-        result,
-        summary,
-        resolverId: authUser.id,
+  try {
+    const resolved = await db.$transaction(async (tx) => {
+    const currentTopic = await tx.topic.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        resolution: { select: { id: true } },
       },
     });
+
+    if (!currentTopic) {
+      throw new Error("TOPIC_NOT_FOUND");
+    }
+
+    if (currentTopic.status === TopicStatus.RESOLVED || currentTopic.resolution) {
+      throw new Error("ALREADY_RESOLVED");
+    }
+
+    const hasSettledBet = await tx.bet.findFirst({
+      where: { topicId: id, settled: true },
+      select: { id: true },
+    });
+
+    if (hasSettledBet) {
+      throw new Error("SETTLEMENT_ALREADY_PROCESSED");
+    }
 
     const bets = await tx.bet.findMany({
       where: { topicId: id, settled: false },
+      select: { id: true, userId: true, choice: true, amount: true },
       orderBy: { createdAt: "asc" },
     });
 
-    const totalPool = bets.reduce((sum, bet) => sum + bet.amount, 0);
-    const winnerPool = bets.filter((bet) => bet.choice === result).reduce((sum, bet) => sum + bet.amount, 0);
+    const settlement = calculateSettlement(bets, result);
 
-    let settledCount = 0;
-    let winnerCount = 0;
-    let payoutTotal = 0;
+    const resolution = await tx.resolution.create({
+      data: {
+        topicId: id,
+        result,
+        summary,
+        resolverId: auth.user.id,
+      },
+    });
 
-    for (const bet of bets) {
-      const won = bet.choice === result;
-      const payout = won && winnerPool > 0 ? Math.floor((totalPool * bet.amount) / winnerPool) : 0;
-
+    for (const bet of settlement.bets) {
       await tx.bet.update({
         where: { id: bet.id },
         data: {
           settled: true,
-          payoutAmount: payout,
+          payoutAmount: bet.payout,
         },
       });
 
-      settledCount += 1;
-
-      if (payout > 0) {
-        winnerCount += 1;
+      if (bet.payout > 0) {
         const updatedUser = await tx.user.update({
           where: { id: bet.userId },
-          data: { pointBalance: { increment: payout } },
+          data: { pointBalance: { increment: bet.payout } },
           select: { pointBalance: true },
         });
 
@@ -109,14 +166,12 @@ export async function POST(req: NextRequest, { params }: Params) {
           data: {
             userId: bet.userId,
             type: "BET_SETTLE",
-            amount: payout,
+            amount: bet.payout,
             balanceAfter: updatedUser.pointBalance,
             relatedBetId: bet.id,
             note: `Settlement payout for topic:${id}`,
           },
         });
-
-        payoutTotal += payout;
       }
     }
 
@@ -128,15 +183,32 @@ export async function POST(req: NextRequest, { params }: Params) {
     return {
       resolution,
       topic: updatedTopic,
-      settlement: {
-        totalPool,
-        winnerPool,
-        settledCount,
-        winnerCount,
-        payoutTotal,
-      },
+      settlement: settlement.summary,
     };
-  });
+    });
 
-  return NextResponse.json({ ok: true, data: resolved, error: null }, { status: 201 });
+    return NextResponse.json({ ok: true, data: resolved, error: null }, { status: 201 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
+
+    if (message === "TOPIC_NOT_FOUND") {
+      return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+    }
+
+    if (message === "ALREADY_RESOLVED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 해결/정산 완료된 토픽입니다." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "SETTLEMENT_ALREADY_PROCESSED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "Settlement already processed for this topic" },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ ok: false, data: null, error: "정산 처리 실패" }, { status: 500 });
+  }
 }
