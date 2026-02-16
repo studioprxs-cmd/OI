@@ -25,6 +25,7 @@ type ReportView = {
   commentHidden?: boolean;
   topicId?: string | null;
   topicTitle?: string;
+  topicStatus?: string;
 };
 
 type Props = {
@@ -46,7 +47,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         orderBy: { createdAt: "desc" },
         include: {
           reporter: { select: { id: true, nickname: true, email: true } },
-          topic: { select: { id: true, title: true } },
+          topic: { select: { id: true, title: true, status: true } },
           comment: { select: { id: true, content: true, isHidden: true } },
         },
         take: 100,
@@ -65,6 +66,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           commentHidden: report.comment?.isHidden,
           topicId: report.topicId,
           topicTitle: report.topic?.title,
+          topicStatus: report.topic?.status,
         })),
       )
       .catch(() => [])
@@ -151,6 +153,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                     <Link href={`/topics/${report.topicId}`} className="text-link">
                       토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
                     </Link>
+                    {report.topicStatus ? <span style={{ marginLeft: "0.4rem", color: "#6b7280" }}>({report.topicStatus})</span> : null}
                   </p>
                 ) : null}
               </div>
@@ -165,7 +168,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             ) : null}
 
             <div style={{ marginTop: "0.6rem" }}>
-              <ReportActions reportId={report.id} initialStatus={report.status} hasComment={Boolean(report.commentId)} />
+              <ReportActions
+                reportId={report.id}
+                initialStatus={report.status}
+                hasComment={Boolean(report.commentId)}
+                hasTopic={Boolean(report.topicId)}
+              />
             </div>
           </Card>
         ))}

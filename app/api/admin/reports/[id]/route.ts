@@ -1,4 +1,4 @@
-import { ReportStatus } from "@prisma/client";
+import { ReportStatus, TopicStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireAdmin } from "@/lib/auth";
@@ -8,6 +8,9 @@ import { LocalReportStatus, localUpdateReportStatus } from "@/lib/report-local";
 type Params = { params: Promise<{ id: string }> };
 
 const ALLOWED_STATUSES: ReportStatus[] = ["OPEN", "REVIEWING", "CLOSED", "REJECTED"];
+const ALLOWED_TOPIC_ACTIONS = ["KEEP", "LOCK", "CANCEL", "REOPEN"] as const;
+
+type TopicAction = (typeof ALLOWED_TOPIC_ACTIONS)[number];
 
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await getAuthUser(req);
@@ -20,6 +23,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const body = await req.json();
   const status = String(body.status ?? "").toUpperCase() as ReportStatus;
   const commentVisibility = String(body.commentVisibility ?? "KEEP").toUpperCase() as "KEEP" | "HIDE" | "UNHIDE";
+  const topicAction = String(body.topicAction ?? "KEEP").toUpperCase() as TopicAction;
 
   if (!ALLOWED_STATUSES.includes(status)) {
     return NextResponse.json({ ok: false, data: null, error: "invalid status" }, { status: 400 });
@@ -29,7 +33,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "invalid commentVisibility" }, { status: 400 });
   }
 
+  if (!ALLOWED_TOPIC_ACTIONS.includes(topicAction)) {
+    return NextResponse.json({ ok: false, data: null, error: "invalid topicAction" }, { status: 400 });
+  }
+
   if (!process.env.DATABASE_URL) {
+    if (topicAction !== "KEEP") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "topicAction requires DATABASE_URL" },
+        { status: 503 },
+      );
+    }
+
     const report = await localUpdateReportStatus({
       id,
       status: status as LocalReportStatus,
@@ -60,10 +75,26 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       });
     }
 
+    if (report.topicId && topicAction !== "KEEP") {
+      const nextTopicStatus: TopicStatus = topicAction === "LOCK"
+        ? "LOCKED"
+        : topicAction === "CANCEL"
+          ? "CANCELED"
+          : "OPEN";
+
+      await tx.topic.update({
+        where: { id: report.topicId },
+        data: {
+          status: nextTopicStatus,
+        },
+      });
+    }
+
     return tx.report.findUnique({
       where: { id },
       include: {
         comment: { select: { id: true, isHidden: true } },
+        topic: { select: { id: true, status: true } },
       },
     });
   });

@@ -11,20 +11,30 @@ const VISIBILITY_OPTIONS = [
   { value: "UNHIDE", label: "댓글 숨김 해제" },
 ] as const;
 
+const TOPIC_ACTION_OPTIONS = [
+  { value: "KEEP", label: "토픽 상태 유지" },
+  { value: "LOCK", label: "토픽 잠금 (LOCKED)" },
+  { value: "CANCEL", label: "토픽 취소 (CANCELED)" },
+  { value: "REOPEN", label: "토픽 재오픈 (OPEN)" },
+] as const;
+
 type StatusValue = (typeof STATUSES)[number];
 type VisibilityValue = (typeof VISIBILITY_OPTIONS)[number]["value"];
+type TopicActionValue = (typeof TOPIC_ACTION_OPTIONS)[number]["value"];
 
 type Props = {
   reportId: string;
   initialStatus: StatusValue;
   hasComment: boolean;
+  hasTopic: boolean;
 };
 
-export function ReportActions({ reportId, initialStatus, hasComment }: Props) {
+export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<StatusValue>(initialStatus);
   const [commentVisibility, setCommentVisibility] = useState<VisibilityValue>("KEEP");
+  const [topicAction, setTopicAction] = useState<TopicActionValue>("KEEP");
 
   async function submit() {
     setIsLoading(true);
@@ -37,6 +47,7 @@ export function ReportActions({ reportId, initialStatus, hasComment }: Props) {
         body: JSON.stringify({
           status,
           commentVisibility: hasComment ? commentVisibility : "KEEP",
+          topicAction: hasTopic ? topicAction : "KEEP",
         }),
       });
       const data = await res.json();
@@ -44,7 +55,7 @@ export function ReportActions({ reportId, initialStatus, hasComment }: Props) {
         setMessage(data.error ?? "상태 변경에 실패했습니다.");
         return;
       }
-      setMessage("신고 상태가 업데이트되었습니다.");
+      setMessage("신고 상태/연관 조치가 업데이트되었습니다.");
       setTimeout(() => window.location.reload(), 300);
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
@@ -74,6 +85,18 @@ export function ReportActions({ reportId, initialStatus, hasComment }: Props) {
               value={commentVisibility}
               onChange={(value) => setCommentVisibility(value as VisibilityValue)}
               options={[...VISIBILITY_OPTIONS]}
+            />
+          </div>
+        ) : null}
+
+        {hasTopic ? (
+          <div style={{ minWidth: "13rem" }}>
+            <SelectField
+              id={`report-topic-action-${reportId}`}
+              name={`report-topic-action-${reportId}`}
+              value={topicAction}
+              onChange={(value) => setTopicAction(value as TopicActionValue)}
+              options={[...TOPIC_ACTION_OPTIONS]}
             />
           </div>
         ) : null}
