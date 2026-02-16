@@ -21,20 +21,29 @@ type ReportView = {
   commentId: string | null;
   commentContent?: string;
   commentHidden?: boolean;
+  topicId?: string | null;
+  topicTitle?: string;
 };
 
-export default async function AdminModerationPage() {
+type Props = {
+  searchParams?: Promise<{ status?: string }>;
+};
+
+export default async function AdminModerationPage({ searchParams }: Props) {
   const viewer = await getSessionUser();
   if (!viewer) redirect("/auth/signin");
   if (viewer.role !== "ADMIN") redirect("/");
 
   const canUseDb = Boolean(process.env.DATABASE_URL);
+  const query = await searchParams;
+  const selectedStatus = String(query?.status ?? "ALL").toUpperCase();
 
   const reports: ReportView[] = canUseDb
     ? await db.report
       .findMany({
         orderBy: { createdAt: "desc" },
         include: {
+          topic: { select: { id: true, title: true } },
           comment: { select: { id: true, content: true, isHidden: true } },
         },
         take: 100,
@@ -49,6 +58,8 @@ export default async function AdminModerationPage() {
           commentId: report.commentId,
           commentContent: report.comment?.content,
           commentHidden: report.comment?.isHidden,
+          topicId: report.topicId,
+          topicTitle: report.topic?.title,
         })),
       )
       .catch(() => [])
@@ -59,6 +70,7 @@ export default async function AdminModerationPage() {
       status: report.status,
       createdAt: report.createdAt,
       commentId: report.commentId,
+      topicId: report.topicId,
     }));
 
   const settlement = canUseDb
@@ -75,22 +87,36 @@ export default async function AdminModerationPage() {
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
 
+  const filteredReports = selectedStatus === "ALL"
+    ? reports
+    : reports.filter((report) => report.status === selectedStatus);
+
   return (
     <PageContainer>
-      <div className="row" style={{ justifyContent: "space-between" }}>
+      <div className="row" style={{ justifyContent: "space-between", gap: "0.6rem", flexWrap: "wrap" }}>
         <h1 style={{ margin: 0 }}>Admin · Moderation & Settlement</h1>
-        <Link className="text-link" href="/admin/topics">
-          토픽 관리로 이동
-        </Link>
+        <div className="row" style={{ gap: "0.9rem" }}>
+          <Link className="text-link" href="/admin/topics">
+            토픽 관리로 이동
+          </Link>
+          <Link className="text-link" href="/admin/moderation?status=ALL">
+            필터 초기화
+          </Link>
+        </div>
       </div>
 
       <Card>
         <SectionTitle>신고 현황</SectionTitle>
-        <div className="row" style={{ marginTop: "0.75rem", flexWrap: "wrap" }}>
+        <div className="row" style={{ marginTop: "0.75rem", flexWrap: "wrap", gap: "0.55rem" }}>
+          <Link className="text-link" href="/admin/moderation?status=ALL">
+            ALL {reports.length}
+          </Link>
           {STATUSES.map((status) => (
-            <Pill key={status}>
-              {status} {counts[status]}
-            </Pill>
+            <Link key={status} className="text-link" href={`/admin/moderation?status=${status}`}>
+              <Pill tone={selectedStatus === status ? "danger" : "neutral"}>
+                {status} {counts[status]}
+              </Pill>
+            </Link>
           ))}
         </div>
       </Card>
@@ -104,15 +130,22 @@ export default async function AdminModerationPage() {
       </Card>
 
       <div className="list">
-        {reports.map((report) => (
+        {filteredReports.map((report) => (
           <Card key={report.id}>
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
               <div>
                 <strong>{report.reason}</strong>
                 <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
                 <small style={{ color: "#6b7280" }}>
                   {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
                 </small>
+                {report.topicId ? (
+                  <p style={{ margin: "0.3rem 0 0" }}>
+                    <Link href={`/topics/${report.topicId}`} className="text-link">
+                      토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
+                    </Link>
+                  </p>
+                ) : null}
               </div>
               {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
             </div>
@@ -129,7 +162,7 @@ export default async function AdminModerationPage() {
             </div>
           </Card>
         ))}
-        {reports.length === 0 ? <Card>신고가 없습니다.</Card> : null}
+        {filteredReports.length === 0 ? <Card>조건에 맞는 신고가 없습니다.</Card> : null}
       </div>
     </PageContainer>
   );

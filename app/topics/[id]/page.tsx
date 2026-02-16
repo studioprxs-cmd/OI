@@ -135,7 +135,7 @@ export default async function TopicDetailPage({ params }: Props) {
                   <p style={{ margin: "0 0 0.4rem" }}>{comment.content}</p>
                   <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
                     <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
-                    {canReport && process.env.DATABASE_URL ? <CommentReportButton commentId={comment.id} /> : null}
+                    {canReport ? <CommentReportButton commentId={comment.id} /> : null}
                   </div>
                 </article>
               ))}
