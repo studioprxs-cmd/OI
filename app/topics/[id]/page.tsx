@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CommentForm } from "./CommentForm";
+import { CommentReportButton } from "./CommentReportButton";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
@@ -29,6 +30,7 @@ export default async function TopicDetailPage({ params }: Props) {
   const canUseDb = Boolean(process.env.DATABASE_URL);
   const viewer = await getSessionUser();
   const canManage = viewer?.role === "ADMIN";
+  const canReport = Boolean(viewer);
 
   const dbTopic = canUseDb ? await db.topic
     .findUnique({
@@ -131,7 +133,10 @@ export default async function TopicDetailPage({ params }: Props) {
               {topic.comments.map((comment) => (
                 <article key={comment.id} className="comment-item">
                   <p style={{ margin: "0 0 0.4rem" }}>{comment.content}</p>
-                  <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
+                  <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
+                    {canReport && process.env.DATABASE_URL ? <CommentReportButton commentId={comment.id} /> : null}
+                  </div>
                 </article>
               ))}
             </div>

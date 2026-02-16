@@ -37,6 +37,7 @@ export default async function AdminTopicsPage() {
         <div className="row" style={{ marginTop: "0.75rem" }}>
           <Link className="text-link" href="/topics">사용자 토픽 목록 보기</Link>
           <Link className="text-link" href="/admin/topics/new">새 토픽 생성</Link>
+          <Link className="text-link" href="/admin/moderation">모더레이션/정산 현황</Link>
         </div>
       </Card>
 

@@ -43,7 +43,8 @@ export function ResolveForm({ topicId }: Props) {
         return;
       }
 
-      setMessage("정산(해결) 정보가 저장되었습니다.");
+      const settledCount = Number(data?.data?.settlement?.settledCount ?? 0);
+      setMessage(`정산(해결) 정보가 저장되었습니다. 정산 베팅 ${settledCount}건`);
       setSummary("");
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
