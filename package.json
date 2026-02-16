@@ -5,11 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "expo start",
     "lint": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts"
+    "prisma:seed": "tsx prisma/seed.ts",
+    "web": "expo start --web"
   },
   "prisma": {
     "seed": "npm run prisma:seed"
@@ -27,5 +28,23 @@
     "prisma": "5.16.1",
     "tsx": "4.16.2",
     "typescript": "5.5.3"
-  }
+  },
+  "description": "초기 골격 + 문서 + Prisma 스키마 + 최소 동작 API/페이지가 포함된 MVP 저장소입니다.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/studioprxs-cmd/oi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/studioprxs-cmd/oi/issues"
+  },
+  "homepage": "https://github.com/studioprxs-cmd/oi#readme"
 }
