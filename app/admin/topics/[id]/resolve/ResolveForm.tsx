@@ -33,6 +33,12 @@ const resultOptions = [
   { value: "NO", label: "NO" },
 ] as const;
 
+function payoutMultiplier(summary?: SettlementPreviewSummary) {
+  if (!summary) return 0;
+  if (summary.winnerPool <= 0) return 0;
+  return summary.totalPool / summary.winnerPool;
+}
+
 export function ResolveForm({ topicId }: Props) {
   const [result, setResult] = useState<ResultValue>("YES");
   const [summary, setSummary] = useState("");
@@ -133,13 +139,44 @@ export function ResolveForm({ topicId }: Props) {
         <strong style={{ display: "block", marginBottom: "0.45rem" }}>정산 미리보기</strong>
         {previewLoading ? <p style={{ margin: 0, color: "#6b7280" }}>불러오는 중...</p> : null}
         {previewError ? <Message text={previewError} tone="error" /> : null}
-        {!previewLoading && !previewError && selectedPreview ? (
-          <div className="row" style={{ gap: "0.85rem", flexWrap: "wrap" }}>
-            <small style={{ color: "#6b7280" }}>미정산 베팅 {previewData?.unsettledBetCount ?? 0}건</small>
-            <small style={{ color: "#6b7280" }}>총 풀 {selectedPreview.totalPool.toLocaleString("ko-KR")}pt</small>
-            <small style={{ color: "#6b7280" }}>승리 풀 {selectedPreview.winnerPool.toLocaleString("ko-KR")}pt</small>
-            <small style={{ color: "#6b7280" }}>승자 {selectedPreview.winnerCount}명</small>
-            <small style={{ color: "#6b7280" }}>예상 총지급 {selectedPreview.payoutTotal.toLocaleString("ko-KR")}pt</small>
+        {!previewLoading && !previewError && previewData?.preview ? (
+          <div className="list" style={{ gap: "0.65rem" }}>
+            <small style={{ color: "#6b7280" }}>미정산 베팅 {previewData.unsettledBetCount ?? 0}건</small>
+            <div className="row" style={{ gap: "0.7rem", flexWrap: "wrap" }}>
+              {(Object.entries(previewData.preview) as Array<[ResultValue, SettlementPreviewSummary]>).map(([side, item]) => {
+                const isSelected = side === result;
+                const multiplier = payoutMultiplier(item);
+
+                return (
+                  <div
+                    key={side}
+                    style={{
+                      flex: "1 1 220px",
+                      border: isSelected ? "1px solid #2563eb" : "1px solid rgba(15, 23, 42, 0.08)",
+                      borderRadius: "0.85rem",
+                      boxShadow: isSelected ? "0 0 0 1px rgba(37, 99, 235, 0.15)" : undefined,
+                    }}
+                  >
+                    <Card>
+                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+                        <strong>{side} 승리 시</strong>
+                        <small style={{ color: isSelected ? "#2563eb" : "#6b7280" }}>{isSelected ? "선택됨" : ""}</small>
+                      </div>
+                      <ul className="simple-list muted" style={{ marginTop: "0.5rem" }}>
+                        <li>총 풀 {item.totalPool.toLocaleString("ko-KR")}pt</li>
+                        <li>승리 풀 {item.winnerPool.toLocaleString("ko-KR")}pt</li>
+                        <li>승자 {item.winnerCount}명</li>
+                        <li>예상 총지급 {item.payoutTotal.toLocaleString("ko-KR")}pt</li>
+                        <li>배당 배율 {multiplier > 0 ? `${multiplier.toFixed(2)}x` : "0x"}</li>
+                      </ul>
+                    </Card>
+                  </div>
+                );
+              })}
+            </div>
+            {selectedPreview?.winnerPool === 0 ? (
+              <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
+            ) : null}
           </div>
         ) : null}
       </Card>

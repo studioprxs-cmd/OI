@@ -29,7 +29,7 @@ type ReportView = {
 };
 
 type Props = {
-  searchParams?: Promise<{ status?: string }>;
+  searchParams?: Promise<{ status?: string; type?: string; q?: string }>;
 };
 
 export default async function AdminModerationPage({ searchParams }: Props) {
@@ -40,6 +40,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const canUseDb = Boolean(process.env.DATABASE_URL);
   const query = await searchParams;
   const selectedStatus = String(query?.status ?? "ALL").toUpperCase();
+  const selectedType = String(query?.type ?? "ALL").toUpperCase();
+  const keyword = String(query?.q ?? "").trim().toLowerCase();
 
   const reports: ReportView[] = canUseDb
     ? await db.report
@@ -94,9 +96,30 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
 
-  const filteredReports = selectedStatus === "ALL"
-    ? reports
-    : reports.filter((report) => report.status === selectedStatus);
+  const filteredReports = reports.filter((report) => {
+    if (selectedStatus !== "ALL" && report.status !== selectedStatus) return false;
+
+    const reportType = report.commentId ? "COMMENT" : "TOPIC";
+    if (selectedType !== "ALL" && selectedType !== reportType) return false;
+
+    if (!keyword) return true;
+
+    const haystack = [
+      report.reason,
+      report.detail,
+      report.reporterNickname,
+      report.reporterEmail,
+      report.commentContent,
+      report.topicTitle,
+      report.topicId,
+      report.id,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(keyword);
+  });
 
   return (
     <PageContainer>
@@ -115,17 +138,60 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       <Card>
         <SectionTitle>신고 현황</SectionTitle>
         <div className="row" style={{ marginTop: "0.75rem", flexWrap: "wrap", gap: "0.55rem" }}>
-          <Link className="text-link" href="/admin/moderation?status=ALL">
+          <Link className="text-link" href="/admin/moderation?status=ALL&type=ALL">
             ALL {reports.length}
           </Link>
           {STATUSES.map((status) => (
-            <Link key={status} className="text-link" href={`/admin/moderation?status=${status}`}>
+            <Link key={status} className="text-link" href={`/admin/moderation?status=${status}&type=${selectedType}`}>
               <Pill tone={selectedStatus === status ? "danger" : "neutral"}>
                 {status} {counts[status]}
               </Pill>
             </Link>
           ))}
         </div>
+
+        <form method="get" className="row" style={{ marginTop: "0.7rem", gap: "0.55rem", flexWrap: "wrap" }}>
+          <input type="hidden" name="status" value={selectedStatus} />
+          <select
+            name="type"
+            defaultValue={selectedType}
+            style={{
+              border: "1px solid rgba(15, 23, 42, 0.15)",
+              borderRadius: "0.65rem",
+              padding: "0.45rem 0.6rem",
+              minWidth: "8rem",
+            }}
+          >
+            <option value="ALL">전체 타입</option>
+            <option value="COMMENT">댓글 신고</option>
+            <option value="TOPIC">토픽 신고</option>
+          </select>
+          <input
+            name="q"
+            defaultValue={query?.q ?? ""}
+            placeholder="신고/토픽/유저 검색"
+            style={{
+              border: "1px solid rgba(15, 23, 42, 0.15)",
+              borderRadius: "0.65rem",
+              padding: "0.45rem 0.6rem",
+              minWidth: "15rem",
+              flex: "1 1 220px",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              border: "1px solid rgba(15, 23, 42, 0.18)",
+              borderRadius: "0.65rem",
+              background: "#111827",
+              color: "#fff",
+              padding: "0.45rem 0.8rem",
+              fontWeight: 600,
+            }}
+          >
+            필터 적용
+          </button>
+        </form>
       </Card>
 
       <Card>

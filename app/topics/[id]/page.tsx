@@ -83,6 +83,13 @@ export default async function TopicDetailPage({ params }: Props) {
     }
     : null;
 
+  const winnerPool = resolution
+    ? resolution.result === Choice.YES
+      ? yesPool
+      : noPool
+    : 0;
+  const winnerPayoutMultiplier = winnerPool > 0 ? totalPool / winnerPool : 0;
+
   const topic = {
     id: dbTopic?.id ?? mockTopic!.id,
     title: dbTopic?.title ?? mockTopic!.title,
@@ -139,7 +146,8 @@ export default async function TopicDetailPage({ params }: Props) {
                 </div>
                 <p style={{ margin: 0 }}>{resolution.summary}</p>
                 <small style={{ color: "#6b7280" }}>
-                  정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt
+                  정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt · 승리 풀 {winnerPool.toLocaleString("ko-KR")} pt
+                  {winnerPayoutMultiplier > 0 ? ` · 배당 배율 ${winnerPayoutMultiplier.toFixed(2)}x` : " · 배당 없음"}
                 </small>
               </div>
             </FeedCard>
