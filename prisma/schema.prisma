@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TopicStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  RESOLVED
+  CANCELED
+}
+
+enum Choice {
+  YES
+  NO
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  CLOSED
+  REJECTED
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  nickname      String
+  passwordHash  String?
+  role          String   @default("USER")
+  pointBalance  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  votes         Vote[]
+  bets          Bet[]
+  comments      Comment[]
+  transactions  WalletTransaction[]
+  reports       Report[] @relation("ReporterReports")
+}
+
+model Topic {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  status        TopicStatus @default(DRAFT)
+  closeAt       DateTime
+  createdById   String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  sources       TopicSource[]
+  votes         Vote[]
+  bets          Bet[]
+  comments      Comment[]
+  resolution    Resolution?
+  reports       Report[]
+}
+
+model TopicSource {
+  id            String   @id @default(cuid())
+  topicId       String
+  url           String
+  title         String
+  publisher     String?
+  publishedAt   DateTime?
+  createdAt     DateTime @default(now())
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([topicId])
+}
+
+model Vote {
+  id            String   @id @default(cuid())
+  topicId       String
+  userId        String
+  choice        Choice
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([topicId, userId])
+  @@index([userId])
+}
+
+model Bet {
+  id            String   @id @default(cuid())
+  topicId       String
+  userId        String
+  choice        Choice
+  amount        Int
+  settled       Boolean  @default(false)
+  payoutAmount  Int?
+  createdAt     DateTime @default(now())
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([topicId, userId])
+}
+
+model Comment {
+  id            String   @id @default(cuid())
+  topicId       String
+  userId        String
+  content       String
+  isHidden      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports       Report[]
+
+  @@index([topicId, createdAt])
+}
+
+model Resolution {
+  id            String   @id @default(cuid())
+  topicId       String   @unique
+  result        Choice
+  summary       String
+  resolvedAt    DateTime @default(now())
+  resolverId    String?
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
+model WalletTransaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  amount        Int
+  balanceAfter  Int
+  relatedBetId  String?
+  note          String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  reporterId      String
+  topicId         String?
+  commentId       String?
+  reason          String
+  detail          String?
+  status          ReportStatus @default(OPEN)
+  createdAt       DateTime     @default(now())
+  reviewedAt      DateTime?
+
+  reporter        User         @relation("ReporterReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  topic           Topic?       @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  comment         Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId, createdAt])
+  @@index([topicId])
+  @@index([commentId])
+}
