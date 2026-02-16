@@ -6,7 +6,7 @@ import { CommentForm } from "./CommentForm";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
-import { PageContainer, Pill } from "@/components/ui";
+import { OiBadge, PageContainer, Pill } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findMockTopic } from "@/lib/mock-data";
@@ -82,6 +82,7 @@ export default async function TopicDetailPage({ params }: Props) {
       <div className="content-grid">
         <section className="main-column">
           <section className="hero-block compact">
+            <OiBadge label="OI Detail" />
             <p className="hero-eyebrow">Topic Detail</p>
             <h1>{topic.title}</h1>
             <p>{topic.description}</p>
@@ -92,13 +93,13 @@ export default async function TopicDetailPage({ params }: Props) {
           </section>
 
           <section className="stats-grid">
-            <FeedCard title="YES Votes" meta={`${yesVotes} (${percent(yesVotes, totalVotes)}%)`}>
+            <FeedCard title="YES 투표" meta={`${yesVotes}표 (${percent(yesVotes, totalVotes)}%)`}>
               <div className="meter"><span style={{ width: `${percent(yesVotes, totalVotes)}%` }} /></div>
             </FeedCard>
-            <FeedCard title="NO Votes" meta={`${noVotes} (${percent(noVotes, totalVotes)}%)`}>
+            <FeedCard title="NO 투표" meta={`${noVotes}표 (${percent(noVotes, totalVotes)}%)`}>
               <div className="meter"><span style={{ width: `${percent(noVotes, totalVotes)}%` }} /></div>
             </FeedCard>
-            <FeedCard title="Total Pool" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
+            <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
               <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
             </FeedCard>
           </section>

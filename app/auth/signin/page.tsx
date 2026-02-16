@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-import { Button, Card, Field, InputField, Message, PageContainer } from "@/components/ui";
+import { Button, Card, Field, InputField, Message, OiBadge, PageContainer } from "@/components/ui";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -45,10 +45,12 @@ export default function SignInPage() {
     <PageContainer>
       <section className="auth-layout">
         <Card>
+          <OiBadge label="OI Auth" />
           <div className="auth-logo-wrap" aria-hidden>
             <Image src="/oi-logo.jpg" alt="" width={220} height={72} className="auth-logo" priority />
           </div>
           <h1 className="section-title">로그인</h1>
+          <p className="auth-sub">계정으로 로그인하고 실시간 이슈 참여를 이어가세요.</p>
           <form className="list" onSubmit={onSubmit}>
             <Field label="이메일" htmlFor="email">
               <InputField id="email" name="email" type="email" value={email} onChange={setEmail} required />

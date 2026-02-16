@@ -7,6 +7,15 @@ export function PageContainer({ children }: LayoutProps) {
   return <main className="page-container">{children}</main>;
 }
 
+export function OiBadge({ label = "OI" }: { label?: string }) {
+  return (
+    <span className="oi-badge" aria-label={`${label} 브랜드 배지`}>
+      <span className="oi-badge-dot" aria-hidden />
+      {label}
+    </span>
+  );
+}
+
 export function Card({ children }: LayoutProps) {
   return <section className="card">{children}</section>;
 }

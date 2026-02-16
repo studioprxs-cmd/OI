@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-import { Button, Card, Field, InputField, Message, PageContainer } from "@/components/ui";
+import { Button, Card, Field, InputField, Message, OiBadge, PageContainer } from "@/components/ui";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -51,10 +51,12 @@ export default function SignUpPage() {
     <PageContainer>
       <section className="auth-layout">
         <Card>
+          <OiBadge label="OI Auth" />
           <div className="auth-logo-wrap" aria-hidden>
             <Image src="/oi-logo.jpg" alt="" width={220} height={72} className="auth-logo" priority />
           </div>
           <h1 className="section-title">회원가입</h1>
+          <p className="auth-sub">간단한 가입 후 관심 토픽을 저장하고 의견을 남겨보세요.</p>
           <form className="list" onSubmit={onSubmit}>
             <Field label="이메일" htmlFor="email">
               <InputField id="email" name="email" type="email" value={email} onChange={setEmail} required />

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
-import { Pill, PageContainer } from "@/components/ui";
+import { OiBadge, Pill, PageContainer } from "@/components/ui";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 
@@ -57,9 +57,10 @@ export default async function HomePage() {
       <div className="content-grid">
         <main className="main-column">
           <section className="hero-block">
+            <OiBadge label="OI Brief" />
             <p className="hero-eyebrow">OI Community Dashboard</p>
             <h1>오늘의 이슈</h1>
-            <p>정치·경제 이슈를 투명하게 보고, 빠르게 참여하는 클레이 스타일 커뮤니티 허브</p>
+            <p>정치·경제 이슈를 투명하게 파악하고, 1분 안에 참여까지 이어지는 모바일 퍼스트 커뮤니티 허브</p>
             <div className="hero-kpis">
               <div>
                 <span>오픈 토픽</span>
