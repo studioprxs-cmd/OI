@@ -1302,42 +1302,36 @@ body::before {
     grid-template-columns: 1fr;
     gap: 0.8rem;
     padding-top: 0.8rem;
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + 1rem);
+    padding-bottom: 1.2rem;
   }
 
   .topic-detail-main {
-    padding-bottom: calc(var(--mobile-fab-clearance) + 4.2rem);
+    padding-bottom: calc(var(--mobile-fab-clearance) + 0.8rem);
   }
 
   .side-rail {
-    position: fixed;
-    left: 0.6rem;
-    right: 0.6rem;
-    bottom: var(--mobile-bottom-nav-offset);
-    z-index: 60;
+    position: static;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    min-height: var(--mobile-bottom-nav-height);
-    border-radius: 16px;
-    padding: 0.45rem;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
-    isolation: isolate;
+    min-height: 0;
+    border-radius: 14px;
+    padding: 0.35rem;
+    background: #ffffff;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
   }
 
   .rail-item {
     width: 100%;
     height: auto;
-    min-height: 48px;
-    border-radius: 12px;
+    min-height: 44px;
+    border-radius: 10px;
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.18rem;
-    padding: 0.35rem 0.2rem;
+    padding: 0.32rem 0.2rem;
   }
 
   .rail-label {
@@ -1619,19 +1613,16 @@ body::before {
 
   .app-body {
     gap: 0.65rem;
-    padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + 0.85rem);
+    padding-bottom: 0.95rem;
   }
 
   .topic-detail-main {
-    padding-bottom: calc(var(--mobile-fab-clearance) + 3.7rem);
+    padding-bottom: calc(var(--mobile-fab-clearance) + 0.6rem);
   }
 
   .side-rail {
-    left: 0.45rem;
-    right: 0.45rem;
-    bottom: var(--mobile-bottom-nav-offset);
-    border-radius: 14px;
-    padding: 0.38rem;
+    border-radius: 12px;
+    padding: 0.3rem;
   }
 
   .rail-label {
