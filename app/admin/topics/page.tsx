@@ -136,6 +136,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
   const topicQueueStressScore = Math.min(100, (statusCounts.OPEN * 11) + (staleOpenCount * 24) + (staleLockedCount * 12));
   const topicIntegrityRiskScore = Math.min(100, (unresolvedSettledBacklogCount * 35) + (resolvedWithoutResolutionCount * 20));
   const topicConfidence = topicIntegrityRiskScore === 0 ? "높음" : topicIntegrityRiskScore <= 30 ? "보통" : "낮음";
+  const dataModeLabel = canUseDb ? "Live DB" : "Local fallback";
 
   const queueLaneItems = [
     {
@@ -188,6 +189,30 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const settlementGuardrails = [
+    {
+      key: "resolved-backlog",
+      label: "RESOLVED 미정산 없음",
+      count: unresolvedSettledBacklogCount,
+      helper: "RESOLVED 토픽 + settled=false 베팅",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "resolution-missing",
+      label: "결과 레코드 연결",
+      count: resolvedWithoutResolutionCount,
+      helper: "status=RESOLVED + resolution=null",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+    {
+      key: "queue-latency",
+      label: "OPEN 지연 24h 이하",
+      count: staleOpenCount,
+      helper: "24시간 이상 OPEN 토픽",
+      tone: staleOpenCount > 0 ? "warning" : "ok",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -235,12 +260,24 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-thumb-rail-card">
+        <p className="admin-jump-nav-label">Thumb rail · Next action</p>
+        <div className="admin-thumb-rail-scroll" aria-label="토픽 운영 바로가기">
+          <Link href="/admin/topics?status=OPEN" className="admin-thumb-chip is-danger">OPEN {statusCounts.OPEN}</Link>
+          <Link href="/admin/topics?status=LOCKED" className="admin-thumb-chip">LOCKED {statusCounts.LOCKED}</Link>
+          <a href="#topic-priority" className="admin-thumb-chip">우선순위</a>
+          <a href="#topic-integrity-watch" className="admin-thumb-chip">무결성 워치</a>
+          <a href="#topic-list" className="admin-thumb-chip">리스트로 이동</a>
+        </div>
+        <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
       <Card className="admin-jump-nav-card admin-jump-nav-card-sticky">
         <p className="admin-jump-nav-label">Quick jump</p>
         <div className="admin-jump-nav" aria-label="토픽 운영 섹션 바로가기">
           <a href="#topic-priority" className="admin-jump-nav-item">우선순위</a>
           <a href="#topic-spotlight" className="admin-jump-nav-item">스포트라이트</a>
-          <a href="#topic-filter" className="admin-jump-nav-item">필터</a>
+          <a href="#topic-integrity-watch" className="admin-jump-nav-item">무결성 워치</a>
           <a href="#topic-list" className="admin-jump-nav-item">토픽 리스트</a>
         </div>
       </Card>
@@ -273,8 +310,11 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
             <p className="admin-command-kicker">Topic command rail</p>
             <h2 className="admin-command-title">지금 처리할 핵심 3단계</h2>
           </div>
-          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>Integrity {integrityIssueTotal}</Pill>
+          <Pill tone={canUseDb ? "success" : "neutral"}>{dataModeLabel}</Pill>
         </div>
+        {!canUseDb ? (
+          <p className="admin-command-warning">DATABASE_URL 미설정 상태라 로컬 fallback 데이터 기준으로 표시됩니다. 운영 점검 전 배포 환경 변수 확인을 권장합니다.</p>
+        ) : null}
         <div className="admin-command-grid">
           {operationsChecklist.map((item, index) => (
             <article key={item.label} className={`admin-command-item is-${item.tone}`}>
@@ -330,6 +370,20 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>무결성 이슈 {integrityIssueTotal}</Pill>
         </div>
         <p className="admin-muted-note">Next best action: {nextActionLabel}</p>
+      </Card>
+
+      <Card id="topic-integrity-watch" className="admin-surface-card admin-guardrail-card">
+        <SectionTitle>Settlement integrity watch</SectionTitle>
+        <p className="admin-muted-note">정산 전 필수 체크 3가지를 고정해 토픽 상태와 결과 정합성을 빠르게 검증합니다.</p>
+        <div className="admin-guardrail-grid" style={{ marginTop: "0.65rem" }}>
+          {settlementGuardrails.map((item) => (
+            <article key={item.key} className={`admin-guardrail-item is-${item.tone}`}>
+              <strong>{item.label}</strong>
+              <small>{item.helper}</small>
+              <span>{item.count === 0 ? "PASS" : `${item.count}건`}</span>
+            </article>
+          ))}
+        </div>
       </Card>
 
       <Card id="topic-spotlight">

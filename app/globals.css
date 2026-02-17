@@ -1981,6 +1981,7 @@ body::before {
 #report-list,
 #topic-priority,
 #topic-spotlight,
+#topic-integrity-watch,
 #topic-filter,
 #topic-list {
   scroll-margin-top: 220px;
