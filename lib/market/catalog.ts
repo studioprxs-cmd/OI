@@ -68,7 +68,7 @@ type ProductFilter = {
   activeOnly?: boolean;
 };
 
-function isProductWithinWindow(product: MarketProduct, now: Date) {
+export function isProductWithinWindow(product: MarketProduct, now: Date = new Date()) {
   const from = product.availableFrom ? new Date(product.availableFrom) : null;
   const until = product.availableUntil ? new Date(product.availableUntil) : null;
 
@@ -90,6 +90,14 @@ export function getMarketProducts(filter: ProductFilter = {}) {
 
     return true;
   });
+}
+
+export function getMarketProductById(productId: string) {
+  return CATALOG.find((product) => product.id === productId) ?? null;
+}
+
+export function calculateMarketOrderPoints(pricePoints: number, quantity: number) {
+  return pricePoints * quantity;
 }
 
 export const MARKET_ZONES: Record<MarketZone, string> = {

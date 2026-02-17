@@ -2118,6 +2118,20 @@ body::before {
   border-color: #d6e1da;
 }
 
+.inline-success {
+  margin: 0;
+  color: #13653e;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.inline-error {
+  margin: 0;
+  color: #9f1f1f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 .settlement-ledger-card {
   margin: 0.66rem 0 0.56rem;
   border: 1px solid #d7e6dd;
