@@ -59,6 +59,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const selectedStatus = String(query?.status ?? "ALL").toUpperCase();
   const selectedType = String(query?.type ?? "ALL").toUpperCase();
   const keyword = String(query?.q ?? "").trim().toLowerCase();
+  const rawKeyword = String(query?.q ?? "").trim();
 
   const reports: ReportView[] = canUseDb
     ? await db.report
@@ -247,6 +248,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const superStaleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 48 * 60 * 60 * 1000).length;
   const filteredOpenIds = filteredReports.filter((report) => report.status === "OPEN").map((report) => report.id);
   const filteredReviewingIds = filteredReports.filter((report) => report.status === "REVIEWING").map((report) => report.id);
+  const activeFilterTokens = [
+    selectedStatus !== "ALL" ? `상태 ${selectedStatus}` : null,
+    selectedType !== "ALL" ? `타입 ${selectedType}` : null,
+    rawKeyword ? `검색어 “${rawKeyword}”` : null,
+  ].filter(Boolean) as string[];
   const closedCount = counts.CLOSED;
   const rejectedCount = counts.REJECTED;
   const resolvedReportCount = closedCount + rejectedCount;
@@ -547,6 +553,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
       </Card>
+
+      {hasCriticalIntegrityIssue ? (
+        <Card className="admin-critical-banner" role="alert" aria-live="polite">
+          <div>
+            <p className="admin-critical-banner-kicker">Critical integrity signal</p>
+            <strong>정산 무결성 긴급 점검 필요 · {integrityIssueTotal}건</strong>
+            <p>누락 지급, 미정산 백로그, 비정상 금액 또는 배당률 밴드 이탈이 감지되었습니다.</p>
+          </div>
+          <div className="admin-critical-banner-actions">
+            <Link href="/admin/topics?status=RESOLVED" className="btn btn-danger">정산 이슈 우선 처리</Link>
+            <Link href="/admin/moderation?status=OPEN" className="btn btn-secondary">OPEN 큐 정리</Link>
+          </div>
+        </Card>
+      ) : null}
 
       <Card id="integrity-watch" className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>Integrity incident board</SectionTitle>
@@ -1000,6 +1020,22 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </div>
         </Card>
       ) : null}
+
+      <Card className="admin-filter-summary-card">
+        <div className="admin-filter-summary-head">
+          <SectionTitle>현재 필터 컨텍스트</SectionTitle>
+          <Pill tone={filteredReports.length > 0 ? "neutral" : "danger"}>결과 {filteredReports.length}건</Pill>
+        </div>
+        {activeFilterTokens.length > 0 ? (
+          <div className="chip-row-scroll" style={{ marginTop: "0.6rem" }}>
+            {activeFilterTokens.map((token) => (
+              <span key={token} className="filter-chip is-active">{token}</span>
+            ))}
+          </div>
+        ) : (
+          <p className="admin-muted-note" style={{ marginTop: "0.55rem" }}>필터 없음 · 기본 전체 큐 보기</p>
+        )}
+      </Card>
 
       <div id="report-list" className="list">
         <Card>
