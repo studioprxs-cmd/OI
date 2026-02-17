@@ -53,9 +53,19 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true, data: report, error: null }, { status: 201 });
   }
 
-  const topic = await db.topic.findUnique({ where: { id: topicId }, select: { id: true } });
+  const topic = await db.topic.findUnique({
+    where: { id: topicId },
+    select: { id: true, createdById: true },
+  });
   if (!topic) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+  }
+
+  if (topic.createdById && topic.createdById === authUser.id) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "본인이 작성한 토픽은 신고할 수 없습니다." },
+      { status: 403 },
+    );
   }
 
   const hasActiveReport = await db.report.findFirst({

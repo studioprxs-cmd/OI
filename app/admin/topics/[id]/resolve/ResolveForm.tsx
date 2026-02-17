@@ -51,6 +51,8 @@ export function ResolveForm({ topicId }: Props) {
 
   const selectedPreview = useMemo(() => previewData?.preview?.[result], [previewData, result]);
   const alreadyResolved = Boolean(previewData?.topic?.resolution);
+  const topicStatus = previewData?.topic?.status ?? "";
+  const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
 
   useEffect(() => {
     let isAlive = true;
@@ -91,6 +93,11 @@ export function ResolveForm({ topicId }: Props) {
 
     if (alreadyResolved) {
       setMessage("이미 해결 처리된 토픽입니다.");
+      return;
+    }
+
+    if (isBlockedStatus) {
+      setMessage(topicStatus === "CANCELED" ? "취소된 토픽은 정산할 수 없습니다." : "초안 토픽은 정산할 수 없습니다.");
       return;
     }
 
@@ -141,7 +148,9 @@ export function ResolveForm({ topicId }: Props) {
         {previewError ? <Message text={previewError} tone="error" /> : null}
         {!previewLoading && !previewError && previewData?.preview ? (
           <div className="list" style={{ gap: "0.65rem" }}>
-            <small style={{ color: "#6b7280" }}>미정산 베팅 {previewData.unsettledBetCount ?? 0}건</small>
+            <small style={{ color: "#6b7280" }}>
+              토픽 상태 {topicStatus || "UNKNOWN"} · 미정산 베팅 {previewData.unsettledBetCount ?? 0}건
+            </small>
             <div className="row" style={{ gap: "0.7rem", flexWrap: "wrap" }}>
               {(Object.entries(previewData.preview) as Array<[ResultValue, SettlementPreviewSummary]>).map(([side, item]) => {
                 const isSelected = side === result;
@@ -174,6 +183,12 @@ export function ResolveForm({ topicId }: Props) {
                 );
               })}
             </div>
+            {isBlockedStatus ? (
+              <Message
+                text={topicStatus === "CANCELED" ? "CANCELED 토픽은 정산할 수 없습니다." : "DRAFT 토픽은 정산할 수 없습니다."}
+                tone="error"
+              />
+            ) : null}
             {selectedPreview?.winnerPool === 0 ? (
               <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
             ) : null}
@@ -195,7 +210,9 @@ export function ResolveForm({ topicId }: Props) {
           placeholder="정산 근거/요약"
         />
       </Field>
-      <Button type="submit" disabled={isLoading || alreadyResolved}>{isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : "결과 확정"}</Button>
+      <Button type="submit" disabled={isLoading || alreadyResolved || isBlockedStatus}>
+        {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
+      </Button>
       {message ? <Message text={message} tone={message.includes("실패") || message.includes("오류") ? "error" : "info"} /> : null}
     </form>
   );

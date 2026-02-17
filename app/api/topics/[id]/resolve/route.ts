@@ -120,6 +120,14 @@ export async function POST(req: NextRequest, { params }: Params) {
       throw new Error("ALREADY_RESOLVED");
     }
 
+    if (currentTopic.status === TopicStatus.CANCELED) {
+      throw new Error("CANCELED_TOPIC_RESOLVE_BLOCKED");
+    }
+
+    if (currentTopic.status === TopicStatus.DRAFT) {
+      throw new Error("DRAFT_TOPIC_RESOLVE_BLOCKED");
+    }
+
     const hasSettledBet = await tx.bet.findFirst({
       where: { topicId: id, settled: true },
       select: { id: true },
@@ -205,6 +213,20 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (message === "SETTLEMENT_ALREADY_PROCESSED") {
       return NextResponse.json(
         { ok: false, data: null, error: "Settlement already processed for this topic" },
+        { status: 409 },
+      );
+    }
+
+    if (message === "CANCELED_TOPIC_RESOLVE_BLOCKED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "취소된 토픽(CANCELED)은 정산 처리할 수 없습니다." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "DRAFT_TOPIC_RESOLVE_BLOCKED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "초안 토픽(DRAFT)은 정산 처리할 수 없습니다." },
         { status: 409 },
       );
     }
