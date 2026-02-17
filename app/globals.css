@@ -23,8 +23,9 @@
   --ease-standard: cubic-bezier(0.2, 0.72, 0.22, 1);
   --mobile-safe-bottom: max(0.55rem, env(safe-area-inset-bottom));
   --mobile-admin-dock-height: 4.6rem;
+  --mobile-comment-cta-height: 3.1rem;
   --mobile-floating-layer-gap: 0.42rem;
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2) + 1.05rem);
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 1.05rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
 }
 
@@ -1885,6 +1886,18 @@ body::before {
   border-color: #dbe8e1;
 }
 
+.admin-report-card.admin-report-card-priority-danger {
+  border-left: 4px solid #df5348;
+}
+
+.admin-report-card.admin-report-card-priority-neutral {
+  border-left: 4px solid #d49a34;
+}
+
+.admin-report-card.admin-report-card-priority-success {
+  border-left: 4px solid #34a26b;
+}
+
 .admin-report-card.is-open {
   border-color: #f1c6c6;
   background: linear-gradient(180deg, #ffffff 0%, #fff9f9 100%);
@@ -2847,7 +2860,7 @@ body::before {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: calc(var(--mobile-thumb-reach-padding) - 0.5rem);
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
     z-index: 59;
     display: inline-flex;
     align-items: center;
@@ -2887,8 +2900,9 @@ body::before {
   :root {
     --mobile-safe-bottom: max(0.45rem, env(safe-area-inset-bottom));
     --mobile-admin-dock-height: 4.2rem;
+    --mobile-comment-cta-height: 2.95rem;
     --mobile-floating-layer-gap: 0.32rem;
-    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2) + 0.86rem);
+    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.86rem);
     --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.75rem);
   }
 

@@ -41,6 +41,14 @@ type Props = {
   searchParams?: Promise<{ status?: string; type?: string; q?: string }>;
 };
 
+function getReportPriority(status: StatusType, elapsedHours: number): { label: string; tone: "danger" | "neutral" | "success" } {
+  if (status === "OPEN" && elapsedHours >= 48) return { label: "Critical", tone: "danger" };
+  if (status === "OPEN") return { label: "High", tone: "danger" };
+  if (status === "REVIEWING" && elapsedHours >= 24) return { label: "Aging", tone: "neutral" };
+  if (status === "REVIEWING") return { label: "Active", tone: "neutral" };
+  return { label: "Closed", tone: "success" };
+}
+
 export default async function AdminModerationPage({ searchParams }: Props) {
   const viewer = await getSessionUser();
   if (!viewer) redirect("/auth/signin");
@@ -838,9 +846,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           const createdAt = new Date(report.createdAt);
           const elapsedHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
           const isStale = (report.status === "OPEN" || report.status === "REVIEWING") && elapsedHours >= 24;
+          const priority = getReportPriority(report.status, elapsedHours);
 
           return (
-            <Card key={report.id} className={`admin-report-card${report.status === "OPEN" ? " is-open" : ""}${isStale ? " is-stale" : ""}`}>
+            <Card key={report.id} className={`admin-report-card admin-report-card-priority-${priority.tone}${report.status === "OPEN" ? " is-open" : ""}${isStale ? " is-stale" : ""}`}>
               <article id={`report-${report.id}`} className="moderation-report-card admin-list-card">
                 <div className="moderation-report-headline admin-list-card-head">
                   <div>
@@ -862,6 +871,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                     ) : null}
                   </div>
                   <div className="row" style={{ gap: "0.4rem" }}>
+                    <Pill tone={priority.tone}>{priority.label}</Pill>
                     {isStale ? <Pill tone="danger">24h+ 지연</Pill> : null}
                     {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
                     <Pill>{report.commentId ? "comment" : "topic"}</Pill>
