@@ -52,6 +52,16 @@ export default async function HomePage() {
   const totalBets = combined.reduce((sum, topic) => sum + topic.betCount, 0);
   const openCount = combined.filter((topic) => topic.status === "OPEN").length;
 
+  const hotTopic = combined
+    .slice()
+    .sort((a, b) => {
+      const aScore = (a.voteCount * 2) + a.commentCount + a.betCount;
+      const bScore = (b.voteCount * 2) + b.commentCount + b.betCount;
+      if (bScore !== aScore) return bScore - aScore;
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    })
+    .find((topic) => topic.status === "OPEN") ?? trending[0] ?? latest[0] ?? null;
+
   return (
     <PageContainer>
       <div className="content-grid">
@@ -80,10 +90,35 @@ export default async function HomePage() {
           <section className="feed-section">
             <div className="section-heading-row section-header">
               <div>
-                <p className="section-kicker">지금 가장 많이 보는 주제</p>
-                <h2>인기 토픽</h2>
+                <p className="section-kicker">오늘 가장 뜨거운 이슈</p>
+                <h2>지금 바로 참여</h2>
               </div>
               <Link href="/topics" className="text-link">전체 보기</Link>
+            </div>
+            {hotTopic ? (
+              <FeedCard
+                title={<Link href={`/topics/${hotTopic.id}`} className="title-link">{hotTopic.title}</Link>}
+                description={hotTopic.description}
+                badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}
+                meta={`투표 ${hotTopic.voteCount} · 베팅 ${hotTopic.betCount} · 댓글 ${hotTopic.commentCount}`}
+                footer={
+                  <div className="row" style={{ justifyContent: "space-between", width: "100%" }}>
+                    <small style={{ color: "#5f7468" }}>
+                      지금 참여해서 여론/마켓 흐름을 먼저 잡아보세요
+                    </small>
+                    <Link href={`/topics/${hotTopic.id}`} className="btn btn-primary" style={{ minHeight: "40px" }}>
+                      참여하기
+                    </Link>
+                  </div>
+                }
+              />
+            ) : null}
+          </section>
+
+          <section className="feed-section">
+            <div className="section-header">
+              <p className="section-kicker">지금 가장 많이 보는 주제</p>
+              <h2>인기 토픽</h2>
             </div>
             <div className="feed-list">
               {trending.map((topic) => (
