@@ -38,7 +38,7 @@ export default async function TopicDetailPage({ params }: Props) {
       where: { id },
       include: {
         votes: { select: { choice: true } },
-        bets: { select: { choice: true, amount: true, settled: true, payoutAmount: true } },
+        bets: { select: { userId: true, choice: true, amount: true, settled: true, payoutAmount: true } },
         comments: {
           where: { isHidden: false },
           orderBy: { createdAt: "desc" },
@@ -89,6 +89,15 @@ export default async function TopicDetailPage({ params }: Props) {
       : noPool
     : 0;
   const winnerPayoutMultiplier = winnerPool > 0 ? totalPool / winnerPool : 0;
+
+  const viewerBets = dbTopic && viewer
+    ? dbTopic.bets.filter((bet) => bet.userId === viewer.id)
+    : [];
+  const viewerBetTotal = viewerBets.reduce((sum, bet) => sum + bet.amount, 0);
+  const viewerPayoutTotal = viewerBets.reduce((sum, bet) => sum + Number(bet.payoutAmount ?? 0), 0);
+  const viewerProfit = viewerPayoutTotal - viewerBetTotal;
+  const viewerSettledCount = viewerBets.filter((bet) => bet.settled).length;
+  const viewerPendingCount = viewerBets.filter((bet) => !bet.settled).length;
 
   const topic = {
     id: dbTopic?.id ?? mockTopic!.id,
@@ -148,6 +157,25 @@ export default async function TopicDetailPage({ params }: Props) {
                 <small style={{ color: "#6b7280" }}>
                   정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt · 승리 풀 {winnerPool.toLocaleString("ko-KR")} pt
                   {winnerPayoutMultiplier > 0 ? ` · 배당 배율 ${winnerPayoutMultiplier.toFixed(2)}x` : " · 배당 없음"}
+                </small>
+              </div>
+            </FeedCard>
+          ) : null}
+
+          {viewer && canUseDb && viewerBets.length > 0 ? (
+            <FeedCard title="내 정산 현황">
+              <div className="list" style={{ gap: "0.45rem" }}>
+                <div className="row" style={{ gap: "0.5rem" }}>
+                  <Pill tone={viewerProfit >= 0 ? "success" : "danger"}>
+                    {resolution ? `손익 ${viewerProfit >= 0 ? "+" : ""}${viewerProfit.toLocaleString("ko-KR")} pt` : `참여 ${viewerBets.length}건`}
+                  </Pill>
+                  <small style={{ color: "#6b7280" }}>
+                    베팅 {viewerBetTotal.toLocaleString("ko-KR")} pt
+                    {resolution ? ` · 지급 ${viewerPayoutTotal.toLocaleString("ko-KR")} pt` : ""}
+                  </small>
+                </div>
+                <small style={{ color: "#6b7280" }}>
+                  정산 완료 {viewerSettledCount}건 · 정산 대기 {viewerPendingCount}건
                 </small>
               </div>
             </FeedCard>

@@ -15,7 +15,9 @@ type ReportRow = {
   reviewedAt: Date | string | null;
   topicId: string | null;
   topicTitle: string | null;
+  topicStatus: string | null;
   commentId: string | null;
+  commentHidden: boolean | null;
 };
 
 function statusTone(status: ReportRow["status"]): "neutral" | "success" | "danger" {
@@ -31,6 +33,30 @@ function statusHint(status: ReportRow["status"]): string {
   return "반려";
 }
 
+function moderationOutcome(report: ReportRow): string | null {
+  if (report.status !== "CLOSED") return null;
+
+  const changes: string[] = [];
+
+  if (report.commentId && report.commentHidden === true) {
+    changes.push("신고한 댓글이 숨김 처리되었습니다");
+  }
+
+  if (report.topicStatus === "LOCKED") {
+    changes.push("관련 토픽이 잠금 처리되었습니다");
+  }
+
+  if (report.topicStatus === "CANCELED") {
+    changes.push("관련 토픽이 취소 처리되었습니다");
+  }
+
+  if (changes.length === 0) {
+    return "운영팀 검토가 완료되었습니다.";
+  }
+
+  return changes.join(" · ");
+}
+
 export default async function MyReportsPage() {
   const viewer = await getSessionUser();
   if (!viewer) redirect("/auth/signin");
@@ -44,8 +70,8 @@ export default async function MyReportsPage() {
         orderBy: { createdAt: "desc" },
         take: 100,
         include: {
-          topic: { select: { id: true, title: true } },
-          comment: { select: { id: true } },
+          topic: { select: { id: true, title: true, status: true } },
+          comment: { select: { id: true, isHidden: true } },
         },
       })
       .then((rows) =>
@@ -58,7 +84,9 @@ export default async function MyReportsPage() {
           reviewedAt: row.reviewedAt,
           topicId: row.topicId,
           topicTitle: row.topic?.title ?? null,
+          topicStatus: row.topic?.status ?? null,
           commentId: row.comment?.id ?? row.commentId,
+          commentHidden: row.comment?.isHidden ?? null,
         })),
       )
       .catch(() => [])
@@ -74,7 +102,9 @@ export default async function MyReportsPage() {
         reviewedAt: report.reviewedAt,
         topicId: report.topicId,
         topicTitle: null,
+        topicStatus: null,
         commentId: report.commentId,
+        commentHidden: null,
       }));
 
   const openCount = reports.filter((item) => item.status === "OPEN" || item.status === "REVIEWING").length;
@@ -112,6 +142,10 @@ export default async function MyReportsPage() {
             </div>
 
             <p style={{ margin: "0.55rem 0 0", color: "#374151" }}>{statusHint(report.status)}</p>
+
+            {moderationOutcome(report) ? (
+              <p style={{ margin: "0.35rem 0 0", color: "#065f46", fontWeight: 600 }}>{moderationOutcome(report)}</p>
+            ) : null}
 
             {report.topicId ? (
               <p style={{ margin: "0.45rem 0 0" }}>
