@@ -1,8 +1,9 @@
-import { TopicStatus } from "@prisma/client";
+import { Prisma, TopicStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -33,6 +34,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`topic-status:${id}`}))`;
+
       const topic = await tx.topic.findUnique({
         where: { id },
         select: {
@@ -59,33 +62,37 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         const unsettledBets = await tx.bet.findMany({
           where: { topicId: id, settled: false },
           select: { id: true, userId: true, amount: true },
+          orderBy: { createdAt: "asc" },
         });
 
         for (const bet of unsettledBets) {
-          await tx.bet.update({
-            where: { id: bet.id },
+          const settleResult = await tx.bet.updateMany({
+            where: { id: bet.id, settled: false },
             data: {
               settled: true,
               payoutAmount: bet.amount,
             },
           });
 
-          const updatedUser = await tx.user.update({
-            where: { id: bet.userId },
-            data: { pointBalance: { increment: bet.amount } },
-            select: { pointBalance: true },
-          });
+          if (settleResult.count !== 1) {
+            throw new Error("BET_ALREADY_SETTLED_RACE");
+          }
 
-          await tx.walletTransaction.create({
-            data: {
+          try {
+            await applyWalletDelta({
+              tx,
               userId: bet.userId,
-              type: "BET_REFUND",
               amount: bet.amount,
-              balanceAfter: updatedUser.pointBalance,
+              type: "BET_REFUND",
               relatedBetId: bet.id,
               note: `Topic canceled refund for topic:${id}`,
-            },
-          });
+            });
+          } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+              throw new Error("DUPLICATE_REFUND_TX_DETECTED");
+            }
+            throw error;
+          }
 
           refundedBetCount += 1;
           refundedAmount += bet.amount;
@@ -122,6 +129,20 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (message === "RESOLVED_TOPIC_CANCEL_BLOCKED") {
       return NextResponse.json(
         { ok: false, data: null, error: "이미 정산 완료된 토픽은 CANCEL 할 수 없습니다." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "BET_ALREADY_SETTLED_RACE") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "환불 처리 중 동시성 충돌이 발생했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "DUPLICATE_REFUND_TX_DETECTED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "중복 환불 트랜잭션이 감지되어 취소 처리를 중단했습니다." },
         { status: 409 },
       );
     }
