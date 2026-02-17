@@ -59,6 +59,7 @@ model Topic {
   bets          Bet[]
   comments      Comment[]
   resolution    Resolution?
+  settlement    Settlement?
   reports       Report[]
 }
 
@@ -132,6 +133,24 @@ model Resolution {
   resolverId    String?
 
   topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+}
+
+model Settlement {
+  id            String   @id @default(cuid())
+  topicId       String   @unique
+  result        Choice
+  totalPool     Int
+  feeRate       Float
+  feeCollected  Int
+  netPool       Int
+  payoutTotal   Int
+  winnerCount   Int
+  settledById   String?
+  settledAt     DateTime @default(now())
+
+  topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@index([settledAt])
 }
 
 model WalletTransaction {

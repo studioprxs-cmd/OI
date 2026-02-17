@@ -46,6 +46,18 @@ export async function GET(req: NextRequest, { params }: Params) {
       title: true,
       status: true,
       resolution: { select: { id: true, result: true, resolvedAt: true } },
+      settlement: {
+        select: {
+          id: true,
+          totalPool: true,
+          feeRate: true,
+          feeCollected: true,
+          netPool: true,
+          payoutTotal: true,
+          winnerCount: true,
+          settledAt: true,
+        },
+      },
     },
   });
 
@@ -174,6 +186,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         id: true,
         status: true,
         resolution: { select: { id: true } },
+        settlement: { select: { id: true } },
       },
     });
 
@@ -181,7 +194,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       throw new Error("TOPIC_NOT_FOUND");
     }
 
-    if (currentTopic.status === TopicStatus.RESOLVED || currentTopic.resolution) {
+    if (currentTopic.status === TopicStatus.RESOLVED || currentTopic.resolution || currentTopic.settlement) {
       throw new Error("ALREADY_RESOLVED");
     }
 
@@ -276,6 +289,20 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
     }
 
+    const settlementLedger = await tx.settlement.create({
+      data: {
+        topicId: id,
+        result,
+        totalPool: settlement.summary.totalPool,
+        feeRate: settlement.summary.feeRate,
+        feeCollected: settlement.summary.feeAmount,
+        netPool: settlement.summary.netPool,
+        payoutTotal: settlement.summary.payoutTotal,
+        winnerCount: settlement.summary.winnerCount,
+        settledById: auth.user.id,
+      },
+    });
+
     const updatedTopic = await tx.topic.update({
       where: { id },
       data: { status: TopicStatus.RESOLVED },
@@ -283,6 +310,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     return {
       resolution,
+      settlementLedger,
       topic: updatedTopic,
       settlement: settlement.summary,
     };
