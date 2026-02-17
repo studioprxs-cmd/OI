@@ -34,6 +34,7 @@ export async function GET(_: Request, { params }: Params) {
       content: true,
       createdAt: true,
       userId: true,
+      _count: { select: { likes: true } },
     },
   });
 

@@ -40,6 +40,7 @@ model User {
   votes         Vote[]
   bets          Bet[]
   comments      Comment[]
+  commentLikes  CommentLike[]
   transactions  WalletTransaction[]
   reports       Report[] @relation("ReporterReports")
 }
@@ -120,8 +121,22 @@ model Comment {
   topic         Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reports       Report[]
+  likes         CommentLike[]
 
   @@index([topicId, createdAt])
+}
+
+model CommentLike {
+  id            String   @id @default(cuid())
+  commentId      String
+  userId         String
+  createdAt      DateTime @default(now())
+
+  comment        Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId, createdAt])
 }
 
 model Resolution {

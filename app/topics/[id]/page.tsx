@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { BetTicket } from "./BetTicket";
 import { CommentForm } from "./CommentForm";
+import { CommentLikeButton } from "./CommentLikeButton";
 import { CommentReportButton } from "./CommentReportButton";
 import { TopicReportButton } from "./TopicReportButton";
 
@@ -46,6 +47,13 @@ export default async function TopicDetailPage({ params }: Props) {
           where: { isHidden: false },
           orderBy: { createdAt: "desc" },
           take: 20,
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            userId: true,
+            _count: { select: { likes: true } },
+          },
         },
         resolution: { select: { result: true, summary: true, resolvedAt: true } },
         _count: { select: { votes: true, bets: true, comments: true } },
@@ -115,7 +123,16 @@ export default async function TopicDetailPage({ params }: Props) {
     title: dbTopic?.title ?? mockTopic!.title,
     description: dbTopic?.description ?? mockTopic!.description,
     status: dbTopic?.status ?? mockTopic!.status,
-    comments: dbTopic?.comments ?? mockTopic!.comments,
+    comments: dbTopic
+      ? dbTopic.comments.map((comment) => ({
+        ...comment,
+        likeCount: comment._count.likes,
+      }))
+      : mockTopic!.comments.map((comment) => ({
+        ...comment,
+        userId: null,
+        likeCount: 0,
+      })),
     counts: dbTopic
       ? { votes: dbTopic._count.votes, bets: dbTopic._count.bets, comments: dbTopic._count.comments }
       : { votes: mockTopic!.voteCount, bets: mockTopic!.betCount, comments: mockTopic!.commentCount },
@@ -252,9 +269,16 @@ export default async function TopicDetailPage({ params }: Props) {
                 {topic.comments.map((comment) => (
                   <article key={comment.id} className="comment-item">
                     <p style={{ margin: "0 0 0.4rem" }}>{comment.content}</p>
-                    <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
                       <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
-                      {canReport ? <CommentReportButton commentId={comment.id} /> : null}
+                      <div className="row" style={{ gap: "0.45rem" }}>
+                        <CommentLikeButton
+                          commentId={comment.id}
+                          initialLikeCount={comment.likeCount}
+                          canLike={Boolean(viewer && comment.userId && comment.userId !== viewer.id)}
+                        />
+                        {canReport ? <CommentReportButton commentId={comment.id} /> : null}
+                      </div>
                     </div>
                   </article>
                 ))}
