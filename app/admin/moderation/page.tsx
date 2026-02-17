@@ -491,6 +491,39 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const northStarCards = [
+    {
+      id: "moderation-latency",
+      label: "Moderation latency",
+      value: `${Math.max(oldestActionableHours, 0)}h`,
+      caption: superStaleActionableCount > 0 ? "48h+ 지연 존재 · 즉시 정리 필요" : "모바일 SLA 흐름 안정",
+      progress: Math.min(100, Math.max(12, Math.round((oldestActionableHours / 48) * 100))),
+      tone: superStaleActionableCount > 0 ? "danger" : staleActionableCount > 0 ? "warning" : "ok",
+      href: "/admin/moderation?status=OPEN",
+      cta: "지연 큐 열기",
+    },
+    {
+      id: "integrity-posture",
+      label: "Integrity posture",
+      value: `${integrityRiskScore}`,
+      caption: integrityIssueTotal > 0 ? `무결성 이슈 ${integrityIssueTotal}건` : "정산 무결성 안정",
+      progress: Math.min(100, Math.max(8, integrityRiskScore)),
+      tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
+      href: "/admin/topics?status=RESOLVED",
+      cta: "정산 가드레일 확인",
+    },
+    {
+      id: "queue-thruput",
+      label: "Queue throughput",
+      value: `${resolvedReportCount}/${reports.length}`,
+      caption: reports.length > 0 ? `종결률 ${Math.round((resolvedReportCount / reports.length) * 100)}%` : "신고 없음",
+      progress: reports.length > 0 ? Math.max(10, Math.round((resolvedReportCount / reports.length) * 100)) : 100,
+      tone: resolvedReportCount >= actionableReports.length ? "ok" : "warning",
+      href: "/admin/moderation?status=ALL",
+      cta: "종결 품질 점검",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -552,6 +585,29 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-northstar-card">
+        <div className="admin-northstar-head">
+          <div>
+            <p className="admin-jump-nav-label">Ops north star</p>
+            <h2 className="admin-command-title">모바일 운영 핵심 지표</h2>
+          </div>
+          <Pill tone={hasCriticalIntegrityIssue ? "danger" : "success"}>{hasCriticalIntegrityIssue ? "Attention" : "Stable"}</Pill>
+        </div>
+        <div className="admin-northstar-grid" style={{ marginTop: "0.65rem" }}>
+          {northStarCards.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-northstar-item is-${item.tone}`}>
+              <span className="admin-northstar-label">{item.label}</span>
+              <strong className="admin-northstar-value">{item.value}</strong>
+              <small>{item.caption}</small>
+              <div className="admin-northstar-meter" aria-hidden>
+                <span style={{ width: `${item.progress}%` }} />
+              </div>
+              <span className="admin-northstar-cta">{item.cta} →</span>
+            </Link>
+          ))}
+        </div>
       </Card>
 
       {hasCriticalIntegrityIssue ? (
