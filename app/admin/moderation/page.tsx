@@ -227,6 +227,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const superStaleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 48 * 60 * 60 * 1000).length;
   const filteredOpenIds = filteredReports.filter((report) => report.status === "OPEN").map((report) => report.id);
   const filteredReviewingIds = filteredReports.filter((report) => report.status === "REVIEWING").map((report) => report.id);
+  const closedCount = counts.CLOSED;
+  const rejectedCount = counts.REJECTED;
+  const resolvedReportCount = closedCount + rejectedCount;
   const totalSettledAmount = Number(settlement._sum.amount ?? 0);
   const totalPayoutAmount = Number(settlement._sum.payoutAmount ?? 0);
   const payoutRatio = totalSettledAmount > 0 ? Math.round((totalPayoutAmount / totalSettledAmount) * 100) : 0;
@@ -310,6 +313,36 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const queueLaneItems = [
+    {
+      id: "lane-open",
+      label: "Intake",
+      title: "OPEN",
+      value: counts.OPEN,
+      meta: "신규 신고 즉시 분류",
+      tone: counts.OPEN > 0 ? "danger" : "ok",
+      href: "/admin/moderation?status=OPEN",
+    },
+    {
+      id: "lane-reviewing",
+      label: "Investigate",
+      title: "REVIEWING",
+      value: counts.REVIEWING,
+      meta: "근거 확인 · 처리 결정",
+      tone: counts.REVIEWING > 0 ? "warning" : "ok",
+      href: "/admin/moderation?status=REVIEWING",
+    },
+    {
+      id: "lane-resolved",
+      label: "Resolve",
+      title: "CLOSED + REJECTED",
+      value: resolvedReportCount,
+      meta: "완료 기록 품질 확인",
+      tone: "ok",
+      href: "/admin/moderation?status=ALL",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -380,6 +413,26 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               <p>{item.hint}</p>
               <span className="admin-command-value">{item.value}</span>
             </article>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="admin-lane-card">
+        <div className="admin-lane-head">
+          <div>
+            <p className="admin-jump-nav-label">Queue lanes</p>
+            <h2 className="admin-command-title">한 손 운영을 위한 처리 레인</h2>
+          </div>
+          <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>Actionable {actionableReports.length}</Pill>
+        </div>
+        <div className="admin-lane-grid" style={{ marginTop: "0.62rem" }}>
+          {queueLaneItems.map((lane) => (
+            <Link key={lane.id} href={lane.href} className={`admin-lane-item is-${lane.tone}`}>
+              <span className="admin-lane-label">{lane.label}</span>
+              <strong className="admin-lane-title">{lane.title}</strong>
+              <span className="admin-lane-value">{lane.value}건</span>
+              <small>{lane.meta}</small>
+            </Link>
           ))}
         </div>
       </Card>

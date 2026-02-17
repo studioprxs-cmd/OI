@@ -662,6 +662,83 @@ body::before {
   padding: 0 0.28rem;
 }
 
+.admin-lane-card {
+  padding-top: 0.85rem;
+  padding-bottom: 0.86rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fcf9 100%);
+}
+
+.admin-lane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.admin-lane-grid {
+  display: grid;
+  gap: 0.52rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-lane-item {
+  border: 1px solid #d7e7de;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+  padding: 0.66rem 0.7rem;
+  display: grid;
+  gap: 0.18rem;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  transition: transform 170ms var(--ease-standard), box-shadow 170ms var(--ease-standard), border-color 170ms var(--ease-standard);
+}
+
+.admin-lane-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.1);
+}
+
+.admin-lane-item.is-danger {
+  border-color: #efc6c6;
+  background: linear-gradient(180deg, #fffdfd 0%, #fff5f5 100%);
+}
+
+.admin-lane-item.is-warning {
+  border-color: #f0dfbc;
+  background: linear-gradient(180deg, #fffef8 0%, #fff9ec 100%);
+}
+
+.admin-lane-item.is-ok {
+  border-color: #cbe6d7;
+  background: linear-gradient(180deg, #f7fdf9 0%, #f1fbf5 100%);
+}
+
+.admin-lane-label {
+  color: #617367;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.admin-lane-title {
+  color: #143628;
+  font-size: 0.91rem;
+  letter-spacing: -0.01em;
+}
+
+.admin-lane-value {
+  color: #102f22;
+  font-size: 1.14rem;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.admin-lane-item small {
+  color: #617368;
+  font-size: 0.77rem;
+}
+
 .admin-jump-nav-card {
   padding-top: 0.85rem;
   padding-bottom: 0.82rem;
@@ -2443,11 +2520,13 @@ body::before {
     font-size: 0.8rem;
   }
 
-  .admin-command-head {
+  .admin-command-head,
+  .admin-lane-head {
     flex-direction: column;
   }
 
-  .admin-command-grid {
+  .admin-command-grid,
+  .admin-lane-grid {
     grid-template-columns: 1fr;
     gap: 0.45rem;
   }
