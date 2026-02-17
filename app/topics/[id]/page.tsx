@@ -120,7 +120,7 @@ export default async function TopicDetailPage({ params }: Props) {
   return (
     <PageContainer>
       <div className="content-grid">
-        <section className="main-column">
+        <section className="main-column topic-detail-main">
           <section className="hero-block compact">
             <OiBadge label="OI Detail" />
             <p className="hero-eyebrow">Topic Detail</p>
