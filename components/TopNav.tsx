@@ -90,7 +90,12 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       const mobileBottomNavHeight = mobileBottomNavRef.current
         ? Math.ceil(mobileBottomNavRef.current.getBoundingClientRect().height)
         : 0;
-      root.style.setProperty("--mobile-global-nav-height", `${mobileBottomNavHeight}px`);
+
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const keyboardInset = window.visualViewport ? Math.max(0, window.innerHeight - window.visualViewport.height) : 0;
+      const keyboardVisible = keyboardInset > 120;
+
+      root.style.setProperty("--mobile-global-nav-height", `${isMobile && keyboardVisible ? 0 : mobileBottomNavHeight}px`);
     };
 
     applyLayoutMetrics();
@@ -104,11 +109,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       resizeObserver.observe(mobileBottomNavRef.current);
     }
 
+    const viewport = window.visualViewport;
+
     window.addEventListener("resize", applyLayoutMetrics);
+    viewport?.addEventListener("resize", applyLayoutMetrics);
+    viewport?.addEventListener("scroll", applyLayoutMetrics);
 
     return () => {
       resizeObserver.disconnect();
       window.removeEventListener("resize", applyLayoutMetrics);
+      viewport?.removeEventListener("resize", applyLayoutMetrics);
+      viewport?.removeEventListener("scroll", applyLayoutMetrics);
       root.style.removeProperty("--top-nav-height");
       root.style.removeProperty("--mobile-global-nav-height");
     };
@@ -253,7 +264,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               aria-current={active ? "page" : undefined}
             >
               <span className="mobile-bottom-nav-icon" aria-hidden>{item.icon}</span>
-              <span>{item.label}</span>
+              <span className="mobile-bottom-nav-label">{item.label}</span>
             </Link>
           );
         })}
