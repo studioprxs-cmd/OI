@@ -3721,10 +3721,10 @@ body::before {
 }
 
 .topic-command-card {
-  border: 1px solid #d7e4f2;
+  border: 1px solid #cfe5d9;
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9ff 100%);
-  box-shadow: 0 8px 18px rgba(23, 67, 119, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f3faf6 100%);
+  box-shadow: 0 8px 18px rgba(14, 92, 53, 0.08);
   padding: 0.72rem 0.76rem;
   text-decoration: none;
   display: grid;
@@ -3734,11 +3734,11 @@ body::before {
 
 .topic-command-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 24px rgba(23, 67, 119, 0.12);
+  box-shadow: 0 14px 24px rgba(14, 92, 53, 0.12);
 }
 
 .topic-command-card span {
-  color: #5b6f89;
+  color: #4f7561;
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3746,28 +3746,28 @@ body::before {
 }
 
 .topic-command-card strong {
-  color: #173e69;
+  color: #145636;
   font-size: 0.94rem;
   letter-spacing: -0.012em;
 }
 
 .topic-command-card small {
-  color: #4f6783;
+  color: #466b57;
   font-size: 0.78rem;
 }
 
 .topic-command-card.is-primary {
-  border-color: #bfd6f5;
-  background: linear-gradient(180deg, #f6fbff 0%, #eaf4ff 100%);
+  border-color: #9fdab9;
+  background: linear-gradient(180deg, #f3fff8 0%, #e4f7ee 100%);
 }
 
 .topic-command-card.is-secondary {
-  border-color: #d2d9f4;
-  background: linear-gradient(180deg, #f9faff 0%, #eff2ff 100%);
+  border-color: #b8dfca;
+  background: linear-gradient(180deg, #f7fdf9 0%, #edf8f2 100%);
 }
 
 .topic-command-card.is-neutral {
-  border-color: #dbe4f0;
+  border-color: #cfe2d7;
 }
 
 .topic-polish-strip {
@@ -3777,16 +3777,16 @@ body::before {
 }
 
 .topic-polish-item {
-  border: 1px solid #d8e5f2;
+  border: 1px solid #d1e5da;
   border-radius: 13px;
-  background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
   padding: 0.6rem 0.68rem;
   display: grid;
   gap: 0.17rem;
 }
 
 .topic-polish-item span {
-  color: #61758f;
+  color: #567564;
   font-size: 0.71rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -3794,12 +3794,12 @@ body::before {
 }
 
 .topic-polish-item strong {
-  color: #163f6c;
+  color: #145535;
   font-size: 0.95rem;
 }
 
 .topic-polish-item small {
-  color: #5d718a;
+  color: #55715f;
   font-size: 0.77rem;
   line-height: 1.34;
 }
@@ -3820,7 +3820,7 @@ body::before {
 }
 
 .topic-polish-item.is-neutral {
-  border-color: #d8e5f2;
+  border-color: #d1e5da;
 }
 
 .topic-kind-tabs {
