@@ -327,6 +327,62 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const settlementGuardrails = [
+    {
+      key: "payout-null",
+      label: "정산값 누락 없음",
+      count: settledWithNullPayoutCount,
+      helper: "settled=true + payoutAmount null",
+      tone: settledWithNullPayoutCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "resolved-backlog",
+      label: "RESOLVED 정산 백로그 없음",
+      count: unresolvedSettledBacklogCount,
+      helper: "토픽은 RESOLVED인데 베팅 미정산",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "resolution-link",
+      label: "결과 레코드 연결 완료",
+      count: resolvedWithoutResolutionCount,
+      helper: "RESOLVED + resolution null",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+  ] as const;
+
+  const settlementGuardrailPassCount = settlementGuardrails.filter((item) => item.count === 0).length;
+  const settlementGuardrailLabel = settlementGuardrailPassCount === settlementGuardrails.length
+    ? "모든 가드레일 통과"
+    : `${settlementGuardrails.length - settlementGuardrailPassCount}개 점검 필요`;
+
+  const executionTimeline = [
+    {
+      id: "now",
+      label: "Now",
+      title: "긴급 큐 즉시 정리",
+      detail: `OPEN ${urgentReportCount}건 · 48h+ ${superStaleActionableCount}건`,
+      href: "/admin/moderation?status=OPEN",
+      tone: urgentReportCount > 0 || superStaleActionableCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "next",
+      label: "Next",
+      title: "정산 무결성 잠금",
+      detail: `무결성 이슈 ${integrityIssueTotal}건`,
+      href: "/admin/topics?status=RESOLVED",
+      tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
+    },
+    {
+      id: "later",
+      label: "Later",
+      title: "완료 기록 품질 확인",
+      detail: `종결 신고 ${resolvedReportCount}건`,
+      href: "/admin/moderation?status=ALL",
+      tone: "ok",
+    },
+  ] as const;
+
   const queueLaneItems = [
     {
       id: "lane-open",
@@ -492,6 +548,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#urgent-inbox" className="admin-jump-nav-item">긴급 인박스</a>
           <a href="#integrity-watch" className="admin-jump-nav-item">무결성 워치</a>
           <a href="#report-list" className="admin-jump-nav-item">신고 리스트</a>
+        </div>
+      </Card>
+
+      <Card className="admin-timeline-card">
+        <SectionTitle>Execution timeline</SectionTitle>
+        <p className="admin-card-intro">지금/다음/마감 전 순서로 운영 우선순위를 고정해 한 손으로 빠르게 이동할 수 있게 구성했습니다.</p>
+        <div className="admin-timeline-grid" style={{ marginTop: "0.68rem" }}>
+          {executionTimeline.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-timeline-item is-${item.tone}`}>
+              <span className="admin-timeline-label">{item.label}</span>
+              <strong>{item.title}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
         </div>
       </Card>
 
@@ -760,6 +830,21 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <span className={resolvedWithoutResolutionCount > 0 ? "is-danger" : "is-ok"}>결과 레코드</span>
           <span className="is-neutral">모바일 우선 점검 추천</span>
         </div>
+      </Card>
+
+      <Card className="admin-surface-card admin-guardrail-card">
+        <SectionTitle>Settlement guardrails</SectionTitle>
+        <p className="admin-muted-note">정산 배치 전 반드시 확인할 3가지 무결성 체크포인트입니다.</p>
+        <div className="admin-guardrail-grid" style={{ marginTop: "0.65rem" }}>
+          {settlementGuardrails.map((item) => (
+            <article key={item.key} className={`admin-guardrail-item is-${item.tone}`}>
+              <strong>{item.label}</strong>
+              <small>{item.helper}</small>
+              <span>{item.count === 0 ? "PASS" : `${item.count}건`}</span>
+            </article>
+          ))}
+        </div>
+        <p className="admin-muted-note" style={{ marginTop: "0.6rem" }}>가드레일 상태: {settlementGuardrailLabel}</p>
       </Card>
 
       <Card id="integrity-watch" className="admin-surface-card">
