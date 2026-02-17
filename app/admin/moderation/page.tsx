@@ -246,6 +246,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     .slice(0, 5);
   const spotlightReports = priorityReports.slice(0, 3);
 
+  const nextActionLabel = urgentReportCount > 0
+    ? `OPEN 신고 ${urgentReportCount}건부터 처리`
+    : counts.REVIEWING > 0
+      ? `REVIEWING 신고 ${counts.REVIEWING}건 정리`
+      : integrityIssueTotal > 0
+        ? `정산 무결성 이슈 ${integrityIssueTotal}건 점검`
+        : "긴급 작업 없음 · 모니터링 유지";
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -330,6 +338,26 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             토픽 신고 집중 보기
           </Link>
         </div>
+      </Card>
+
+      <Card className="admin-ops-playbook-card">
+        <SectionTitle>오늘의 운영 플레이북</SectionTitle>
+        <p className="admin-card-intro">지금 가장 효과가 큰 순서로 3단계만 실행하세요. 모바일에서도 한눈에 우선순위가 보이도록 구성했습니다.</p>
+        <ol className="admin-ops-playbook-list" style={{ marginTop: "0.72rem" }}>
+          <li>
+            <strong>Step 1 · 긴급 큐 정리</strong>
+            <span>OPEN {urgentReportCount}건, 48h+ 지연 {superStaleActionableCount}건 우선 처리</span>
+          </li>
+          <li>
+            <strong>Step 2 · 무결성 리스크 잠금</strong>
+            <span>누락/백로그/불일치 {integrityIssueTotal}건 확인 후 정산 일관성 복구</span>
+          </li>
+          <li>
+            <strong>Step 3 · 큐 정상화 확인</strong>
+            <span>REVIEWING {counts.REVIEWING}건과 숨김 댓글 신고 {hiddenCommentReportCount}건 재검토</span>
+          </li>
+        </ol>
+        <p className="admin-muted-note" style={{ marginTop: "0.65rem" }}>Next best action: {nextActionLabel}</p>
       </Card>
 
       <Card>
@@ -560,7 +588,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           const isStale = (report.status === "OPEN" || report.status === "REVIEWING") && elapsedHours >= 24;
 
           return (
-            <Card key={report.id}>
+            <Card key={report.id} className={`admin-report-card${report.status === "OPEN" ? " is-open" : ""}${isStale ? " is-stale" : ""}`}>
               <article id={`report-${report.id}`} className="moderation-report-card admin-list-card">
                 <div className="moderation-report-headline admin-list-card-head">
                   <div>
