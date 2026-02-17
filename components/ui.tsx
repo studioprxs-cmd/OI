@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ComponentPropsWithoutRef, ReactNode } from "react";
 
 type LayoutProps = { children: ReactNode };
 type WithClassName = { className?: string };
+type CardProps = LayoutProps & WithClassName & Omit<ComponentPropsWithoutRef<"section">, "className" | "children">;
 
 export function PageContainer({ children }: LayoutProps) {
   return <main className="page-container">{children}</main>;
@@ -17,8 +18,12 @@ export function OiBadge({ label = "OI" }: { label?: string }) {
   );
 }
 
-export function Card({ children, className }: LayoutProps & WithClassName) {
-  return <section className={`card${className ? ` ${className}` : ""}`}>{children}</section>;
+export function Card({ children, className, ...props }: CardProps) {
+  return (
+    <section className={`card${className ? ` ${className}` : ""}`} {...props}>
+      {children}
+    </section>
+  );
 }
 
 export function SectionTitle({ children }: LayoutProps) {

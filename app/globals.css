@@ -662,6 +662,49 @@ body::before {
   padding: 0 0.28rem;
 }
 
+.admin-jump-nav-card {
+  padding-top: 0.85rem;
+  padding-bottom: 0.82rem;
+}
+
+.admin-jump-nav-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5d7065;
+  font-weight: 700;
+}
+
+.admin-jump-nav {
+  display: grid;
+  gap: 0.46rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-jump-nav-item {
+  min-height: 42px;
+  border-radius: 11px;
+  border: 1px solid #d8e7de;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+  text-decoration: none;
+  color: #16402d;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 0.45rem 0.5rem;
+  transition: transform 160ms var(--ease-standard), box-shadow 160ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+
+.admin-jump-nav-item:hover {
+  transform: translateY(-1px);
+  border-color: #b9dcc8;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
 .feed-card-head {
   display: flex;
   justify-content: space-between;
@@ -1364,6 +1407,13 @@ body::before {
 
 .admin-mobile-dock-spacer {
   display: none;
+}
+
+#queue-priority,
+#urgent-inbox,
+#integrity-watch,
+#report-list {
+  scroll-margin-top: 220px;
 }
 
 .moderation-report-card {
@@ -2138,6 +2188,15 @@ body::before {
 
   .admin-quick-action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-jump-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-jump-nav-item {
+    min-height: 44px;
+    font-size: 0.8rem;
   }
 
   .admin-watch-grid {

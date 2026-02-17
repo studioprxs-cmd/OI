@@ -335,6 +335,16 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-jump-nav-card">
+        <p className="admin-jump-nav-label">Quick jump</p>
+        <div className="admin-jump-nav" aria-label="운영 섹션 바로가기">
+          <a href="#queue-priority" className="admin-jump-nav-item">우선 처리 큐</a>
+          <a href="#urgent-inbox" className="admin-jump-nav-item">긴급 인박스</a>
+          <a href="#integrity-watch" className="admin-jump-nav-item">무결성 워치</a>
+          <a href="#report-list" className="admin-jump-nav-item">신고 리스트</a>
+        </div>
+      </Card>
+
       <StatePanel
         title={hasCriticalIntegrityIssue ? "정산/무결성 긴급 점검" : "정산 무결성 상태 안정"}
         description={hasCriticalIntegrityIssue
@@ -463,7 +473,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </form>
       </Card>
 
-      <Card className="admin-surface-card admin-surface-card-priority">
+      <Card id="queue-priority" className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>우선 처리 큐</SectionTitle>
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
           <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>처리 필요 {actionableReports.length}</Pill>
@@ -478,7 +488,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-muted-note">기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.</p>
       </Card>
 
-      <Card className="admin-surface-card admin-surface-card-priority">
+      <Card id="urgent-inbox" className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>긴급 인박스</SectionTitle>
         <p className="admin-muted-note">즉시 처리 대상만 모아서 상단으로 끌어올렸습니다. 오래된 OPEN/REVIEWING 건부터 우선 확인하세요.</p>
         {priorityReports.length > 0 ? (
@@ -547,7 +557,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </div>
       </Card>
 
-      <Card className="admin-surface-card">
+      <Card id="integrity-watch" className="admin-surface-card">
         <SectionTitle>무결성 워치리스트</SectionTitle>
         <p className="admin-muted-note">정산 정합성 이슈를 카드 단위로 빠르게 스캔하고 바로 이동하세요.</p>
         <div className="admin-watch-grid" style={{ marginTop: "0.68rem" }}>
@@ -601,7 +611,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </Card>
       ) : null}
 
-      <div className="list">
+      <div id="report-list" className="list">
         <Card>
           <SectionTitle>일괄 트리아지</SectionTitle>
           <div style={{ marginTop: "0.6rem" }}>
