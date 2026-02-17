@@ -488,17 +488,17 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         {filteredReports.map((report) => (
           <Card key={report.id}>
             <article className="moderation-report-card">
-              <div className="row moderation-report-head" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
+              <div className="moderation-report-headline">
                 <div>
-                  <strong>{report.reason}</strong>
-                  <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
-                  <small style={{ color: "#6b7280" }}>
+                  <h3 className="moderation-report-title">{report.reason}</h3>
+                  <p className="moderation-report-detail">{report.detail ?? "상세 설명 없음"}</p>
+                  <small className="moderation-report-meta">
                     {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
                     {report.reporterNickname ? ` · 신고자 ${report.reporterNickname}` : ""}
                     {report.reporterEmail ? ` (${report.reporterEmail})` : ""}
                   </small>
                   {report.topicId ? (
-                    <p style={{ margin: "0.3rem 0 0" }}>
+                    <p className="moderation-report-context">
                       <Link href={`/topics/${report.topicId}`} className="text-link">
                         토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
                       </Link>
@@ -513,13 +513,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               </div>
 
               {report.commentContent ? (
-                <p style={{ margin: "0.6rem 0 0", color: "#111827" }}>
+                <p className="moderation-report-comment">
                   코멘트: {report.commentContent}
                   {report.commentHidden ? " (숨김 처리됨)" : ""}
                 </p>
               ) : null}
 
-              <div style={{ marginTop: "0.6rem" }}>
+              <div className="moderation-report-actions">
                 <ReportActions
                   reportId={report.id}
                   initialStatus={report.status}

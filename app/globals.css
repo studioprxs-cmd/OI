@@ -25,8 +25,9 @@
   --mobile-bottom-nav-offset: max(0.55rem, env(safe-area-inset-bottom));
   --mobile-bottom-stack-gap: 0.7rem;
   --mobile-admin-dock-height: 3.7rem;
+  --mobile-floating-layer-gap: 0.35rem;
   --mobile-fab-clearance: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + var(--mobile-bottom-stack-gap));
-  --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + 0.5rem);
+  --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.5rem);
 }
 
 html, body {
@@ -1072,7 +1073,53 @@ body::before {
 
 .moderation-report-card {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.48rem;
+}
+
+.moderation-report-headline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.moderation-report-title {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.moderation-report-detail {
+  margin: 0.35rem 0;
+  color: #5d6c63;
+  font-size: 0.92rem;
+}
+
+.moderation-report-meta {
+  color: #6b7280;
+  font-size: 0.81rem;
+  line-height: 1.45;
+}
+
+.moderation-report-context {
+  margin-top: 0.32rem;
+}
+
+.moderation-report-comment {
+  margin: 0.25rem 0 0;
+  padding: 0.58rem 0.62rem;
+  border: 1px solid #e2ece5;
+  border-radius: 11px;
+  background: #f8fcfa;
+  color: #1c2d23;
+  font-size: 0.9rem;
+}
+
+.moderation-report-actions {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #d8e5dd;
 }
 
 .resolve-confirm-check {
@@ -1497,9 +1544,15 @@ body::before {
     min-height: 44px;
   }
 
-  .moderation-report-head {
+  .moderation-report-head,
+  .moderation-report-headline {
     flex-direction: column;
     gap: 0.45rem;
+  }
+
+  .moderation-report-actions {
+    margin-top: 0.2rem;
+    padding-top: 0.45rem;
   }
 
   .resolve-confirm-check {
@@ -1553,7 +1606,7 @@ body::before {
     position: fixed;
     left: 0.7rem;
     right: 0.7rem;
-    bottom: calc(var(--mobile-fab-clearance) + 0.25rem);
+    bottom: calc(var(--mobile-fab-clearance) + var(--mobile-floating-layer-gap) + 0.2rem);
     z-index: 58;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1578,7 +1631,7 @@ body::before {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: var(--mobile-fab-clearance);
+    bottom: calc(var(--mobile-fab-clearance) + var(--mobile-floating-layer-gap));
     z-index: 59;
     display: inline-flex;
     align-items: center;
@@ -1602,8 +1655,9 @@ body::before {
     --mobile-bottom-nav-offset: max(0.45rem, env(safe-area-inset-bottom));
     --mobile-bottom-stack-gap: 0.55rem;
     --mobile-admin-dock-height: 3.45rem;
+    --mobile-floating-layer-gap: 0.3rem;
     --mobile-fab-clearance: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + var(--mobile-bottom-stack-gap));
-    --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + 0.45rem);
+    --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.45rem);
   }
 
   .top-nav-inner,
@@ -1686,7 +1740,7 @@ body::before {
   .admin-mobile-dock {
     left: 0.45rem;
     right: 0.45rem;
-    bottom: calc(var(--mobile-fab-clearance) + 0.2rem);
+    bottom: calc(var(--mobile-fab-clearance) + var(--mobile-floating-layer-gap));
     border-radius: 12px;
     padding: 0.4rem;
     gap: 0.36rem;
