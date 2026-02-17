@@ -2212,6 +2212,29 @@ body::before {
   font-size: 0.89rem;
 }
 
+.admin-empty-tip-list {
+  margin: 0.08rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.26rem;
+}
+
+.admin-empty-tip-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.36rem;
+  color: #4f6559;
+  font-size: 0.81rem;
+  line-height: 1.4;
+}
+
+.admin-empty-tip-list li::before {
+  content: "•";
+  color: #0d8e4a;
+  font-weight: 800;
+}
+
 .admin-empty-icon {
   width: 1.6rem;
   height: 1.6rem;
@@ -3769,6 +3792,29 @@ body::before {
   color: #8a4a41;
   font-size: 0.84rem;
   line-height: 1.45;
+}
+
+.admin-error-checklist {
+  margin: 0.06rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.admin-error-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.36rem;
+  color: #7b3f37;
+  font-size: 0.81rem;
+  line-height: 1.4;
+}
+
+.admin-error-checklist li::before {
+  content: "✓";
+  color: #b63a32;
+  font-weight: 800;
 }
 
 .admin-error-actions {

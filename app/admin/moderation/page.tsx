@@ -1032,6 +1032,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             kicker="Queue stable"
             title="긴급 처리 대상이 없습니다"
             description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
+            tips={[
+              "다음 작업: 정산 가드레일 5개 항목 PASS 여부 확인",
+              "리뷰 큐가 0건이어도 최근 CLOSED 샘플 2~3건 품질 점검",
+            ]}
           />
         )}
       </Card>
@@ -1058,6 +1062,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             kicker="Spotlight clear"
             title="스포트라이트 대상이 없습니다"
             description="긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다."
+            tips={[
+              "필요 시 OPEN 필터로 이동해 신규 유입을 먼저 확인",
+              "모바일 도크에서 정산 점검으로 바로 전환 가능",
+            ]}
           />
         )}
       </Card>
@@ -1286,6 +1294,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             kicker="No matches"
             title="조건에 맞는 신고가 없습니다"
             description="필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요."
+            tips={[
+              "상태/타입은 좁히고 검색어는 비우면 큐를 빠르게 복원할 수 있습니다",
+              "보고서 ID 또는 토픽 제목 일부만 입력해도 검색됩니다",
+            ]}
             actions={<Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>}
           />
         ) : null}
