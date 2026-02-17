@@ -1,4 +1,4 @@
-import { Choice, TopicStatus } from "@prisma/client";
+import { Choice, Prisma, TopicStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireAdmin } from "@/lib/auth";
@@ -318,6 +318,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     return NextResponse.json({ ok: true, data: resolved, error: null }, { status: 201 });
   } catch (error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 해결/정산 완료된 토픽입니다." },
+        { status: 409 },
+      );
+    }
+
     const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
 
     if (message === "TOPIC_NOT_FOUND") {
