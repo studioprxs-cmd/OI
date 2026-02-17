@@ -26,6 +26,21 @@ type PreviewResponse = {
     YES: SettlementPreviewSummary;
     NO: SettlementPreviewSummary;
   };
+  resolvedSettlement?: {
+    totalBets: number;
+    payoutTotal: number;
+    winnerCount: number;
+    winnerPool: number;
+    totalPool: number;
+    topPayouts: Array<{
+      betId: string;
+      userId: string;
+      userLabel: string;
+      payoutAmount: number;
+      amount: number;
+      choice: ResultValue;
+    }>;
+  } | null;
 };
 
 const resultOptions = [
@@ -53,6 +68,7 @@ export function ResolveForm({ topicId }: Props) {
   const selectedPreview = useMemo(() => previewData?.preview?.[result], [previewData, result]);
   const alreadyResolved = Boolean(previewData?.topic?.resolution);
   const topicStatus = previewData?.topic?.status ?? "";
+  const resolvedSettlement = previewData?.resolvedSettlement ?? null;
   const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
   const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && Number(previewData?.unsettledBetCount ?? 0) > 0;
 
@@ -196,6 +212,31 @@ export function ResolveForm({ topicId }: Props) {
                 );
               })}
             </div>
+            {alreadyResolved && resolvedSettlement ? (
+              <div className="resolved-settlement-card">
+                <strong style={{ display: "block" }}>확정 정산 결과</strong>
+                <ul className="simple-list muted" style={{ marginTop: "0.45rem" }}>
+                  <li>총 베팅 {resolvedSettlement.totalBets}건</li>
+                  <li>총 풀 {resolvedSettlement.totalPool.toLocaleString("ko-KR")}pt</li>
+                  <li>승리 풀 {resolvedSettlement.winnerPool.toLocaleString("ko-KR")}pt</li>
+                  <li>승자 {resolvedSettlement.winnerCount}명</li>
+                  <li>총 지급 {resolvedSettlement.payoutTotal.toLocaleString("ko-KR")}pt</li>
+                </ul>
+                {resolvedSettlement.topPayouts.length > 0 ? (
+                  <div style={{ marginTop: "0.55rem" }}>
+                    <small style={{ color: "#6b7280" }}>상위 지급 내역</small>
+                    <ul className="simple-list" style={{ marginTop: "0.35rem" }}>
+                      {resolvedSettlement.topPayouts.map((item) => (
+                        <li key={item.betId}>
+                          {item.userLabel} · {item.payoutAmount.toLocaleString("ko-KR")}pt
+                          <small style={{ color: "#6b7280" }}> (베팅 {item.amount.toLocaleString("ko-KR")}pt, {item.choice})</small>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {isBlockedStatus ? (
               <Message
                 text={topicStatus === "CANCELED" ? "CANCELED 토픽은 정산할 수 없습니다." : "DRAFT 토픽은 정산할 수 없습니다."}

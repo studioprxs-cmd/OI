@@ -48,24 +48,74 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
   }
 
-  const bets = await db.bet.findMany({
+  const unsettledBets = await db.bet.findMany({
     where: { topicId: id, settled: false },
     select: { id: true, userId: true, choice: true, amount: true },
     orderBy: { createdAt: "asc" },
   });
 
-  const yesPreview = calculateSettlement(bets, "YES");
-  const noPreview = calculateSettlement(bets, "NO");
+  const yesPreview = calculateSettlement(unsettledBets, "YES");
+  const noPreview = calculateSettlement(unsettledBets, "NO");
+
+  const resolvedSettlement = topic.resolution
+    ? await db.bet
+        .findMany({
+          where: { topicId: id, settled: true },
+          select: {
+            id: true,
+            choice: true,
+            amount: true,
+            payoutAmount: true,
+            user: {
+              select: {
+                id: true,
+                nickname: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: [{ payoutAmount: "desc" }, { amount: "desc" }, { createdAt: "asc" }],
+        })
+        .then((settledBets) => {
+          const totalBets = settledBets.length;
+          const payoutTotal = settledBets.reduce((sum, bet) => sum + (bet.payoutAmount ?? 0), 0);
+          const winnerCount = settledBets.filter((bet) => (bet.payoutAmount ?? 0) > 0).length;
+          const winnerPool = settledBets
+            .filter((bet) => bet.choice === topic.resolution?.result)
+            .reduce((sum, bet) => sum + bet.amount, 0);
+          const totalPool = settledBets.reduce((sum, bet) => sum + bet.amount, 0);
+
+          return {
+            totalBets,
+            payoutTotal,
+            winnerCount,
+            winnerPool,
+            totalPool,
+            topPayouts: settledBets
+              .filter((bet) => (bet.payoutAmount ?? 0) > 0)
+              .slice(0, 5)
+              .map((bet) => ({
+                betId: bet.id,
+                userId: bet.user.id,
+                userLabel: bet.user.nickname || bet.user.email || bet.user.id,
+                payoutAmount: bet.payoutAmount ?? 0,
+                amount: bet.amount,
+                choice: bet.choice,
+              })),
+          };
+        })
+    : null;
 
   return NextResponse.json({
     ok: true,
     data: {
       topic,
-      unsettledBetCount: bets.length,
+      unsettledBetCount: unsettledBets.length,
       preview: {
         YES: yesPreview.summary,
         NO: noPreview.summary,
       },
+      resolvedSettlement,
     },
     error: null,
   });

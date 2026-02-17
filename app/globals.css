@@ -693,6 +693,13 @@ body::before {
   margin-top: 0.14rem;
 }
 
+.resolved-settlement-card {
+  border: 1px solid #cde9d8;
+  background: #f3fcf6;
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.72rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
