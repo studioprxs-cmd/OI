@@ -42,6 +42,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   try {
     const voteResult = await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`vote-user-topic:${authUser.id}:${id}`}))`;
+
       const latestTopic = await tx.topic.findUnique({
         where: { id },
         select: { status: true, closeAt: true },
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         userId: authUser.id,
         amount: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS,
         type: "VOTE_REWARD",
+        relatedVoteId: vote.id,
         note: `Vote reward topic:${id}`,
       });
 

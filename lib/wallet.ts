@@ -6,11 +6,12 @@ type ApplyWalletDeltaInput = {
   amount: number;
   type: string;
   relatedBetId?: string;
+  relatedVoteId?: string;
   note?: string;
 };
 
 export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
-  const { tx, userId, amount, type, relatedBetId, note } = input;
+  const { tx, userId, amount, type, relatedBetId, relatedVoteId, note } = input;
   const normalizedAmount = Number.isFinite(amount) ? Math.trunc(amount) : 0;
 
   if (normalizedAmount === 0) {
@@ -31,6 +32,7 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
         amount: normalizedAmount,
         balanceAfter: updatedUser.pointBalance,
         relatedBetId,
+        relatedVoteId,
         note,
       },
     });
@@ -67,6 +69,7 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
       amount: normalizedAmount,
       balanceAfter: updatedUser.pointBalance,
       relatedBetId,
+      relatedVoteId,
       note,
     },
   });

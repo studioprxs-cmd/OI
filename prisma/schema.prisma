@@ -141,12 +141,15 @@ model WalletTransaction {
   amount        Int
   balanceAfter  Int
   relatedBetId  String?
+  relatedVoteId String?
   note          String?
   createdAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@unique([relatedBetId, type], map: "wallet_tx_related_bet_type_key")
+  @@unique([relatedVoteId, type], map: "wallet_tx_related_vote_type_key")
 }
 
 model Report {
