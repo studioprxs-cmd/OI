@@ -28,7 +28,9 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const searchParams = useSearchParams();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const quickMenuRef = useRef<HTMLDivElement | null>(null);
 
   const initialSearch = useMemo(() => {
     if (pathname.startsWith("/topics")) {
@@ -51,17 +53,21 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, [initialSearch]);
 
   useEffect(() => {
-    if (!profileMenuOpen) return;
+    if (!profileMenuOpen && !quickMenuOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
-      if (!profileMenuRef.current) return;
-      if (profileMenuRef.current.contains(event.target as Node)) return;
+      const target = event.target as Node;
+      const inProfile = profileMenuRef.current?.contains(target);
+      const inQuick = quickMenuRef.current?.contains(target);
+      if (inProfile || inQuick) return;
       setProfileMenuOpen(false);
+      setQuickMenuOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileMenuOpen(false);
+        setQuickMenuOpen(false);
       }
     }
 
@@ -71,7 +77,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [profileMenuOpen]);
+  }, [profileMenuOpen, quickMenuOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -214,11 +220,13 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     <>
       <header className="top-nav top-search-only" ref={headerRef}>
         <div className="top-nav-inner top-search-only-inner">
+          <Link href="/" className="top-brand-mini" aria-label="홈으로 이동">OI</Link>
+
           <form className="search-field top-fixed-search" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
             <span aria-hidden>🔎</span>
             <input
               type="search"
-              placeholder="토픽 제목·설명 검색"
+              placeholder="이슈/토픽 검색"
               aria-label="이슈 검색"
               autoComplete="off"
               value={searchQuery}
@@ -226,49 +234,85 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             />
           </form>
 
-          <div className="profile-menu-wrap" ref={profileMenuRef}>
-            <button
-              type="button"
-              className={`top-search-auth-btn ${profileMenuOpen ? "is-active" : ""}`}
-              onClick={() => setProfileMenuOpen((prev) => !prev)}
-              aria-haspopup="menu"
-              aria-expanded={profileMenuOpen}
-              aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
-            >
-              {viewer ? viewer.nickname : "로그인"}
-            </button>
-            {profileMenuOpen ? (
-              <div className="profile-menu" role="menu">
-                {viewer ? (
-                  <>
-                    <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      내 활동
-                    </Link>
-                    <button
+          <div className="top-search-actions">
+            <div className="profile-menu-wrap" ref={profileMenuRef}>
+              <button
+                type="button"
+                className={`top-search-icon-btn ${profileMenuOpen ? "is-active" : ""}`}
+                onClick={() => {
+                  setProfileMenuOpen((prev) => !prev);
+                  setQuickMenuOpen(false);
+                }}
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
+              >
+                ⟲
+              </button>
+              {profileMenuOpen ? (
+                <div className="profile-menu" role="menu">
+                  {viewer ? (
+                    <>
+                      <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                        {viewer.nickname}
+                      </Link>
+                      <button
+                        className="profile-menu-item"
+                        type="button"
+                        role="menuitem"
+                        onClick={async () => {
+                          setProfileMenuOpen(false);
+                          await handleLogout();
+                        }}
+                        disabled={isLoggingOut}
+                      >
+                        {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/auth/signin" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                        로그인
+                      </Link>
+                      <Link href="/auth/signup" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                        회원가입
+                      </Link>
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="profile-menu-wrap" ref={quickMenuRef}>
+              <button
+                type="button"
+                className={`top-search-icon-btn ${quickMenuOpen ? "is-active" : ""}`}
+                onClick={() => {
+                  setQuickMenuOpen((prev) => !prev);
+                  setProfileMenuOpen(false);
+                }}
+                aria-haspopup="menu"
+                aria-expanded={quickMenuOpen}
+                aria-label="메뉴"
+              >
+                ☰
+              </button>
+              {quickMenuOpen ? (
+                <div className="profile-menu" role="menu">
+                  {NAV_ITEMS.map((item) => (
+                    <Link
+                      key={`quick-${item.href}`}
+                      href={item.href}
                       className="profile-menu-item"
-                      type="button"
                       role="menuitem"
-                      onClick={async () => {
-                        setProfileMenuOpen(false);
-                        await handleLogout();
-                      }}
-                      disabled={isLoggingOut}
+                      onClick={() => setQuickMenuOpen(false)}
                     >
-                      {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/auth/signin" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      로그인
+                      {item.label}
                     </Link>
-                    <Link href="/auth/signup" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      회원가입
-                    </Link>
-                  </>
-                )}
-              </div>
-            ) : null}
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>

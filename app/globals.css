@@ -129,8 +129,17 @@ body::before {
 
 .top-search-only-inner {
   min-height: 64px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.6rem;
+}
+
+.top-brand-mini {
+  text-decoration: none;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: #113f2b;
+  padding: 0.2rem 0.3rem;
 }
 
 .top-fixed-search {
@@ -138,18 +147,24 @@ body::before {
   margin: 0;
 }
 
-.top-search-auth-btn {
-  min-height: 44px;
+.top-search-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.top-search-icon-btn {
+  width: 42px;
+  height: 42px;
   border-radius: 999px;
   border: 1px solid #cbe2d5;
   background: linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
   color: #184833;
-  font-size: 0.9rem;
+  font-size: 1.15rem;
   font-weight: 800;
-  padding: 0.48rem 0.92rem;
 }
 
-.top-search-auth-btn.is-active {
+.top-search-icon-btn.is-active {
   border-color: #97d8b5;
   background: linear-gradient(180deg, #ecfbf3 0%, #def5e8 100%);
 }
@@ -4790,14 +4805,17 @@ body::before {
   }
 
   .top-search-only-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
-  .top-search-auth-btn {
-    min-height: 42px;
-    padding-inline: 0.72rem;
-    font-size: 0.84rem;
-    white-space: nowrap;
+  .top-search-actions {
+    gap: 0.3rem;
+  }
+
+  .top-search-icon-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 1.02rem;
   }
 
   .auth-chip-row {
