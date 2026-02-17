@@ -11,14 +11,16 @@ type Viewer = {
 } | null;
 
 type NavItem = {
-  href: "/" | "/topics" | "/admin/topics";
+  href: "/" | "/topics" | "/me" | "/me/reports" | "/admin/topics";
   label: string;
   adminOnly?: boolean;
+  authOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "홈" },
   { href: "/topics", label: "토픽" },
+  { href: "/me", label: "내 활동", authOnly: true },
   { href: "/admin/topics", label: "관리", adminOnly: true },
 ];
 
@@ -55,7 +57,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         </Link>
 
         <nav className="top-nav-links" aria-label="글로벌 탐색">
-          {NAV_ITEMS.filter((item) => !item.adminOnly || viewer?.role === "ADMIN").map((item) => {
+          {NAV_ITEMS.filter((item) => {
+            if (item.adminOnly && viewer?.role !== "ADMIN") return false;
+            if (item.authOnly && !viewer) return false;
+            return true;
+          }).map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`}>
@@ -77,7 +83,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               <button className="top-nav-link" type="button" onClick={handleLogout} disabled={isLoggingOut}>
                 {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
               </button>
-              <button className="profile-chip" type="button">{initials}</button>
+              <Link className="profile-chip" href="/me" aria-label="내 활동 페이지로 이동">{initials}</Link>
             </div>
           ) : (
             <div className="auth-chip-row">
