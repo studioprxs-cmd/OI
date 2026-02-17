@@ -3356,7 +3356,7 @@ body::before {
   }
 
   .resolve-submit-bar {
-    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height) + var(--mobile-floating-layer-gap));
     min-height: var(--mobile-resolve-submit-height);
     padding: 0.42rem;
     border-radius: 12px;
