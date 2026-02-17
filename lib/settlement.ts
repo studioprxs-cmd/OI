@@ -135,7 +135,7 @@ export function calculateSettlement(
     };
   });
 
-  const winnerCount = settled.filter((bet) => bet.payout > 0).length;
+  const winnerCount = winners.length;
   const payoutTotal = settled.reduce((sum, bet) => sum + bet.payout, 0);
 
   return {

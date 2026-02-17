@@ -96,7 +96,7 @@ export async function GET(req: NextRequest, { params }: Params) {
         .then((settledBets) => {
           const totalBets = settledBets.length;
           const payoutTotal = settledBets.reduce((sum, bet) => sum + (bet.payoutAmount ?? 0), 0);
-          const winnerCount = settledBets.filter((bet) => (bet.payoutAmount ?? 0) > 0).length;
+          const winnerCount = settledBets.filter((bet) => bet.choice === topic.resolution?.result).length;
           const winnerPool = settledBets
             .filter((bet) => bet.choice === topic.resolution?.result)
             .reduce((sum, bet) => sum + bet.amount, 0);
