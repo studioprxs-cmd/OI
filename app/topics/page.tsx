@@ -6,9 +6,10 @@ import { OiBadge, Pill, PageContainer, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
+import { parseTopicKindFromTitle } from "@/lib/topic";
 
 type Props = {
-  searchParams?: Promise<{ q?: string; status?: string }>;
+  searchParams?: Promise<{ q?: string; status?: string; kind?: string }>;
 };
 
 function statusTone(status: string): "neutral" | "success" | "danger" {
@@ -26,6 +27,7 @@ export default async function TopicsPage({ searchParams }: Props) {
   const keyword = (params.q ?? "").trim();
   const normalizedKeyword = keyword.toLowerCase();
   const statusFilter = params.status === "OPEN" || params.status === "RESOLVED" ? params.status : "ALL";
+  const kindFilter = params.kind === "BETTING" || params.kind === "POLL" ? params.kind : "ALL";
 
   const dbTopics = canUseDb ? await db.topic
     .findMany({
@@ -38,11 +40,14 @@ export default async function TopicsPage({ searchParams }: Props) {
   const topics = [
     ...dbTopics.map((topic) => ({
       ...topic,
+      kind: parseTopicKindFromTitle(topic.title),
       voteCount: topic._count.votes,
       betCount: topic._count.bets,
       commentCount: topic._count.comments,
     })),
-    ...mockTopicSummaries().filter((mock) => !dbTopics.some((topic) => topic.id === mock.id)),
+    ...mockTopicSummaries()
+      .filter((mock) => !dbTopics.some((topic) => topic.id === mock.id))
+      .map((mock) => ({ ...mock, kind: parseTopicKindFromTitle(mock.title) })),
   ].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
   const filteredTopics = topics.filter((topic) => {
@@ -67,23 +72,42 @@ export default async function TopicsPage({ searchParams }: Props) {
             <div className="row" style={{ marginTop: "0.6rem" }}>
               <Pill tone="success">활성 {activeTopics}</Pill>
               <Pill tone="danger">종료 {resolvedTopics}</Pill>
+              <Pill>전체 {topics.length}</Pill>
               {canManage ? <Link href="/admin/topics" className="text-link">관리자 화면</Link> : null}
             </div>
-            <div className="filter-chip-row" style={{ marginTop: "0.55rem" }}>
+            <div className="topic-filter-row" style={{ marginTop: "0.62rem" }}>
               <Link
                 href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=OPEN` : "?status=OPEN"}`}
-                className={`filter-chip ${statusFilter === "OPEN" ? "is-active" : ""}`}
+                className={`topic-filter-chip ${statusFilter === "OPEN" ? "is-active" : ""}`}
               >
                 오픈만 보기
               </Link>
               <Link
                 href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=RESOLVED` : "?status=RESOLVED"}`}
-                className={`filter-chip ${statusFilter === "RESOLVED" ? "is-active" : ""}`}
+                className={`topic-filter-chip ${statusFilter === "RESOLVED" ? "is-active" : ""}`}
               >
                 종료만 보기
               </Link>
-              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>필터 초기화</Link>
+              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>필터 초기화</Link>
             </div>
+          </section>
+
+          <section className="topic-summary-grid" aria-label="토픽 요약 지표">
+            <article className="topic-summary-card">
+              <p className="topic-summary-label">활성 토픽</p>
+              <strong className="topic-summary-value">{activeTopics}</strong>
+              <span className="topic-summary-meta">지금 참여 가능한 이슈</span>
+            </article>
+            <article className="topic-summary-card">
+              <p className="topic-summary-label">종료 토픽</p>
+              <strong className="topic-summary-value">{resolvedTopics}</strong>
+              <span className="topic-summary-meta">정산/결과 확인 가능</span>
+            </article>
+            <article className="topic-summary-card">
+              <p className="topic-summary-label">현재 필터</p>
+              <strong className="topic-summary-value">{statusFilter}</strong>
+              <span className="topic-summary-meta">{keyword ? `검색어 “${keyword}” 적용` : "검색어 없음"}</span>
+            </article>
           </section>
 
           {topics.length === 0 ? (
