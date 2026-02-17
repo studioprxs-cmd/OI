@@ -146,7 +146,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   const result = String(body.result ?? "").toUpperCase() as Choice;
   const summary = String(body.summary ?? "").trim();
   const confirmNoWinner = Boolean(body.confirmNoWinner);
-  const confirmPayoutDelta = Boolean(body.confirmPayoutDelta);
 
   if (result !== "YES" && result !== "NO") {
     return NextResponse.json({ ok: false, data: null, error: "result must be YES or NO" }, { status: 400 });
@@ -211,9 +210,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       throw new Error("NO_WINNER_CONFIRM_REQUIRED");
     }
 
+    if (settlement.summary.invalidAmountCount > 0) {
+      throw new Error("INVALID_BET_AMOUNT_DETECTED");
+    }
+
     const payoutDelta = settlement.summary.totalPool - settlement.summary.payoutTotal;
-    if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE && !confirmPayoutDelta) {
-      throw new Error("PAYOUT_DELTA_CONFIRM_REQUIRED");
+    if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE) {
+      throw new Error("PAYOUT_INTEGRITY_VIOLATION");
     }
 
     const resolution = await tx.resolution.create({
@@ -313,12 +316,23 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
-    if (message === "PAYOUT_DELTA_CONFIRM_REQUIRED") {
+    if (message === "INVALID_BET_AMOUNT_DETECTED") {
       return NextResponse.json(
         {
           ok: false,
           data: null,
-          error: "총 풀과 총 지급이 일치하지 않습니다. 정산 차이 검토 후 confirmPayoutDelta=true로 다시 요청하세요.",
+          error: "비정상 베팅 금액(0 이하 또는 유효하지 않은 값)이 감지되어 정산을 중단했습니다. 베팅 데이터 정합성을 먼저 복구하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "PAYOUT_INTEGRITY_VIOLATION") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "총 풀과 총 지급 합계가 일치하지 않아 정산을 차단했습니다. 무결성 점검 후 다시 시도하세요.",
         },
         { status: 409 },
       );

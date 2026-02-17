@@ -543,6 +543,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             <p className="admin-hero-eyebrow">Operations Console</p>
             <h1 className="admin-hero-title">Admin · Moderation & Settlement</h1>
             <p className="admin-hero-subtitle">신고 큐와 정산 무결성을 모바일 우선 동선으로 빠르게 점검하고 처리하세요.</p>
+            <div className="row" style={{ marginTop: "0.5rem", gap: "0.4rem" }}>
+              <Pill tone={canUseDb ? "success" : "neutral"}>{canUseDb ? "Live guardrails" : "Fallback mode"}</Pill>
+              <Pill tone={hasCriticalIntegrityIssue ? "danger" : "success"}>{hasCriticalIntegrityIssue ? "Settlement hard-stop active" : "Settlement integrity healthy"}</Pill>
+            </div>
           </div>
           <div className="row admin-header-links">
             <Link className="text-link" href="/admin/topics">
