@@ -30,11 +30,12 @@ type ButtonProps = {
   disabled?: boolean;
   onClick?: () => void;
   variant?: "primary" | "secondary" | "danger";
+  className?: string;
 };
 
-export function Button({ type = "button", children, disabled, onClick, variant = "primary" }: ButtonProps) {
+export function Button({ type = "button", children, disabled, onClick, variant = "primary", className }: ButtonProps) {
   return (
-    <button type={type} className={`btn btn-${variant}`} disabled={disabled} onClick={onClick}>
+    <button type={type} className={`btn btn-${variant}${className ? ` ${className}` : ""}`} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );

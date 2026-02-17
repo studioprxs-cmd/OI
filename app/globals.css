@@ -641,6 +641,18 @@ body::before {
   font-weight: 700;
 }
 
+.report-preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.report-preset-button {
+  min-height: 38px;
+  padding: 0.5rem 0.72rem;
+  font-size: 0.84rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -750,6 +762,15 @@ body::before {
   .section-heading-row {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .report-preset-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .report-preset-button {
+    width: 100%;
   }
 }
 

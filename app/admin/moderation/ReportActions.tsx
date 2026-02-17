@@ -46,18 +46,50 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
     (hasComment && commentVisibility !== "KEEP") ||
     (hasTopic && topicAction !== "KEEP");
 
-  async function submit() {
-    if (!hasChanges) {
+  function applyPreset(input: {
+    status: StatusValue;
+    commentVisibility?: VisibilityValue;
+    topicAction?: TopicActionValue;
+  }) {
+    const nextCommentVisibility = hasComment ? (input.commentVisibility ?? "KEEP") : "KEEP";
+    const nextTopicAction = hasTopic ? (input.topicAction ?? "KEEP") : "KEEP";
+
+    setStatus(input.status);
+    setCommentVisibility(nextCommentVisibility);
+    setTopicAction(nextTopicAction);
+
+    void submit({
+      status: input.status,
+      commentVisibility: nextCommentVisibility,
+      topicAction: nextTopicAction,
+    });
+  }
+
+  async function submit(override?: {
+    status?: StatusValue;
+    commentVisibility?: VisibilityValue;
+    topicAction?: TopicActionValue;
+  }) {
+    const nextStatus = override?.status ?? status;
+    const nextCommentVisibility = override?.commentVisibility ?? commentVisibility;
+    const nextTopicAction = override?.topicAction ?? topicAction;
+
+    const hasPendingChanges =
+      nextStatus !== initialStatus ||
+      (hasComment && nextCommentVisibility !== "KEEP") ||
+      (hasTopic && nextTopicAction !== "KEEP");
+
+    if (!hasPendingChanges) {
       setMessage("변경된 내용이 없습니다.");
       return;
     }
 
-    if (topicAction === "CANCEL") {
+    if (nextTopicAction === "CANCEL") {
       const agreed = window.confirm("토픽을 CANCELED 상태로 변경하시겠습니까? 이미 참여한 사용자에게 영향이 있을 수 있습니다.");
       if (!agreed) return;
     }
 
-    if (topicAction === "REOPEN" && isResolvedTopic) {
+    if (nextTopicAction === "REOPEN" && isResolvedTopic) {
       setMessage("이미 정산 완료된 토픽은 REOPEN 할 수 없습니다.");
       return;
     }
@@ -70,9 +102,9 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          status,
-          commentVisibility: hasComment ? commentVisibility : "KEEP",
-          topicAction: hasTopic ? topicAction : "KEEP",
+          status: nextStatus,
+          commentVisibility: hasComment ? nextCommentVisibility : "KEEP",
+          topicAction: hasTopic ? nextTopicAction : "KEEP",
         }),
       });
       const data = (await res.json()) as {
@@ -87,7 +119,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
       const refundedBetCount = Number(data?.data?.refundSummary?.refundedBetCount ?? 0);
       const refundedAmount = Number(data?.data?.refundSummary?.refundedAmount ?? 0);
 
-      if (topicAction === "CANCEL") {
+      if (nextTopicAction === "CANCEL") {
         setMessage(`신고/토픽 상태를 업데이트했습니다. 환불 ${refundedBetCount}건 · ${refundedAmount.toLocaleString("ko-KR")}pt`);
       } else {
         setMessage("신고 상태/연관 조치가 업데이트되었습니다.");
@@ -144,6 +176,38 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
         <Button type="button" disabled={isLoading || !hasChanges} onClick={submit}>
           {isLoading ? "저장 중..." : hasChanges ? "변경 저장" : "변경 없음"}
         </Button>
+      </div>
+
+      <div className="report-preset-row">
+        <Button
+          type="button"
+          variant="secondary"
+          className="report-preset-button"
+          disabled={isLoading}
+          onClick={() => applyPreset({ status: "REVIEWING", commentVisibility: hasComment ? "HIDE" : "KEEP" })}
+        >
+          빠른 처리: 검토중 + 댓글 숨김
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className="report-preset-button"
+          disabled={isLoading}
+          onClick={() => applyPreset({ status: "CLOSED", commentVisibility: "KEEP", topicAction: "KEEP" })}
+        >
+          빠른 처리: 닫기(CLOSED)
+        </Button>
+        {hasTopic ? (
+          <Button
+            type="button"
+            variant="danger"
+            className="report-preset-button"
+            disabled={isLoading || isResolvedTopic}
+            onClick={() => applyPreset({ status: "CLOSED", topicAction: "CANCEL" })}
+          >
+            빠른 처리: 토픽 취소 + 환불
+          </Button>
+        ) : null}
       </div>
 
       <small style={{ color: "#6b7280" }}>
