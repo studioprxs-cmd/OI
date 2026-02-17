@@ -782,6 +782,33 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const opsGlanceCards = [
+    {
+      id: "glance-inbox",
+      label: "Urgent inbox",
+      value: `${urgentReportCount}건`,
+      helper: superStaleActionableCount > 0 ? `48h+ ${superStaleActionableCount}건` : "즉시 처리 대기 없음",
+      href: "/admin/moderation?status=OPEN",
+      tone: urgentReportCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "glance-integrity",
+      label: "Settlement integrity",
+      value: `${integrityIssueTotal}건`,
+      helper: hasCriticalIntegrityIssue ? "긴급 가드레일 위반" : "가드레일 정상",
+      href: "#integrity-watch",
+      tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
+    },
+    {
+      id: "glance-next",
+      label: "Next best action",
+      value: nextPriorityReport ? nextPriorityReport.reason : "즉시 처리 없음",
+      helper: nextPriorityReport ? `#${nextPriorityReport.id.slice(0, 8)} · ${new Date(nextPriorityReport.createdAt).toLocaleDateString("ko-KR")}` : "모니터링 모드",
+      href: nextPriorityReport ? `#report-${nextPriorityReport.id}` : "/admin/topics?status=RESOLVED",
+      tone: nextPriorityReport ? "warning" : "ok",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -872,6 +899,22 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-glance-card" aria-label="운영 한눈에 보기">
+        <div className="admin-glance-head">
+          <p className="admin-jump-nav-label">At a glance</p>
+          <Pill tone={hasCriticalIntegrityIssue ? "danger" : "success"}>{hasCriticalIntegrityIssue ? "Immediate attention" : "Steady"}</Pill>
+        </div>
+        <div className="admin-glance-grid">
+          {opsGlanceCards.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-glance-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </Link>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-integrity-command-bar" aria-label="신고/정산 무결성 즉시 명령">
