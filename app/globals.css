@@ -851,42 +851,72 @@ body::before {
 .market-layout {
   display: grid;
   gap: 0.95rem;
-  border: 1px solid #f0dcc2;
+  border: 1px solid #cae9d5;
   border-radius: 22px;
   padding: 0.9rem;
-  background: linear-gradient(180deg, #fffaf4 0%, #fff5ea 100%);
+  background: radial-gradient(120% 150% at 100% 0%, rgba(4, 152, 77, 0.12) 0%, rgba(4, 152, 77, 0) 45%), linear-gradient(180deg, #f7fdf9 0%, #eefaf3 100%);
 }
 
 .market-hero {
-  background: linear-gradient(135deg, #ba7a15 0%, #d19023 52%, #e2a83a 100%);
+  background: linear-gradient(130deg, #0f7f45 0%, #12964f 50%, #1fb261 100%);
 }
 
 .market-shelf-grid {
   display: grid;
   gap: 0.62rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .market-shelf-card {
-  border: 1px solid #efddc8;
+  border: 1px solid #d6ecdf;
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #fffaf3 100%);
-  box-shadow: 0 8px 18px rgba(107, 64, 10, 0.08);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fdf8 100%);
+  box-shadow: 0 8px 18px rgba(19, 102, 57, 0.08);
   padding: 0.74rem;
   display: grid;
-  gap: 0.28rem;
+  gap: 0.42rem;
 }
 
 .market-shelf-card h3 {
   margin: 0;
   font-size: 0.95rem;
-  color: #6f3f0d;
+  color: #0e6a3a;
 }
 
 .market-shelf-card p {
   margin: 0;
-  color: #81583a;
+  color: #2d5a41;
   font-size: 0.84rem;
+}
+
+.market-product-teaser {
+  display: grid;
+  gap: 0.36rem;
+}
+
+.market-product-teaser strong {
+  font-size: 0.87rem;
+  line-height: 1.35;
+  color: #123f2a;
+}
+
+.market-product-teaser small {
+  color: #0f7f45;
+  font-weight: 700;
+}
+
+.market-product-teaser-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #d3e9dc;
+  background: #e8f7ee;
+}
+
+.market-product-teaser-image {
+  object-fit: cover;
 }
 
 .main-column,

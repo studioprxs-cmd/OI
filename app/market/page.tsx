@@ -1,8 +1,14 @@
+import Image from "next/image";
 import Link from "next/link";
 
+import { MARKET_ZONES, getMarketProducts } from "@/lib/market/catalog";
 import { OiBadge, PageContainer, StatePanel } from "@/components/ui";
 
+const ZONE_ORDER = ["GOODS", "DIGITAL", "DEAL", "GIFT"] as const;
+
 export default function MarketPage() {
+  const products = getMarketProducts({ activeOnly: true });
+
   return (
     <PageContainer>
       <div className="market-layout">
@@ -10,28 +16,39 @@ export default function MarketPage() {
           <OiBadge label="POINT MARKET" />
           <p className="hero-eyebrow">Points Marketplace</p>
           <h1>포인트 마켓</h1>
-          <p>베팅으로 모은 포인트로 제품을 구매하는 마켓플레이스입니다. 상품/장바구니/주문 플로우를 순차적으로 확장 중이에요.</p>
+          <p>오잉에서 쌓은 포인트를 굿즈·디지털·핫딜로 바로 교환하세요. 모바일에서 빠르게 고르고 바로 참여하도록 MVP 동선을 정리했습니다.</p>
         </section>
 
         <section className="market-shelf-grid" aria-label="마켓 구역 미리보기">
-          <article className="market-shelf-card">
-            <h3>굿즈 존</h3>
-            <p>오이 한정 굿즈, 시즌 콜라보, 응원 상품</p>
-          </article>
-          <article className="market-shelf-card">
-            <h3>디지털 존</h3>
-            <p>이모지 팩, 배지, 프로필 꾸미기 아이템</p>
-          </article>
-          <article className="market-shelf-card">
-            <h3>핫딜 존</h3>
-            <p>시간 한정 포인트 특가 · 빠른 품절 주의</p>
-          </article>
+          {ZONE_ORDER.map((zone) => {
+            const shelfProducts = products.filter((product) => product.zone === zone).slice(0, 1);
+
+            return (
+              <article className="market-shelf-card" key={zone}>
+                <h3>{MARKET_ZONES[zone]}</h3>
+                {shelfProducts.length === 0 ? (
+                  <p>공개 준비 중인 구역입니다.</p>
+                ) : (
+                  shelfProducts.map((product) => (
+                    <div key={product.id} className="market-product-teaser">
+                      <div className="market-product-teaser-image-wrap">
+                        <Image src={product.imageUrl} alt={product.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="market-product-teaser-image" />
+                      </div>
+                      <strong>{product.name}</strong>
+                      <p>{product.description}</p>
+                      <small>{product.pricePoints.toLocaleString("ko-KR")}pt</small>
+                    </div>
+                  ))
+                )}
+              </article>
+            );
+          })}
         </section>
 
         <StatePanel
-          title="마켓플레이스 베타 준비중"
-          description="곧 포인트 결제 상품 목록을 공개합니다. 우선 오잉에서 포인트를 쌓아두세요."
-          tone="warning"
+          title="마켓플레이스 베타 카탈로그 공개"
+          description="상품 목록 API(`/api/market/products`)와 모바일 카드 레이아웃을 먼저 열었습니다. 다음 단계에서 구매 트랜잭션/재고 차감을 연결합니다."
+          tone="success"
           actions={<Link href="/oing" className="btn btn-primary">오잉에서 포인트 쌓기</Link>}
         />
       </div>
