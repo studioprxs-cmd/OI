@@ -732,6 +732,77 @@ body::before {
   align-items: center;
 }
 
+.bet-ticket {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.bet-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.bet-choice {
+  min-height: 48px;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  border-radius: 12px;
+  font-weight: 750;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.bet-choice small {
+  font-size: 0.78rem;
+  color: #5a6d61;
+}
+
+.bet-choice.is-active.yes {
+  border-color: #7be0a2;
+  background: #e9fbf0;
+  color: #075a31;
+}
+
+.bet-choice.is-active.no {
+  border-color: #f2b3b3;
+  background: #fff1f1;
+  color: #8f2424;
+}
+
+.bet-quick-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.bet-quick-btn {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: #355145;
+  font-weight: 600;
+}
+
+.bet-preview {
+  border: 1px solid #d9efe1;
+  border-radius: 12px;
+  background: #f6fcf8;
+  padding: 0.58rem 0.7rem;
+}
+
+.bet-preview p {
+  margin: 0;
+  font-size: 0.93rem;
+}
+
+.bet-preview small {
+  color: #60766a;
+}
+
 .topic-floating-comment {
   display: none;
 }
@@ -908,6 +979,10 @@ body::before {
   .resolve-confirm-check {
     font-size: 0.85rem;
     padding: 0.58rem 0.62rem;
+  }
+
+  .bet-quick-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topic-anchor-nav {

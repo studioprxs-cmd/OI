@@ -2,6 +2,7 @@ import { Choice } from "@prisma/client";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BetTicket } from "./BetTicket";
 import { CommentForm } from "./CommentForm";
 import { CommentReportButton } from "./CommentReportButton";
 import { TopicReportButton } from "./TopicReportButton";
@@ -12,6 +13,7 @@ import { OiBadge, PageContainer, Pill } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findMockTopic } from "@/lib/mock-data";
+import { getParticipationBlockReason } from "@/lib/topic-policy";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -74,6 +76,11 @@ export default async function TopicDetailPage({ params }: Props) {
   const totalPayout = dbTopic
     ? dbTopic.bets.reduce((sum, bet) => sum + Number(bet.payoutAmount ?? 0), 0)
     : 0;
+
+  const participationBlockReason = dbTopic
+    ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
+    : "데모 토픽에서는 베팅이 제한됩니다.";
+  const canBet = canUseDb && !participationBlockReason;
 
   const resolution = dbTopic?.resolution
     ? {
@@ -151,6 +158,17 @@ export default async function TopicDetailPage({ params }: Props) {
             </FeedCard>
             </div>
           </section>
+
+          <FeedCard title="Polymarket 스타일 베팅 티켓" meta="현재 풀 기준 가격/예상 수령을 보면서 바로 참여">
+            <BetTicket
+              topicId={topic.id}
+              yesPool={yesPool}
+              noPool={noPool}
+              canBet={Boolean(canBet)}
+              isAuthenticated={Boolean(viewer)}
+              blockReason={participationBlockReason ?? undefined}
+            />
+          </FeedCard>
 
           {resolution ? (
             <div id="topic-settlement">
