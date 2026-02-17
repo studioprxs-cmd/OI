@@ -4825,13 +4825,19 @@ body::before {
   }
 
   .top-search-actions {
-    gap: 0.3rem;
+    gap: 0.28rem;
   }
 
-  .top-search-icon-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 1.02rem;
+  .top-wallet-chip {
+    min-height: 38px;
+    padding-inline: 0.54rem;
+    font-size: 0.74rem;
+  }
+
+  .top-search-login-btn {
+    min-height: 38px;
+    padding-inline: 0.62rem;
+    font-size: 0.8rem;
   }
 
   .auth-chip-row {

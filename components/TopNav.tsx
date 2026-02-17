@@ -28,9 +28,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const searchParams = useSearchParams();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [quickMenuOpen, setQuickMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const quickMenuRef = useRef<HTMLDivElement | null>(null);
 
   const initialSearch = useMemo(() => {
     if (pathname.startsWith("/topics")) {
@@ -53,21 +51,18 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, [initialSearch]);
 
   useEffect(() => {
-    if (!profileMenuOpen && !quickMenuOpen) return;
+    if (!profileMenuOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       const inProfile = profileMenuRef.current?.contains(target);
-      const inQuick = quickMenuRef.current?.contains(target);
-      if (inProfile || inQuick) return;
+      if (inProfile) return;
       setProfileMenuOpen(false);
-      setQuickMenuOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileMenuOpen(false);
-        setQuickMenuOpen(false);
       }
     }
 
@@ -77,7 +72,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [profileMenuOpen, quickMenuOpen]);
+  }, [profileMenuOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -235,26 +230,30 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           </form>
 
           <div className="top-search-actions">
+            <Link href="/market" className="top-wallet-chip" aria-label="포인트 지갑 및 마켓">
+              <span aria-hidden>◍</span>
+              <span>포인트 지갑</span>
+            </Link>
+
             <div className="profile-menu-wrap" ref={profileMenuRef}>
               <button
                 type="button"
-                className={`top-search-icon-btn ${profileMenuOpen ? "is-active" : ""}`}
+                className={`top-search-login-btn ${profileMenuOpen ? "is-active" : ""}`}
                 onClick={() => {
                   setProfileMenuOpen((prev) => !prev);
-                  setQuickMenuOpen(false);
                 }}
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
               >
-                ⟲
+                {viewer ? viewer.nickname : "로그인"}
               </button>
               {profileMenuOpen ? (
                 <div className="profile-menu" role="menu">
                   {viewer ? (
                     <>
                       <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                        {viewer.nickname}
+                        내 활동
                       </Link>
                       <button
                         className="profile-menu-item"
@@ -279,37 +278,6 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
                       </Link>
                     </>
                   )}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="profile-menu-wrap" ref={quickMenuRef}>
-              <button
-                type="button"
-                className={`top-search-icon-btn ${quickMenuOpen ? "is-active" : ""}`}
-                onClick={() => {
-                  setQuickMenuOpen((prev) => !prev);
-                  setProfileMenuOpen(false);
-                }}
-                aria-haspopup="menu"
-                aria-expanded={quickMenuOpen}
-                aria-label="메뉴"
-              >
-                ☰
-              </button>
-              {quickMenuOpen ? (
-                <div className="profile-menu" role="menu">
-                  {NAV_ITEMS.map((item) => (
-                    <Link
-                      key={`quick-${item.href}`}
-                      href={item.href}
-                      className="profile-menu-item"
-                      role="menuitem"
-                      onClick={() => setQuickMenuOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
                 </div>
               ) : null}
             </div>
