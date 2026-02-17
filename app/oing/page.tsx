@@ -16,9 +16,13 @@ function statusTone(status: string): "neutral" | "success" | "danger" {
 export default async function OingPage() {
   const canUseDb = Boolean(process.env.DATABASE_URL);
 
+  const now = Date.now();
+  const minCloseMs = now + (10 * 60 * 1000);
+  const maxCloseMs = now + (7 * 24 * 60 * 60 * 1000);
+
   const dbTopics = canUseDb ? await db.topic.findMany({
     orderBy: { createdAt: "desc" },
-    take: 40,
+    take: 80,
     include: {
       bets: { select: { choice: true, amount: true } },
       _count: { select: { votes: true, bets: true, comments: true } },
@@ -26,7 +30,15 @@ export default async function OingPage() {
   }).catch(() => []) : [];
 
   const bettingTopicsFromDb = dbTopics
-    .filter((topic) => parseTopicKindFromTitle(topic.title) === "BETTING")
+    .filter((topic) => {
+      if (parseTopicKindFromTitle(topic.title) !== "BETTING") return false;
+      if (topic.status !== "OPEN") return false;
+
+      const closeMs = new Date(topic.closeAt).getTime();
+      if (Number.isNaN(closeMs)) return false;
+
+      return closeMs >= minCloseMs && closeMs <= maxCloseMs;
+    })
     .map((topic) => {
       const yesPool = topic.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
       const noPool = topic.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
@@ -52,7 +64,15 @@ export default async function OingPage() {
     });
 
   const fallbackMock = mockTopicSummaries()
-    .filter((topic) => parseTopicKindFromTitle(topic.title) === "BETTING")
+    .filter((topic) => {
+      if (parseTopicKindFromTitle(topic.title) !== "BETTING") return false;
+      if (topic.status !== "OPEN") return false;
+
+      const closeMs = new Date(topic.closeAt).getTime();
+      if (Number.isNaN(closeMs)) return false;
+
+      return closeMs >= minCloseMs && closeMs <= maxCloseMs;
+    })
     .map((topic) => {
       const yesPool = Math.floor(topic.totalPool * 0.5);
       const noPool = topic.totalPool - yesPool;
@@ -82,9 +102,10 @@ export default async function OingPage() {
             <OiBadge label="OING" />
             <p className="hero-eyebrow">Polymarket-style Betting</p>
             <h1>오잉 베팅</h1>
-            <p>핫한 이슈에 YES/NO로 베팅하고 포인트를 쌓아보세요. 오잉은 빠른 참여와 직관적인 확률 감각에 집중합니다.</p>
+            <p>핫한 이슈에 YES/NO로 베팅하고 포인트를 쌓아보세요. 오잉은 <strong>최소 10분 ~ 최대 7일</strong> 안에 결과가 나는 명확한 주제만 다룹니다.</p>
             <div className="row" style={{ marginTop: "0.6rem" }}>
               <Pill tone="success">진행중 {openCount}</Pill>
+              <Pill tone="neutral">만기 10분~7일</Pill>
               <Pill tone="neutral">총 베팅풀 {totalPool.toLocaleString("ko-KR")} pt</Pill>
               <Link href="/topics?kind=BETTING" className="text-link">전체 베팅 토픽</Link>
             </div>
@@ -93,7 +114,7 @@ export default async function OingPage() {
           {bettingTopics.length === 0 ? (
             <StatePanel
               title="베팅 가능한 오잉 이슈가 아직 없습니다"
-              description="관리자에서 BETTING 타입 토픽을 열면 여기서 바로 참여할 수 있어요."
+              description="지금은 10분~7일 조건에 맞는 OPEN 베팅 토픽이 없습니다. 조건에 맞는 토픽이 열리면 여기서 바로 참여할 수 있어요."
               tone="warning"
               actions={<Link href="/topics" className="btn btn-secondary">토픽 보러가기</Link>}
             />
