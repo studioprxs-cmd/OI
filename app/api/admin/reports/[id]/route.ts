@@ -12,6 +12,37 @@ const ALLOWED_TOPIC_ACTIONS = ["KEEP", "LOCK", "CANCEL", "REOPEN"] as const;
 
 type TopicAction = (typeof ALLOWED_TOPIC_ACTIONS)[number];
 
+export async function GET(req: NextRequest, { params }: Params) {
+  const user = await getAuthUser(req);
+  const guard = requireAdmin(user);
+  if (!guard.ok) {
+    return NextResponse.json({ ok: false, data: null, error: guard.error }, { status: guard.status });
+  }
+
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json(
+      { ok: false, data: null, error: "DB is not configured in local mode." },
+      { status: 503 },
+    );
+  }
+
+  const { id } = await params;
+  const report = await db.report.findUnique({
+    where: { id },
+    include: {
+      reporter: { select: { id: true, nickname: true, email: true } },
+      topic: { select: { id: true, title: true, status: true } },
+      comment: { select: { id: true, content: true, isHidden: true } },
+    },
+  });
+
+  if (!report) {
+    return NextResponse.json({ ok: false, data: null, error: "Report not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, data: report, error: null });
+}
+
 export async function PATCH(req: NextRequest, { params }: Params) {
   const user = await getAuthUser(req);
   const guard = requireAdmin(user);
@@ -48,7 +79,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const report = await localUpdateReportStatus({
       id,
       status: status as LocalReportStatus,
-      hideComment: commentVisibility === "HIDE",
+      commentVisibility,
     });
     if (!report) {
       return NextResponse.json({ ok: false, data: null, error: "Report not found" }, { status: 404 });
@@ -56,52 +87,86 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: true, data: report, error: null });
   }
 
-  const updated = await db.$transaction(async (tx) => {
-    const report = await tx.report.findUnique({ where: { id } });
-    if (!report) return null;
+  try {
+    const updated = await db.$transaction(async (tx) => {
+      const report = await tx.report.findUnique({ where: { id } });
+      if (!report) return null;
 
-    await tx.report.update({
-      where: { id },
-      data: {
-        status,
-        reviewedAt: new Date(),
-      },
-    });
-
-    if (report.commentId && commentVisibility !== "KEEP") {
-      await tx.comment.update({
-        where: { id: report.commentId },
-        data: { isHidden: commentVisibility === "HIDE" },
-      });
-    }
-
-    if (report.topicId && topicAction !== "KEEP") {
-      const nextTopicStatus: TopicStatus = topicAction === "LOCK"
-        ? "LOCKED"
-        : topicAction === "CANCEL"
-          ? "CANCELED"
-          : "OPEN";
-
-      await tx.topic.update({
-        where: { id: report.topicId },
+      await tx.report.update({
+        where: { id },
         data: {
-          status: nextTopicStatus,
+          status,
+          reviewedAt: new Date(),
         },
       });
+
+      if (report.commentId && commentVisibility !== "KEEP") {
+        await tx.comment.update({
+          where: { id: report.commentId },
+          data: { isHidden: commentVisibility === "HIDE" },
+        });
+      }
+
+      if (report.topicId && topicAction !== "KEEP") {
+        const currentTopic = await tx.topic.findUnique({
+          where: { id: report.topicId },
+          select: {
+            id: true,
+            status: true,
+            resolution: { select: { id: true } },
+          },
+        });
+
+        if (!currentTopic) {
+          throw new Error("TOPIC_NOT_FOUND");
+        }
+
+        if (topicAction === "REOPEN" && (currentTopic.status === "RESOLVED" || currentTopic.resolution)) {
+          throw new Error("RESOLVED_TOPIC_REOPEN_BLOCKED");
+        }
+
+        const nextTopicStatus: TopicStatus = topicAction === "LOCK"
+          ? "LOCKED"
+          : topicAction === "CANCEL"
+            ? "CANCELED"
+            : "OPEN";
+
+        await tx.topic.update({
+          where: { id: report.topicId },
+          data: {
+            status: nextTopicStatus,
+          },
+        });
+      }
+
+      return tx.report.findUnique({
+        where: { id },
+        include: {
+          comment: { select: { id: true, isHidden: true } },
+          topic: { select: { id: true, status: true } },
+        },
+      });
+    });
+
+    if (!updated) {
+      return NextResponse.json({ ok: false, data: null, error: "Report not found" }, { status: 404 });
     }
 
-    return tx.report.findUnique({
-      where: { id },
-      include: {
-        comment: { select: { id: true, isHidden: true } },
-        topic: { select: { id: true, status: true } },
-      },
-    });
-  });
+    return NextResponse.json({ ok: true, data: updated, error: null });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
 
-  if (!updated) {
-    return NextResponse.json({ ok: false, data: null, error: "Report not found" }, { status: 404 });
+    if (message === "TOPIC_NOT_FOUND") {
+      return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+    }
+
+    if (message === "RESOLVED_TOPIC_REOPEN_BLOCKED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 정산 완료된 토픽은 REOPEN 할 수 없습니다." },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ ok: false, data: null, error: "신고 업데이트 실패" }, { status: 500 });
   }
-
-  return NextResponse.json({ ok: true, data: updated, error: null });
 }

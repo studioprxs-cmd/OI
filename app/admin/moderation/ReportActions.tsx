@@ -28,9 +28,11 @@ type Props = {
   initialStatus: StatusValue;
   hasComment: boolean;
   hasTopic: boolean;
+  commentHidden?: boolean;
+  topicStatus?: string;
 };
 
-export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }: Props) {
+export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, commentHidden = false, topicStatus }: Props) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,10 +40,26 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
   const [commentVisibility, setCommentVisibility] = useState<VisibilityValue>("KEEP");
   const [topicAction, setTopicAction] = useState<TopicActionValue>("KEEP");
 
+  const isResolvedTopic = topicStatus === "RESOLVED";
+  const hasChanges =
+    status !== initialStatus ||
+    (hasComment && commentVisibility !== "KEEP") ||
+    (hasTopic && topicAction !== "KEEP");
+
   async function submit() {
+    if (!hasChanges) {
+      setMessage("변경된 내용이 없습니다.");
+      return;
+    }
+
     if (topicAction === "CANCEL") {
       const agreed = window.confirm("토픽을 CANCELED 상태로 변경하시겠습니까? 이미 참여한 사용자에게 영향이 있을 수 있습니다.");
       if (!agreed) return;
+    }
+
+    if (topicAction === "REOPEN" && isResolvedTopic) {
+      setMessage("이미 정산 완료된 토픽은 REOPEN 할 수 없습니다.");
+      return;
     }
 
     setIsLoading(true);
@@ -74,7 +92,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
   return (
     <div className="list" style={{ gap: "0.45rem" }}>
       <div className="row" style={{ gap: "0.55rem", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ minWidth: "9rem" }}>
+        <div style={{ minWidth: "9rem", flex: "1 1 9rem" }}>
           <SelectField
             id={`report-status-${reportId}`}
             name={`report-status-${reportId}`}
@@ -85,7 +103,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
         </div>
 
         {hasComment ? (
-          <div style={{ minWidth: "11rem" }}>
+          <div style={{ minWidth: "11rem", flex: "1 1 11rem" }}>
             <SelectField
               id={`report-comment-visibility-${reportId}`}
               name={`report-comment-visibility-${reportId}`}
@@ -97,22 +115,28 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic }:
         ) : null}
 
         {hasTopic ? (
-          <div style={{ minWidth: "13rem" }}>
+          <div style={{ minWidth: "13rem", flex: "1 1 13rem" }}>
             <SelectField
               id={`report-topic-action-${reportId}`}
               name={`report-topic-action-${reportId}`}
               value={topicAction}
               onChange={(value) => setTopicAction(value as TopicActionValue)}
-              options={[...TOPIC_ACTION_OPTIONS]}
+              options={TOPIC_ACTION_OPTIONS.map((option) => ({
+                ...option,
+                label: option.value === "REOPEN" && isResolvedTopic ? `${option.label} (정산 완료 토픽 불가)` : option.label,
+              }))}
             />
           </div>
         ) : null}
 
-        <Button type="button" disabled={isLoading} onClick={submit}>
-          {isLoading ? "저장 중..." : "변경 저장"}
+        <Button type="button" disabled={isLoading || !hasChanges} onClick={submit}>
+          {isLoading ? "저장 중..." : hasChanges ? "변경 저장" : "변경 없음"}
         </Button>
       </div>
 
+      <small style={{ color: "#6b7280" }}>
+        현재 댓글 상태: {hasComment ? (commentHidden ? "숨김" : "표시") : "해당 없음"} · 토픽 상태: {topicStatus ?? "해당 없음"}
+      </small>
       {message ? <Message text={message} tone={message.includes("실패") || message.includes("오류") ? "error" : "info"} /> : null}
     </div>
   );

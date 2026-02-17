@@ -9,6 +9,7 @@ import { localListReports } from "@/lib/report-local";
 import { ReportActions } from "./ReportActions";
 
 const STATUSES = ["OPEN", "REVIEWING", "CLOSED", "REJECTED"] as const;
+const ACTIONABLE_STATUSES = ["OPEN", "REVIEWING"] as const;
 
 type StatusType = (typeof STATUSES)[number];
 
@@ -121,6 +122,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     return haystack.includes(keyword);
   });
 
+  const actionableReports = reports.filter((report) => (ACTIONABLE_STATUSES as readonly string[]).includes(report.status));
+  const hiddenCommentReportCount = reports.filter((report) => report.commentHidden).length;
+
   return (
     <PageContainer>
       <div className="row" style={{ justifyContent: "space-between", gap: "0.6rem", flexWrap: "wrap" }}>
@@ -195,6 +199,19 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </Card>
 
       <Card>
+        <SectionTitle>우선 처리 큐</SectionTitle>
+        <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
+          <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>처리 필요 {actionableReports.length}</Pill>
+          <Pill>숨김 댓글 {hiddenCommentReportCount}</Pill>
+          <Pill>토픽 신고 {reports.filter((report) => !report.commentId).length}</Pill>
+          <Pill>댓글 신고 {reports.filter((report) => Boolean(report.commentId)).length}</Pill>
+        </div>
+        <p style={{ margin: "0.65rem 0 0", color: "#6b7280" }}>
+          기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.
+        </p>
+      </Card>
+
+      <Card>
         <SectionTitle>정산 현황</SectionTitle>
         <p style={{ margin: "0.55rem 0", color: "#6b7280" }}>
           정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {Number(settlement._sum.amount ?? 0).toLocaleString("ko-KR")} pt · 총 지급{" "}
@@ -203,6 +220,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </Card>
 
       <div className="list">
+        {selectedStatus === "ALL" && selectedType === "ALL" && !keyword ? (
+          <Card>
+            <SectionTitle>즉시 확인 권장</SectionTitle>
+            <p style={{ margin: "0.45rem 0 0", color: "#6b7280" }}>
+              OPEN/REVIEWING 신고 {actionableReports.length}건이 대기 중입니다.
+            </p>
+          </Card>
+        ) : null}
+
         {filteredReports.map((report) => (
           <Card key={report.id}>
             <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
@@ -239,6 +265,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                 initialStatus={report.status}
                 hasComment={Boolean(report.commentId)}
                 hasTopic={Boolean(report.topicId)}
+                commentHidden={Boolean(report.commentHidden)}
+                topicStatus={report.topicStatus}
               />
             </div>
           </Card>

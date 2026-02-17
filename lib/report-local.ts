@@ -21,6 +21,8 @@ type LocalReportData = {
   hiddenCommentIds: string[];
 };
 
+type LocalCommentVisibility = "KEEP" | "HIDE" | "UNHIDE";
+
 const DATA_DIR = path.join(process.cwd(), ".data");
 const DATA_FILE = path.join(DATA_DIR, "reports.json");
 
@@ -117,7 +119,7 @@ export async function localHasActiveTopicReport(input: {
 export async function localUpdateReportStatus(input: {
   id: string;
   status: LocalReportStatus;
-  hideComment?: boolean;
+  commentVisibility?: LocalCommentVisibility;
 }) {
   const data = await readData();
   const report = data.reports.find((item) => item.id === input.id);
@@ -126,8 +128,14 @@ export async function localUpdateReportStatus(input: {
   report.status = input.status;
   report.reviewedAt = new Date().toISOString();
 
-  if (input.hideComment && report.commentId && !data.hiddenCommentIds.includes(report.commentId)) {
-    data.hiddenCommentIds.push(report.commentId);
+  if (report.commentId) {
+    if (input.commentVisibility === "HIDE" && !data.hiddenCommentIds.includes(report.commentId)) {
+      data.hiddenCommentIds.push(report.commentId);
+    }
+
+    if (input.commentVisibility === "UNHIDE") {
+      data.hiddenCommentIds = data.hiddenCommentIds.filter((id) => id !== report.commentId);
+    }
   }
 
   await writeData(data);
