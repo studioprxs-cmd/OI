@@ -762,6 +762,15 @@ body::before {
   padding-bottom: 0.82rem;
 }
 
+.admin-jump-nav-card-sticky {
+  position: sticky;
+  top: 224px;
+  z-index: 23;
+  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(246, 251, 248, 0.92) 100%);
+  border-color: #d9e7de;
+}
+
 .admin-jump-nav-label {
   margin: 0 0 0.45rem;
   font-size: 0.74rem;
@@ -1391,6 +1400,54 @@ body::before {
   background: #f4f7f5;
   color: #405146;
   border-color: #d6e1da;
+}
+
+.settlement-ledger-card {
+  margin: 0.66rem 0 0.56rem;
+  border: 1px solid #d7e6dd;
+  border-radius: 14px;
+  padding: 0.66rem 0.74rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.72rem;
+  align-items: flex-start;
+  background: linear-gradient(180deg, #f8fcfa 0%, #f3faf6 100%);
+}
+
+.settlement-ledger-card.is-balanced {
+  border-color: #bfe4cd;
+  background: linear-gradient(180deg, #f4fcf7 0%, #edf9f2 100%);
+}
+
+.settlement-ledger-card.is-warning {
+  border-color: #d9e6d6;
+}
+
+.settlement-ledger-card.is-danger {
+  border-color: #f1c5c2;
+  background: linear-gradient(180deg, #fff9f9 0%, #fff3f3 100%);
+}
+
+.settlement-ledger-label {
+  margin: 0;
+  font-size: 0.73rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5f7367;
+  font-weight: 700;
+}
+
+.settlement-ledger-value {
+  display: block;
+  margin-top: 0.14rem;
+  font-size: 1.26rem;
+  letter-spacing: -0.02em;
+  color: #143828;
+}
+
+.settlement-ledger-card small {
+  color: #5d6f64;
+  font-size: 0.78rem;
 }
 
 .admin-quick-action-grid {
@@ -2523,6 +2580,18 @@ body::before {
     font-size: 0.74rem;
   }
 
+  .settlement-ledger-card {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 12px;
+    padding: 0.62rem 0.66rem;
+    gap: 0.5rem;
+  }
+
+  .settlement-ledger-value {
+    font-size: 1.12rem;
+  }
+
   .state-panel-actions {
     width: 100%;
   }
@@ -2537,6 +2606,11 @@ body::before {
 
   .admin-quick-action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-jump-nav-card-sticky {
+    top: 164px;
+    z-index: 26;
   }
 
   .admin-jump-nav {

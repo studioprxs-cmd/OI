@@ -235,7 +235,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ]}
       />
 
-      <Card className="admin-jump-nav-card">
+      <Card className="admin-jump-nav-card admin-jump-nav-card-sticky">
         <p className="admin-jump-nav-label">Quick jump</p>
         <div className="admin-jump-nav" aria-label="토픽 운영 섹션 바로가기">
           <a href="#topic-priority" className="admin-jump-nav-item">우선순위</a>

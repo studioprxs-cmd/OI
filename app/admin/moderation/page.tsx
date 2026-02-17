@@ -233,6 +233,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const totalSettledAmount = Number(settlement._sum.amount ?? 0);
   const totalPayoutAmount = Number(settlement._sum.payoutAmount ?? 0);
   const payoutRatio = totalSettledAmount > 0 ? Math.round((totalPayoutAmount / totalSettledAmount) * 100) : 0;
+  const settlementGapAmount = totalSettledAmount - totalPayoutAmount;
+  const settlementGapAbs = Math.abs(settlementGapAmount);
+  const settlementBalanceLabel = settlementGapAbs === 0 ? "균형" : settlementGapAmount > 0 ? "미지급 여지" : "과지급 의심";
   const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
   const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
@@ -462,7 +465,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </div>
       </Card>
 
-      <Card className="admin-jump-nav-card">
+      <Card className="admin-jump-nav-card admin-jump-nav-card-sticky">
         <p className="admin-jump-nav-label">Quick jump</p>
         <div className="admin-jump-nav" aria-label="운영 섹션 바로가기">
           <a href="#queue-priority" className="admin-jump-nav-item">우선 처리 큐</a>
@@ -715,6 +718,17 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-muted-note">
           정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {totalSettledAmount.toLocaleString("ko-KR")} pt · 총 지급 {totalPayoutAmount.toLocaleString("ko-KR")} pt
         </p>
+        <div className={`settlement-ledger-card ${settlementGapAbs === 0 ? "is-balanced" : settlementGapAmount > 0 ? "is-warning" : "is-danger"}`}>
+          <div>
+            <p className="settlement-ledger-label">Settlement ledger</p>
+            <strong className="settlement-ledger-value">
+              {settlementGapAmount > 0 ? "+" : settlementGapAmount < 0 ? "-" : "±"}
+              {settlementGapAbs.toLocaleString("ko-KR")}pt
+            </strong>
+            <small>총 베팅 - 총 지급 기준 차이</small>
+          </div>
+          <Pill tone={settlementGapAbs === 0 ? "success" : settlementGapAmount > 0 ? "neutral" : "danger"}>{settlementBalanceLabel}</Pill>
+        </div>
         <div className="row" style={{ gap: "0.45rem", flexWrap: "wrap" }}>
           <Pill tone={settledWithNullPayoutCount > 0 ? "danger" : "success"}>정산값 누락 {settledWithNullPayoutCount}</Pill>
           <Pill tone={unresolvedSettledBacklogCount > 0 ? "danger" : "success"}>정산 대기 백로그 {unresolvedSettledBacklogCount}</Pill>
