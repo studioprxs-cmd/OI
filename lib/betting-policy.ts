@@ -3,6 +3,8 @@ export const BET_LIMITS = {
   MAX_AMOUNT: 50_000,
   MAX_POOL_SHARE: 0.2,
   DAILY_LIMIT: 100_000,
+  COOLDOWN_AFTER_LOSSES: 5,
+  COOLDOWN_DURATION_MS: 3_600_000,
 } as const;
 
 export function getBetLimitError(amount: number): string | null {

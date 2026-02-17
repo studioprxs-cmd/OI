@@ -82,6 +82,29 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error(`TOPIC_BLOCKED:${latestParticipationBlockReason}`);
       }
 
+      const recentSettledBets = await tx.bet.findMany({
+        where: {
+          userId: authUser.id,
+          settled: true,
+        },
+        orderBy: { createdAt: "desc" },
+        take: BET_LIMITS.COOLDOWN_AFTER_LOSSES,
+        select: { payoutAmount: true, createdAt: true },
+      });
+
+      const hasLossStreak =
+        recentSettledBets.length >= BET_LIMITS.COOLDOWN_AFTER_LOSSES
+        && recentSettledBets.every((bet) => (bet.payoutAmount ?? 0) <= 0);
+
+      if (hasLossStreak) {
+        const lastLossAt = recentSettledBets[0]?.createdAt;
+        const elapsedMs = lastLossAt ? Date.now() - new Date(lastLossAt).getTime() : Number.POSITIVE_INFINITY;
+        if (elapsedMs < BET_LIMITS.COOLDOWN_DURATION_MS) {
+          const remainingMs = BET_LIMITS.COOLDOWN_DURATION_MS - elapsedMs;
+          throw new Error(`COOLDOWN_ACTIVE:${remainingMs}`);
+        }
+      }
+
       const [userTopicTotal, topicPoolTotal, userTodayTotal] = await Promise.all([
         tx.bet.aggregate({
           _sum: { amount: true },
@@ -217,6 +240,15 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (message === "POOL_SHARE_EXCEEDED") {
       return NextResponse.json(
         { ok: false, data: null, error: `한 토픽에서 개인 베팅 점유율은 최대 ${Math.round(BET_LIMITS.MAX_POOL_SHARE * 100)}%입니다.` },
+        { status: 409 },
+      );
+    }
+
+    if (message.startsWith("COOLDOWN_ACTIVE:")) {
+      const remainingMs = Number(message.split(":")[1] ?? 0);
+      const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+      return NextResponse.json(
+        { ok: false, data: null, error: `연속 손실 보호가 적용되어 있습니다. 약 ${remainingMinutes}분 후 다시 시도해주세요.` },
         { status: 409 },
       );
     }
