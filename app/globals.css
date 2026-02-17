@@ -120,9 +120,9 @@ body::before {
 }
 
 .brand-logo {
-  width: clamp(116px, 30vw, 160px);
+  width: clamp(140px, 36vw, 196px);
   height: auto;
-  max-height: 44px;
+  max-height: 56px;
   object-fit: contain;
   border-radius: 10px;
 }
