@@ -667,6 +667,31 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-segment-nav-card">
+        <div className="admin-segment-nav-head">
+          <p className="admin-jump-nav-label">Queue mode</p>
+          <Pill tone={selectedStatus === "ALL" && selectedType === "ALL" ? "success" : "neutral"}>{selectedStatus}/{selectedType}</Pill>
+        </div>
+        <div className="admin-segment-nav-grid" aria-label="신고 큐 빠른 전환">
+          <Link href={`/admin/moderation?status=ALL&type=${selectedType}&q=${encodeURIComponent(rawKeyword)}`} className={`admin-segment-nav-item${selectedStatus === "ALL" ? " is-active" : ""}`}>
+            <span>All queue</span>
+            <strong>{reports.length}</strong>
+          </Link>
+          <Link href={`/admin/moderation?status=OPEN&type=${selectedType}&q=${encodeURIComponent(rawKeyword)}`} className={`admin-segment-nav-item is-danger${selectedStatus === "OPEN" ? " is-active" : ""}`}>
+            <span>OPEN</span>
+            <strong>{counts.OPEN}</strong>
+          </Link>
+          <Link href={`/admin/moderation?status=REVIEWING&type=${selectedType}&q=${encodeURIComponent(rawKeyword)}`} className={`admin-segment-nav-item is-warning${selectedStatus === "REVIEWING" ? " is-active" : ""}`}>
+            <span>REVIEWING</span>
+            <strong>{counts.REVIEWING}</strong>
+          </Link>
+          <Link href={`/admin/moderation?status=ALL&type=TOPIC&q=${encodeURIComponent(rawKeyword)}`} className={`admin-segment-nav-item is-ok${selectedType === "TOPIC" ? " is-active" : ""}`}>
+            <span>TOPIC only</span>
+            <strong>{reports.filter((report) => !report.commentId).length}</strong>
+          </Link>
+        </div>
+      </Card>
+
       <Card className="admin-thumb-rail-card">
         <p className="admin-jump-nav-label">Thumb rail · Next action</p>
         <div className="admin-thumb-rail-scroll" aria-label="엄지 운영 바로가기">

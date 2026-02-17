@@ -554,6 +554,31 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-segment-nav-card">
+        <div className="admin-segment-nav-head">
+          <p className="admin-jump-nav-label">Queue mode</p>
+          <Pill tone={selectedStatus === "ALL" ? "success" : "neutral"}>{selectedStatus}</Pill>
+        </div>
+        <div className="admin-segment-nav-grid" aria-label="토픽 상태 빠른 전환">
+          <Link href={`/admin/topics?status=ALL&q=${encodeURIComponent(keyword)}`} className={`admin-segment-nav-item${selectedStatus === "ALL" ? " is-active" : ""}`}>
+            <span>All queue</span>
+            <strong>{topics.length}</strong>
+          </Link>
+          <Link href={`/admin/topics?status=OPEN&q=${encodeURIComponent(keyword)}`} className={`admin-segment-nav-item is-danger${selectedStatus === "OPEN" ? " is-active" : ""}`}>
+            <span>OPEN</span>
+            <strong>{statusCounts.OPEN}</strong>
+          </Link>
+          <Link href={`/admin/topics?status=LOCKED&q=${encodeURIComponent(keyword)}`} className={`admin-segment-nav-item is-warning${selectedStatus === "LOCKED" ? " is-active" : ""}`}>
+            <span>LOCKED</span>
+            <strong>{statusCounts.LOCKED}</strong>
+          </Link>
+          <Link href={`/admin/topics?status=RESOLVED&q=${encodeURIComponent(keyword)}`} className={`admin-segment-nav-item is-ok${selectedStatus === "RESOLVED" ? " is-active" : ""}`}>
+            <span>RESOLVED</span>
+            <strong>{statusCounts.RESOLVED}</strong>
+          </Link>
+        </div>
+      </Card>
+
       <Card className="admin-thumb-rail-card">
         <p className="admin-jump-nav-label">Thumb rail · Next action</p>
         <div className="admin-thumb-rail-scroll" aria-label="토픽 운영 바로가기">

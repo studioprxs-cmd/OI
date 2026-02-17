@@ -696,6 +696,86 @@ body::before {
   padding: 0 0.28rem;
 }
 
+.admin-segment-nav-card {
+  padding-top: 0.8rem;
+  padding-bottom: 0.82rem;
+  border-color: #d4e5dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+}
+
+.admin-segment-nav-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-segment-nav-head .admin-jump-nav-label {
+  margin-bottom: 0;
+}
+
+.admin-segment-nav-grid {
+  margin-top: 0.58rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-segment-nav-item {
+  min-height: 58px;
+  border-radius: 13px;
+  border: 1px solid #d7e7de;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  text-decoration: none;
+  color: #153a2a;
+  padding: 0.52rem 0.6rem;
+  display: grid;
+  align-content: center;
+  gap: 0.16rem;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);
+  transition: transform 160ms var(--ease-standard), border-color 160ms var(--ease-standard), box-shadow 160ms var(--ease-standard);
+}
+
+.admin-segment-nav-item:hover {
+  transform: translateY(-1px);
+  border-color: #b8dbc8;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.1);
+}
+
+.admin-segment-nav-item span {
+  font-size: 0.71rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5f7267;
+  font-weight: 700;
+}
+
+.admin-segment-nav-item strong {
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+  color: #123628;
+}
+
+.admin-segment-nav-item.is-danger {
+  border-color: #efc7c5;
+  background: linear-gradient(180deg, #fffdfd 0%, #fff4f4 100%);
+}
+
+.admin-segment-nav-item.is-warning {
+  border-color: #efdfbe;
+  background: linear-gradient(180deg, #fffef9 0%, #fff9ec 100%);
+}
+
+.admin-segment-nav-item.is-ok {
+  border-color: #cde7d8;
+  background: linear-gradient(180deg, #f8fdfb 0%, #f1fbf5 100%);
+}
+
+.admin-segment-nav-item.is-active {
+  border-color: #8fdab0;
+  box-shadow: inset 0 0 0 1px rgba(16, 134, 78, 0.18), 0 10px 22px rgba(15, 23, 42, 0.09);
+}
+
 .admin-lane-card {
   padding-top: 0.9rem;
   padding-bottom: 0.9rem;
@@ -3492,6 +3572,10 @@ body::before {
   .admin-settlement-sla-grid,
   .ops-health-strip {
     grid-template-columns: 1fr;
+  }
+
+  .admin-segment-nav-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .topic-summary-grid {
