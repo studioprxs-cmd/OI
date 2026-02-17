@@ -44,6 +44,23 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
   const visibleNavItems = NAV_ITEMS;
+  const currentTopicKind = searchParams.get("kind");
+
+  const isNavItemActive = (item: NavItem) => {
+    if (item.href === "/") {
+      return pathname === "/";
+    }
+
+    if (!pathname.startsWith("/topics")) {
+      return false;
+    }
+
+    if (item.kind) {
+      return currentTopicKind === item.kind;
+    }
+
+    return currentTopicKind === null;
+  };
 
   useEffect(() => {
     setSearchQuery(initialSearch);
@@ -230,12 +247,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         <nav className="top-nav-links" aria-label="글로벌 탐색">
           <div className="top-nav-tabs">
             {visibleNavItems.map((item) => {
-              const currentKind = searchParams.get("kind");
-              const active = item.href === "/"
-                ? pathname === "/"
-                : item.kind
-                  ? pathname.startsWith("/topics") && currentKind === item.kind
-                  : pathname.startsWith("/topics") && !currentKind;
+              const active = isNavItemActive(item);
               return (
                 <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
                   <span className="top-nav-link-icon" aria-hidden>{item.icon}</span>
@@ -315,12 +327,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색" ref={mobileBottomNavRef}>
         {visibleNavItems.map((item) => {
-          const currentKind = searchParams.get("kind");
-          const active = item.href === "/"
-            ? pathname === "/"
-            : item.kind
-              ? pathname.startsWith("/topics") && currentKind === item.kind
-              : pathname.startsWith("/topics") && !currentKind;
+          const active = isNavItemActive(item);
           return (
             <Link
               key={`mobile-${item.href}`}
