@@ -394,6 +394,29 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     .slice()
     .sort((a, b) => b.count - a.count)[0];
 
+  const integrityEscalationQueue = [
+    ...unresolvedSettledBacklogTopics.map((topic) => ({
+      id: `backlog-${topic.id}`,
+      title: topic.title,
+      status: "RESOLVED 백로그",
+      count: topic._count.bets,
+      helper: `미정산 베팅 ${topic._count.bets}건`,
+      href: `/admin/topics/${topic.id}/resolve`,
+      tone: "danger" as const,
+    })),
+    ...resolvedWithoutResolutionTopics.map((topic) => ({
+      id: `resolution-${topic.id}`,
+      title: topic.title,
+      status: "결과 레코드 누락",
+      count: 1,
+      helper: `생성 ${new Date(topic.createdAt).toLocaleDateString("ko-KR")}`,
+      href: `/admin/topics/${topic.id}/resolve`,
+      tone: "warning" as const,
+    })),
+  ]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+
   const nextActionLabel = urgentReportCount > 0
     ? `OPEN 신고 ${urgentReportCount}건부터 처리`
     : counts.REVIEWING > 0
@@ -820,6 +843,39 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               </Link>
             ))}
         </div>
+      </Card>
+
+      <Card className="admin-surface-card admin-breach-queue-card">
+        <div className="admin-breach-queue-head">
+          <div>
+            <p className="admin-jump-nav-label">Settlement breach queue</p>
+            <h2 className="admin-command-title">정산 무결성 에스컬레이션 토픽</h2>
+          </div>
+          <Pill tone={integrityEscalationQueue.length > 0 ? "danger" : "success"}>
+            {integrityEscalationQueue.length > 0 ? `즉시 확인 ${integrityEscalationQueue.length}건` : "에스컬레이션 없음"}
+          </Pill>
+        </div>
+        {integrityEscalationQueue.length > 0 ? (
+          <div className="admin-breach-queue-grid" style={{ marginTop: "0.66rem" }}>
+            {integrityEscalationQueue.map((item) => (
+              <Link key={item.id} href={item.href} className={`admin-breach-queue-item is-${item.tone}`}>
+                <span className="admin-breach-queue-status">{item.status}</span>
+                <strong>{item.title}</strong>
+                <small>{item.helper}</small>
+                <span className="admin-breach-queue-cta">Resolve →</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <AdminEmptyState
+            icon="✓"
+            tone="success"
+            statusLabel="Clear"
+            kicker="Settlement queue stable"
+            title="정산 에스컬레이션 대상이 없습니다"
+            description="RESOLVED 백로그와 결과 레코드 누락이 없어 즉시 복구 큐가 비어 있습니다."
+          />
+        )}
       </Card>
 
       <Card className="admin-recovery-card" id="settlement-recovery">
