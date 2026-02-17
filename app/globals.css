@@ -407,6 +407,56 @@ body::before {
   background: linear-gradient(180deg, #f8fbff 0%, #f2f7fe 100%);
 }
 
+.topic-head-panel {
+  border: 1px solid #d4e0f2;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 100%);
+  box-shadow: 0 10px 24px rgba(40, 90, 150, 0.08);
+  padding: 1rem;
+  display: grid;
+  gap: 0.62rem;
+}
+
+.topic-head-title h1 {
+  margin: 0.15rem 0 0.32rem;
+  font-size: clamp(1.3rem, 2.1vw, 1.9rem);
+  color: #14365f;
+}
+
+.topic-head-title p {
+  margin: 0;
+  color: #446182;
+}
+
+.topics-layout .topic-filter-chip {
+  background: #ffffff;
+  color: #20538a;
+  border-color: #c9daf2;
+}
+
+.topics-layout .topic-filter-chip.is-active {
+  background: linear-gradient(180deg, #eaf3ff 0%, #dcecff 100%);
+  color: #11457c;
+  border-color: #9dc4f5;
+}
+
+.topics-layout .topic-kind-tabs {
+  border-color: #cfdff3;
+  background: #eaf1fc;
+}
+
+.topics-layout .topic-kind-tab {
+  background: #ffffff;
+  color: #24568d;
+  border-color: #cfe0f4;
+}
+
+.topics-layout .topic-kind-tab.is-active {
+  background: linear-gradient(180deg, #e9f3ff 0%, #dbeaff 100%);
+  color: #123f70;
+  border-color: #9fc2ee;
+}
+
 .oing-layout {
   border: 1px solid #ead8f7;
   border-radius: 22px;

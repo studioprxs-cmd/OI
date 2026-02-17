@@ -82,11 +82,13 @@ export default async function TopicsPage({ searchParams }: Props) {
     <PageContainer>
       <div className="content-grid topics-layout">
         <main className="main-column">
-          <section className="hero-block compact">
-            <OiBadge label="OI Topics" />
-            <p className="hero-eyebrow">Topics</p>
-            <h1>전체 토픽 피드</h1>
-            <p>토론·예측 토픽을 한눈에 비교하고, 관심 이슈에 바로 참여해보세요.</p>
+          <section className="topic-head-panel">
+            <div className="topic-head-title">
+              <OiBadge label="OI Topics" />
+              <p className="hero-eyebrow">Topics Explorer</p>
+              <h1>전체 토픽 피드</h1>
+              <p>토론·예측 토픽을 한눈에 비교하고, 관심 이슈에 바로 참여해보세요.</p>
+            </div>
             <div className="row" style={{ marginTop: "0.6rem" }}>
               <Pill tone="success">활성 {activeTopics}</Pill>
               <Pill tone="danger">종료 {resolvedTopics}</Pill>
