@@ -29,6 +29,21 @@ export default async function TopicsPage({ searchParams }: Props) {
   const statusFilter = params.status === "OPEN" || params.status === "RESOLVED" ? params.status : "ALL";
   const kindFilter = params.kind === "BETTING" || params.kind === "POLL" ? params.kind : "ALL";
 
+  const buildTopicFilterHref = (next: { status?: "OPEN" | "RESOLVED" | "ALL"; kind?: "BETTING" | "POLL" | "ALL" }) => {
+    const search = new URLSearchParams();
+
+    if (keyword) search.set("q", keyword);
+
+    const nextStatus = next.status ?? statusFilter;
+    const nextKind = next.kind ?? kindFilter;
+
+    if (nextStatus !== "ALL") search.set("status", nextStatus);
+    if (nextKind !== "ALL") search.set("kind", nextKind);
+
+    const query = search.toString();
+    return query ? `/topics?${query}` : "/topics";
+  };
+
   const dbTopics = canUseDb ? await db.topic
     .findMany({
       orderBy: { createdAt: "desc" },
@@ -81,33 +96,33 @@ export default async function TopicsPage({ searchParams }: Props) {
             </div>
             <div className="topic-filter-row" style={{ marginTop: "0.62rem" }}>
               <Link
-                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=OPEN` : "?status=OPEN"}`}
+                href={buildTopicFilterHref({ status: "OPEN" })}
                 className={`topic-filter-chip ${statusFilter === "OPEN" ? "is-active" : ""}`}
               >
                 오픈만 보기
               </Link>
               <Link
-                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=RESOLVED` : "?status=RESOLVED"}`}
+                href={buildTopicFilterHref({ status: "RESOLVED" })}
                 className={`topic-filter-chip ${statusFilter === "RESOLVED" ? "is-active" : ""}`}
               >
                 종료만 보기
               </Link>
-              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>상태 초기화</Link>
+              <Link href={buildTopicFilterHref({ status: "ALL" })} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>상태 초기화</Link>
             </div>
             <div className="topic-filter-row" style={{ marginTop: "0.42rem" }}>
               <Link
-                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&kind=BETTING` : "?kind=BETTING"}`}
+                href={buildTopicFilterHref({ kind: "BETTING" })}
                 className={`topic-filter-chip ${kindFilter === "BETTING" ? "is-active" : ""}`}
               >
                 베팅 이슈
               </Link>
               <Link
-                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&kind=POLL` : "?kind=POLL"}`}
+                href={buildTopicFilterHref({ kind: "POLL" })}
                 className={`topic-filter-chip ${kindFilter === "POLL" ? "is-active" : ""}`}
               >
                 여론 투표 이슈
               </Link>
-              <Link href={keyword ? "/topics" : "/topics?kind=ALL"} className={`topic-filter-chip ${kindFilter === "ALL" ? "is-active" : ""}`}>유형 초기화</Link>
+              <Link href={buildTopicFilterHref({ kind: "ALL" })} className={`topic-filter-chip ${kindFilter === "ALL" ? "is-active" : ""}`}>유형 초기화</Link>
             </div>
           </section>
 

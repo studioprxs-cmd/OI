@@ -55,6 +55,7 @@ function payoutMultiplier(summary?: SettlementPreviewSummary) {
 }
 
 const NO_WINNER_CONFIRM_PHRASE = "0PT 지급 승인";
+const PAYOUT_DELTA_CONFIRM_PHRASE = "정산 차이 검토 완료";
 const MIN_SUMMARY_LENGTH = 12;
 const SUMMARY_PRESETS = [
   { label: "공식 근거", text: "공식 발표 및 검증된 근거를 토대로 결과를 확정합니다." },
@@ -69,6 +70,8 @@ export function ResolveForm({ topicId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [confirmNoWinner, setConfirmNoWinner] = useState(false);
   const [noWinnerConfirmPhrase, setNoWinnerConfirmPhrase] = useState("");
+  const [confirmPayoutDelta, setConfirmPayoutDelta] = useState(false);
+  const [payoutDeltaConfirmPhrase, setPayoutDeltaConfirmPhrase] = useState("");
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [previewError, setPreviewError] = useState("");
@@ -87,6 +90,7 @@ export function ResolveForm({ topicId }: Props) {
   const hasPayoutDelta = unsettledCount > 0 && payoutDelta !== 0;
   const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && unsettledCount > 0;
   const noWinnerPhraseMatched = noWinnerConfirmPhrase.trim() === NO_WINNER_CONFIRM_PHRASE;
+  const payoutDeltaPhraseMatched = payoutDeltaConfirmPhrase.trim() === PAYOUT_DELTA_CONFIRM_PHRASE;
   const summaryTrimmed = summary.trim();
   const summaryTooShort = summaryTrimmed.length > 0 && summaryTrimmed.length < MIN_SUMMARY_LENGTH;
 
@@ -128,6 +132,13 @@ export function ResolveForm({ topicId }: Props) {
       setNoWinnerConfirmPhrase("");
     }
   }, [requiresNoWinnerConfirm, result]);
+
+  useEffect(() => {
+    if (!hasPayoutDelta) {
+      setConfirmPayoutDelta(false);
+      setPayoutDeltaConfirmPhrase("");
+    }
+  }, [hasPayoutDelta, result]);
 
   useEffect(() => {
     let isAlive = true;
@@ -193,6 +204,16 @@ export function ResolveForm({ topicId }: Props) {
 
     if (requiresNoWinnerConfirm && !noWinnerPhraseMatched) {
       setMessage(`0pt 지급 정산을 확정하려면 확인 문구 \"${NO_WINNER_CONFIRM_PHRASE}\" 를 정확히 입력하세요.`);
+      return;
+    }
+
+    if (hasPayoutDelta && !confirmPayoutDelta) {
+      setMessage("총 풀과 예상 총지급이 일치하지 않습니다. 차이 검토 확인 체크를 완료해야 저장할 수 있습니다.");
+      return;
+    }
+
+    if (hasPayoutDelta && !payoutDeltaPhraseMatched) {
+      setMessage(`정산 차이를 검토했으면 확인 문구 \"${PAYOUT_DELTA_CONFIRM_PHRASE}\" 를 정확히 입력하세요.`);
       return;
     }
 
@@ -328,6 +349,28 @@ export function ResolveForm({ topicId }: Props) {
                 tone="error"
               />
             ) : null}
+            {hasPayoutDelta ? (
+              <div className="list" style={{ gap: "0.52rem" }}>
+                <label className="resolve-confirm-check">
+                  <input
+                    type="checkbox"
+                    checked={confirmPayoutDelta}
+                    onChange={(event) => setConfirmPayoutDelta(event.target.checked)}
+                  />
+                  <span>정산 차이({payoutDelta > 0 ? "+" : ""}{payoutDelta.toLocaleString("ko-KR")}pt) 원인을 검토했고 이 값으로 확정 진행해도 되는지 확인했습니다.</span>
+                </label>
+                <Field label={`확인 문구 입력 (${PAYOUT_DELTA_CONFIRM_PHRASE})`} htmlFor="payout-delta-confirm-phrase">
+                  <input
+                    id="payout-delta-confirm-phrase"
+                    className="input"
+                    value={payoutDeltaConfirmPhrase}
+                    onChange={(event) => setPayoutDeltaConfirmPhrase(event.target.value)}
+                    placeholder={PAYOUT_DELTA_CONFIRM_PHRASE}
+                    autoComplete="off"
+                  />
+                </Field>
+              </div>
+            ) : null}
             {requiresNoWinnerConfirm ? (
               <div className="list" style={{ gap: "0.52rem" }}>
                 <label className="resolve-confirm-check">
@@ -382,7 +425,7 @@ export function ResolveForm({ topicId }: Props) {
       <div className="resolve-submit-bar">
         <Button
           type="submit"
-          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
+          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched))}
         >
           {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
         </Button>
