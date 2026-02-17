@@ -657,6 +657,10 @@ body::before {
   align-items: stretch;
 }
 
+.moderation-bulk-row {
+  align-items: stretch;
+}
+
 .moderation-report-head {
   align-items: flex-start;
 }
@@ -800,7 +804,9 @@ body::before {
 
   .moderation-filter-form select,
   .moderation-filter-form input,
-  .moderation-filter-form button {
+  .moderation-filter-form button,
+  .moderation-bulk-row .input,
+  .moderation-bulk-row .btn {
     width: 100%;
     flex: 1 1 100% !important;
     min-height: 44px;

@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
 
+import { BulkModerationActions } from "./BulkModerationActions";
 import { ReportActions } from "./ReportActions";
 
 const STATUSES = ["OPEN", "REVIEWING", "CLOSED", "REJECTED"] as const;
@@ -141,6 +142,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const actionableReports = reports.filter((report) => (ACTIONABLE_STATUSES as readonly string[]).includes(report.status));
   const hiddenCommentReportCount = reports.filter((report) => report.commentHidden).length;
   const urgentReportCount = reports.filter((report) => report.status === "OPEN").length;
+  const filteredOpenIds = filteredReports.filter((report) => report.status === "OPEN").map((report) => report.id);
+  const filteredReviewingIds = filteredReports.filter((report) => report.status === "REVIEWING").map((report) => report.id);
 
   return (
     <PageContainer>
@@ -240,6 +243,17 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </Card>
 
       <div className="list">
+        <Card>
+          <SectionTitle>일괄 트리아지</SectionTitle>
+          <div style={{ marginTop: "0.6rem" }}>
+            <BulkModerationActions
+              openIds={filteredOpenIds}
+              reviewingIds={filteredReviewingIds}
+              filteredCount={filteredReports.length}
+            />
+          </div>
+        </Card>
+
         <small style={{ color: "#6b7280" }}>정렬 기준: 상태 우선순위(OPEN → REVIEWING → CLOSED/REJECTED), 이후 최신순</small>
         {selectedStatus === "ALL" && selectedType === "ALL" && !keyword ? (
           <Card>
