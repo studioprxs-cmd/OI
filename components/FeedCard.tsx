@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ReactNode } from "react";
 
 type FeedCardProps = {
@@ -7,11 +8,18 @@ type FeedCardProps = {
   badge?: ReactNode;
   footer?: ReactNode;
   children?: ReactNode;
+  thumbnailSrc?: string;
+  thumbnailAlt?: string;
 };
 
-export function FeedCard({ title, description, meta, badge, footer, children }: FeedCardProps) {
+export function FeedCard({ title, description, meta, badge, footer, children, thumbnailSrc, thumbnailAlt }: FeedCardProps) {
   return (
     <article className="feed-card">
+      {thumbnailSrc ? (
+        <div className="feed-card-thumbnail">
+          <Image src={thumbnailSrc} alt={thumbnailAlt ?? "토픽 썸네일"} width={1200} height={630} />
+        </div>
+      ) : null}
       <div className="feed-card-head">
         <div>
           <h3 className="feed-card-title">{title}</h3>

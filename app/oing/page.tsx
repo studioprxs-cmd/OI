@@ -6,6 +6,7 @@ import { OiBadge, PageContainer, Pill, StatePanel } from "@/components/ui";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
+import { getTopicThumbnail } from "@/lib/topic-thumbnail";
 
 function statusTone(status: string): "neutral" | "success" | "danger" {
   if (status === "OPEN") return "success";
@@ -128,6 +129,8 @@ export default async function OingPage() {
                 {bettingTopics.map((topic) => (
                   <FeedCard
                     key={topic.id}
+                    thumbnailSrc={getTopicThumbnail(topic.id, topic.title)}
+                    thumbnailAlt={`${topic.title} 배너`}
                     title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                     description={topic.description}
                     badge={<Pill tone={statusTone(topic.status)}>{topic.status}</Pill>}

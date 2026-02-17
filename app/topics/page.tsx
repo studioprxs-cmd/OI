@@ -7,6 +7,7 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
+import { getTopicThumbnail } from "@/lib/topic-thumbnail";
 
 type Props = {
   searchParams?: Promise<{ q?: string; status?: string; kind?: string }>;
@@ -245,6 +246,8 @@ export default async function TopicsPage({ searchParams }: Props) {
                 {filteredTopics.map((topic) => (
                   <FeedCard
                     key={topic.id}
+                    thumbnailSrc={getTopicThumbnail(topic.id, topic.title)}
+                    thumbnailAlt={`${topic.title} 썸네일`}
                     title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                     description={topic.description}
                     badge={<Pill tone={statusTone(topic.status)}>{topic.status} · {topic.kind === "BETTING" ? "베팅" : "여론"}</Pill>}

@@ -5,6 +5,7 @@ import { WidgetCard } from "@/components/WidgetCard";
 import { OiBadge, Pill, PageContainer } from "@/components/ui";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
+import { getTopicThumbnail } from "@/lib/topic-thumbnail";
 
 function statusTone(status: string): "neutral" | "success" | "danger" {
   if (status === "OPEN") return "success";
@@ -98,6 +99,8 @@ export default async function HomePage() {
             {hotTopic ? (
               <div className="hot-issue-focus">
                 <FeedCard
+                  thumbnailSrc={getTopicThumbnail(hotTopic.id, hotTopic.title)}
+                  thumbnailAlt={`${hotTopic.title} 배너`}
                   title={<Link href={`/topics/${hotTopic.id}`} className="title-link">{hotTopic.title}</Link>}
                   description={hotTopic.description}
                   badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}
@@ -132,6 +135,8 @@ export default async function HomePage() {
               {trending.map((topic) => (
                 <FeedCard
                   key={topic.id}
+                  thumbnailSrc={getTopicThumbnail(topic.id, topic.title)}
+                  thumbnailAlt={`${topic.title} 썸네일`}
                   title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                   description={topic.description}
                   badge={<Pill tone={statusTone(topic.status)}>{topic.status}</Pill>}
@@ -150,6 +155,8 @@ export default async function HomePage() {
               {latest.map((topic) => (
                 <FeedCard
                   key={topic.id}
+                  thumbnailSrc={getTopicThumbnail(topic.id, topic.title)}
+                  thumbnailAlt={`${topic.title} 썸네일`}
                   title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                   description={topic.description}
                   meta={new Date(topic.createdAt).toLocaleDateString("ko-KR")}
