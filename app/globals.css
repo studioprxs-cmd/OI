@@ -139,6 +139,43 @@ body::before {
   gap: 0.5rem;
 }
 
+.profile-menu-wrap {
+  position: relative;
+}
+
+.profile-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  min-width: 132px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  padding: 0.28rem;
+  z-index: 60;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.profile-menu-item {
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  text-decoration: none;
+  color: #1e3828;
+  font: inherit;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.55rem;
+  cursor: pointer;
+}
+
+.profile-menu-item:hover {
+  background: #eef5f0;
+}
+
 .nick-chip {
   font-size: 0.88rem;
   color: #4f6057;

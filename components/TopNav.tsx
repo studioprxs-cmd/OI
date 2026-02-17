@@ -38,6 +38,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     return "";
   }, [pathname, searchParams]);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     setSearchQuery(initialSearch);
@@ -79,7 +80,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       <div className="top-nav-inner">
         <Link href="/" className="brand-lockup" aria-label="오늘의 이슈 홈">
           <Image
-            src="/oi-logo.jpg"
+            src="/oi-logo-transparent.png"
             alt="오늘의 이슈 로고"
             width={168}
             height={56}
@@ -120,12 +121,53 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           {viewer ? (
             <div className="auth-chip-row">
               <span className="nick-chip">{viewer.nickname}</span>
-              <button className="top-nav-link" type="button" onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-              </button>
               <Link className="profile-chip" href="/me" aria-label="내 활동 페이지로 이동">{initials}</Link>
             </div>
           ) : null}
+
+          <div className="profile-menu-wrap">
+            <button
+              type="button"
+              className="top-nav-link"
+              onClick={() => setProfileMenuOpen((prev) => !prev)}
+              aria-haspopup="menu"
+              aria-expanded={profileMenuOpen}
+            >
+              회원정보
+            </button>
+            {profileMenuOpen ? (
+              <div className="profile-menu" role="menu">
+                {viewer ? (
+                  <>
+                    <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      내 활동
+                    </Link>
+                    <button
+                      className="profile-menu-item"
+                      type="button"
+                      role="menuitem"
+                      onClick={async () => {
+                        setProfileMenuOpen(false);
+                        await handleLogout();
+                      }}
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/auth/signin" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      로그인
+                    </Link>
+                    <Link href="/auth/signup" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      회원가입
+                    </Link>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </header>
