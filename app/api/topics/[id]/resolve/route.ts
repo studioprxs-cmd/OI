@@ -234,6 +234,18 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
 
     for (const bet of settlement.bets) {
+      const existingSettlementTx = await tx.walletTransaction.findFirst({
+        where: {
+          relatedBetId: bet.id,
+          type: "BET_SETTLE",
+        },
+        select: { id: true },
+      });
+
+      if (existingSettlementTx) {
+        throw new Error("DUPLICATE_SETTLEMENT_TX_DETECTED");
+      }
+
       await tx.bet.update({
         where: { id: bet.id },
         data: {
@@ -349,6 +361,17 @@ export async function POST(req: NextRequest, { params }: Params) {
           ok: false,
           data: null,
           error: "수수료 차감 후 순지급 풀(net pool)과 총 지급 합계가 일치하지 않아 정산을 차단했습니다. 무결성 점검 후 다시 시도하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "DUPLICATE_SETTLEMENT_TX_DETECTED") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "동일 베팅에 대한 중복 정산 트랜잭션이 감지되어 정산을 차단했습니다. 원장 정합성을 점검한 뒤 다시 시도하세요.",
         },
         { status: 409 },
       );

@@ -63,6 +63,9 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   try {
     const result = await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`bet-user:${authUser.id}`}))`;
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`bet-topic:${id}`}))`;
+
       const latestTopic = await tx.topic.findUnique({
         where: { id },
         select: { title: true, status: true, closeAt: true },
