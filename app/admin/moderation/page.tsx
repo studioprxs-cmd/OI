@@ -428,6 +428,30 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const experienceSignals = [
+    {
+      id: "nav-consistency",
+      label: "Nav consistency",
+      value: selectedStatus === "ALL" && selectedType === "ALL" && !rawKeyword ? "Clean" : "Filtered",
+      hint: activeFilterTokens.length > 0 ? activeFilterTokens.join(" · ") : "기본 큐 탐색 모드",
+      tone: activeFilterTokens.length > 0 ? "neutral" : "ok",
+    },
+    {
+      id: "thumb-flow",
+      label: "Thumb flow",
+      value: `${actionableReports.length} targets`,
+      hint: nextPriorityReport ? `다음 추천: ${nextPriorityReport.reason}` : "즉시 처리 항목 없음",
+      tone: actionableReports.length > 0 ? "warning" : "ok",
+    },
+    {
+      id: "state-clarity",
+      label: "State clarity",
+      value: hasCriticalIntegrityIssue ? "Alert" : "Stable",
+      hint: canUseDb ? "Live guardrails on" : "Fallback data mode",
+      tone: hasCriticalIntegrityIssue ? "danger" : canUseDb ? "ok" : "neutral",
+    },
+  ] as const;
+
   const settlementGuardrails = [
     {
       key: "payout-null",
@@ -653,6 +677,18 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-context-bar">
+        <div className="admin-context-grid">
+          {experienceSignals.map((item) => (
+            <article key={item.id} className={`admin-context-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.hint}</small>
+            </article>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-incident-digest-card">

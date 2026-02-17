@@ -98,6 +98,37 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       .catch(() => [])
     : [];
 
+  const settledWithNullPayoutCount = canUseDb
+    ? await db.bet.count({ where: { settled: true, payoutAmount: null } }).catch(() => 0)
+    : 0;
+
+  const nonPositiveBetAmountCount = canUseDb
+    ? await db.bet
+      .count({
+        where: {
+          amount: {
+            lte: 0,
+          },
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
+  const settlement = canUseDb
+    ? await db.bet
+      .aggregate({
+        _count: { id: true },
+        _sum: { amount: true, payoutAmount: true },
+        where: { settled: true },
+      })
+      .catch(() => ({ _count: { id: 0 }, _sum: { amount: 0, payoutAmount: 0 } }))
+    : { _count: { id: 0 }, _sum: { amount: 0, payoutAmount: 0 } };
+
+  const totalSettledAmount = Number(settlement._sum.amount ?? 0);
+  const totalPayoutAmount = Number(settlement._sum.payoutAmount ?? 0);
+  const payoutRatio = totalSettledAmount > 0 ? Math.round((totalPayoutAmount / totalSettledAmount) * 100) : 0;
+  const hasPayoutRatioOutlier = settlement._count.id >= 5 && (payoutRatio < 90 || payoutRatio > 110);
+
   const statusCounts = Object.fromEntries(
     STATUS_ORDER.map((status) => [status, topics.filter((topic) => topic.status === status).length]),
   ) as Record<(typeof STATUS_ORDER)[number], number>;
@@ -132,7 +163,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
 
   const pendingResolveCount = topics.filter((topic) => topic.status === "OPEN" || topic.status === "LOCKED").length;
   const staleOpenCount = topics.filter((topic) => topic.status === "OPEN" && Date.now() - new Date(topic.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
-  const integrityIssueTotal = unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
+  const integrityIssueTotal = unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + settledWithNullPayoutCount + nonPositiveBetAmountCount + (hasPayoutRatioOutlier ? 1 : 0);
   const priorityTopics = filteredTopics
     .filter((topic) => {
       const ageHours = Math.floor((Date.now() - new Date(topic.createdAt).getTime()) / (1000 * 60 * 60));
@@ -149,7 +180,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ? `OPEN/LOCKED ${pendingResolveCount}건 순차 정리`
         : "긴급 토픽 없음 · 신규 생성/품질 관리 권장";
   const topicQueueStressScore = Math.min(100, (statusCounts.OPEN * 11) + (staleOpenCount * 24) + (staleLockedCount * 12));
-  const topicIntegrityRiskScore = Math.min(100, (unresolvedSettledBacklogCount * 35) + (resolvedWithoutResolutionCount * 20));
+  const topicIntegrityRiskScore = Math.min(100, (unresolvedSettledBacklogCount * 35) + (resolvedWithoutResolutionCount * 20) + (settledWithNullPayoutCount * 40) + (nonPositiveBetAmountCount * 25) + (hasPayoutRatioOutlier ? 20 : 0));
   const topicConfidence = topicIntegrityRiskScore === 0 ? "높음" : topicIntegrityRiskScore <= 30 ? "보통" : "낮음";
   const dataModeLabel = canUseDb ? "Live DB" : "Local fallback";
   const oldestPendingTopicHours = topics.length > 0
@@ -244,6 +275,30 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const experienceSignals = [
+    {
+      id: "nav-consistency",
+      label: "Nav consistency",
+      value: selectedStatus === "ALL" && !keyword ? "Clean" : "Filtered",
+      hint: selectedStatus === "ALL" && !keyword ? "기본 토픽 큐 모드" : `status=${selectedStatus}${keyword ? " · keyword" : ""}`,
+      tone: selectedStatus === "ALL" && !keyword ? "ok" : "neutral",
+    },
+    {
+      id: "thumb-flow",
+      label: "Thumb flow",
+      value: `${pendingResolveCount} targets`,
+      hint: nextActionLabel,
+      tone: pendingResolveCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "state-clarity",
+      label: "State clarity",
+      value: integrityIssueTotal > 0 ? "Alert" : "Stable",
+      hint: canUseDb ? "Live guardrails on" : "Fallback data mode",
+      tone: integrityIssueTotal > 0 ? "danger" : canUseDb ? "ok" : "neutral",
+    },
+  ] as const;
+
   const settlementGuardrails = [
     {
       key: "resolved-backlog",
@@ -260,6 +315,27 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
     },
     {
+      key: "payout-null",
+      label: "settled 지급값 누락 없음",
+      count: settledWithNullPayoutCount,
+      helper: "settled=true + payoutAmount null",
+      tone: settledWithNullPayoutCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "non-positive-amount",
+      label: "비정상 금액 없음",
+      count: nonPositiveBetAmountCount,
+      helper: "bet.amount <= 0",
+      tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "payout-ratio-band",
+      label: "배당률 밴드 정상",
+      count: hasPayoutRatioOutlier ? 1 : 0,
+      helper: "정산 5건 이상 시 payout ratio 90~110%",
+      tone: hasPayoutRatioOutlier ? "warning" : "ok",
+    },
+    {
       key: "queue-latency",
       label: "OPEN 지연 24h 이하",
       count: staleOpenCount,
@@ -268,7 +344,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
-  const settlementReadinessScore = Math.max(0, 100 - (unresolvedSettledBacklogCount * 24) - (resolvedWithoutResolutionCount * 16) - (staleOpenCount * 7));
+  const settlementReadinessScore = Math.max(0, 100 - (unresolvedSettledBacklogCount * 24) - (resolvedWithoutResolutionCount * 16) - (settledWithNullPayoutCount * 28) - (nonPositiveBetAmountCount * 18) - (hasPayoutRatioOutlier ? 14 : 0) - (staleOpenCount * 7));
   const settlementReadinessTone = settlementReadinessScore < 60 ? "danger" : settlementReadinessScore < 85 ? "warning" : "ok";
   const settlementReadinessLabel = settlementReadinessScore < 60 ? "긴급 점검 필요" : settlementReadinessScore < 85 ? "주의" : "안정";
   const queueSlaLabel = staleOpenCount > 0 || staleLockedCount > 0
@@ -351,6 +427,33 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
     },
     {
+      key: "payout-null-watch",
+      label: "지급값 누락",
+      count: settledWithNullPayoutCount,
+      description: "settled=true인데 payoutAmount가 비어 있는 데이터",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "정산값 복구",
+      tone: settledWithNullPayoutCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "amount-watch",
+      label: "비정상 금액",
+      count: nonPositiveBetAmountCount,
+      description: "bet.amount <= 0인 비정상 베팅 데이터",
+      href: "/admin/topics?status=ALL",
+      actionLabel: "금액 데이터 검증",
+      tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "ratio-watch",
+      label: "배당률 밴드 이탈",
+      count: hasPayoutRatioOutlier ? 1 : 0,
+      description: `정산 ${settlement._count.id}건 기준 payout ratio ${payoutRatio}%`,
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "정산 레저 재검토",
+      tone: hasPayoutRatioOutlier ? "warning" : "ok",
+    },
+    {
       key: "open-aging-watch",
       label: "OPEN 지연 토픽",
       count: staleOpenCount,
@@ -383,6 +486,15 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       hint: "결과 레코드 누락 연결",
       href: "/admin/topics?status=RESOLVED",
       tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "topic-pack-payout",
+      label: "Payout ledger",
+      count: settledWithNullPayoutCount + (hasPayoutRatioOutlier ? 1 : 0),
+      value: `${settledWithNullPayoutCount + (hasPayoutRatioOutlier ? 1 : 0)}건`,
+      hint: `누락 지급 ${settledWithNullPayoutCount} · 배당률 ${payoutRatio}%`,
+      href: "/admin/topics?status=RESOLVED",
+      tone: settledWithNullPayoutCount > 0 || hasPayoutRatioOutlier ? "danger" : "ok",
     },
     {
       id: "topic-pack-latency",
@@ -422,14 +534,14 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
             <span className="admin-kpi-meta">24시간 이상 OPEN</span>
           </div>
           <div className="admin-pulse-card">
-            <p className="admin-kpi-label">정산 백로그</p>
-            <strong className="admin-kpi-value">{unresolvedSettledBacklogCount}건</strong>
-            <span className="admin-kpi-meta">RESOLVED 상태 미정산</span>
+            <p className="admin-kpi-label">무결성 이슈</p>
+            <strong className="admin-kpi-value">{integrityIssueTotal}건</strong>
+            <span className="admin-kpi-meta">백로그 · 누락 지급 · 결과 불일치 · 비정상 금액 · 배당률</span>
           </div>
           <div className="admin-pulse-card">
-            <p className="admin-kpi-label">결과 불일치</p>
-            <strong className="admin-kpi-value">{resolvedWithoutResolutionCount}건</strong>
-            <span className="admin-kpi-meta">RESOLVED · 결과 없음</span>
+            <p className="admin-kpi-label">정산 배당률</p>
+            <strong className="admin-kpi-value">{payoutRatio}%</strong>
+            <span className="admin-kpi-meta">총 지급 / 총 베팅</span>
           </div>
         </div>
       </section>
@@ -452,6 +564,18 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           <a href="#topic-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-context-bar">
+        <div className="admin-context-grid">
+          {experienceSignals.map((item) => (
+            <article key={item.id} className={`admin-context-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.hint}</small>
+            </article>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-incident-digest-card">
