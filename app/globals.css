@@ -2544,6 +2544,76 @@ body::before {
   font-size: 0.82rem;
 }
 
+.admin-integrity-command-bar {
+  border-color: #cfe4d8;
+  background: linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
+}
+
+.admin-integrity-command-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.admin-integrity-command-grid {
+  margin-top: 0.56rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-integrity-command-item {
+  text-decoration: none;
+  border: 1px solid #d8e6de;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.05);
+  padding: 0.62rem 0.68rem;
+  display: grid;
+  gap: 0.16rem;
+  transition: transform 160ms var(--ease-standard), box-shadow 160ms var(--ease-standard), border-color 160ms var(--ease-standard);
+}
+
+.admin-integrity-command-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.1);
+}
+
+.admin-integrity-command-item span {
+  color: #5b6f64;
+  font-size: 0.71rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.admin-integrity-command-item strong {
+  color: #133629;
+  font-size: 1.04rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-integrity-command-item small {
+  color: #607268;
+  font-size: 0.76rem;
+}
+
+.admin-integrity-command-item.is-danger {
+  border-color: #f1c8c6;
+  background: linear-gradient(180deg, #fff9f9 0%, #fff3f3 100%);
+}
+
+.admin-integrity-command-item.is-warning {
+  border-color: #f1dfbd;
+  background: linear-gradient(180deg, #fffef8 0%, #fff9ec 100%);
+}
+
+.admin-integrity-command-item.is-ok {
+  border-color: #cde7d8;
+  background: linear-gradient(180deg, #f8fdfb 0%, #f1fbf5 100%);
+}
+
 .admin-context-bar {
   border-color: #d2e5da;
   background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
@@ -3728,7 +3798,8 @@ body::before {
 
   .admin-northstar-head,
   .admin-command-head,
-  .admin-lane-head {
+  .admin-lane-head,
+  .admin-integrity-command-head {
     flex-direction: column;
   }
 
@@ -3737,7 +3808,8 @@ body::before {
   .admin-lane-grid,
   .admin-timeline-grid,
   .admin-cadence-grid,
-  .admin-guardrail-grid {
+  .admin-guardrail-grid,
+  .admin-integrity-command-grid {
     grid-template-columns: 1fr;
     gap: 0.45rem;
   }

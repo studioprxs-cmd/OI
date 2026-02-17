@@ -704,6 +704,35 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
       </Card>
 
+      <Card className="admin-integrity-command-bar" aria-label="신고/정산 무결성 즉시 명령">
+        <div className="admin-integrity-command-head">
+          <p className="admin-jump-nav-label">Integrity command bar</p>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>{integrityIssueTotal > 0 ? `복구 ${integrityIssueTotal}건` : "무결성 정상"}</Pill>
+        </div>
+        <div className="admin-integrity-command-grid">
+          <Link href="/admin/topics?status=RESOLVED" className={`admin-integrity-command-item is-${settledWithNullPayoutCount > 0 ? "danger" : "ok"}`}>
+            <span>지급값 누락</span>
+            <strong>{settledWithNullPayoutCount}건</strong>
+            <small>payoutAmount null</small>
+          </Link>
+          <Link href="/admin/topics?status=RESOLVED" className={`admin-integrity-command-item is-${unresolvedSettledBacklogCount > 0 ? "danger" : "ok"}`}>
+            <span>정산 백로그</span>
+            <strong>{unresolvedSettledBacklogCount}건</strong>
+            <small>RESOLVED 미정산</small>
+          </Link>
+          <Link href="/admin/topics?status=RESOLVED" className={`admin-integrity-command-item is-${resolvedWithoutResolutionCount > 0 ? "warning" : "ok"}`}>
+            <span>결과 불일치</span>
+            <strong>{resolvedWithoutResolutionCount}건</strong>
+            <small>resolution 누락</small>
+          </Link>
+          <Link href="#integrity-watch" className={`admin-integrity-command-item is-${hasPayoutRatioOutlier ? "warning" : "ok"}`}>
+            <span>배당률 밴드</span>
+            <strong>{payoutRatio}%</strong>
+            <small>90~110% 기준</small>
+          </Link>
+        </div>
+      </Card>
+
       <Card className="admin-context-bar">
         <div className="admin-context-grid">
           {experienceSignals.map((item) => (
