@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { RELEASE } from "@/lib/release";
 
@@ -39,10 +39,34 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, [pathname, searchParams]);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!profileMenuRef.current) return;
+      if (profileMenuRef.current.contains(event.target as Node)) return;
+      setProfileMenuOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [profileMenuOpen]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -125,10 +149,10 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             </div>
           ) : null}
 
-          <div className="profile-menu-wrap">
+          <div className="profile-menu-wrap" ref={profileMenuRef}>
             <button
               type="button"
-              className="top-nav-link"
+              className={`top-nav-link profile-trigger ${profileMenuOpen ? "is-active" : ""}`}
               onClick={() => setProfileMenuOpen((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={profileMenuOpen}
