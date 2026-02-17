@@ -840,6 +840,33 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const executionCompass = [
+    {
+      id: "compass-now",
+      label: "Now",
+      title: "OPEN 핫큐 정리",
+      detail: `OPEN ${urgentReportCount} · 48h+ ${superStaleActionableCount}`,
+      href: "/admin/moderation?status=OPEN",
+      tone: urgentReportCount > 0 || superStaleActionableCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "compass-next",
+      label: "Next",
+      title: "무결성 하드스톱",
+      detail: `정산 이슈 ${integrityIssueTotal}건 잠금 점검`,
+      href: "/admin/topics?status=RESOLVED",
+      tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
+    },
+    {
+      id: "compass-later",
+      label: "Later",
+      title: "종결 품질 회고",
+      detail: `종결 ${resolvedReportCount} / 전체 ${reports.length}`,
+      href: "/admin/moderation?status=ALL",
+      tone: "neutral",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -946,6 +973,22 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-execution-compass-card" aria-label="운영 실행 나침반">
+        <div className="admin-execution-compass-head">
+          <p className="admin-jump-nav-label">Execution compass</p>
+          <Pill tone={hasCriticalIntegrityIssue ? "danger" : "success"}>{hasCriticalIntegrityIssue ? "Hard-stop active" : "Flow steady"}</Pill>
+        </div>
+        <div className="admin-execution-compass-grid">
+          {executionCompass.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-execution-compass-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-glance-card" aria-label="운영 한눈에 보기">

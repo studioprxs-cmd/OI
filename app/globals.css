@@ -401,17 +401,18 @@ body::before {
 }
 
 .topics-layout {
-  border: 1px solid #cfe6d8;
+  border: 1px solid #bfe0cc;
   border-radius: 22px;
   padding: 0.9rem;
-  background: linear-gradient(180deg, #f7fdf9 0%, #eef8f2 100%);
+  background: linear-gradient(180deg, #edf9f2 0%, #def3e8 100%);
+  box-shadow: 0 12px 26px rgba(10, 110, 60, 0.08);
 }
 
 .topic-head-panel {
-  border: 1px solid #cfe6d8;
+  border: 1px solid #a9d7be;
   border-radius: 18px;
-  background: linear-gradient(180deg, #ffffff 0%, #f2fbf6 100%);
-  box-shadow: 0 10px 24px rgba(18, 92, 56, 0.08);
+  background: linear-gradient(180deg, #f8fffb 0%, #e8f8ef 100%);
+  box-shadow: 0 12px 24px rgba(12, 104, 60, 0.12);
   padding: 1rem;
   display: grid;
   gap: 0.62rem;
@@ -616,6 +617,22 @@ body::before {
   box-shadow: var(--shadow-card);
   padding: 1.05rem;
   transition: transform 180ms var(--ease-standard), box-shadow 180ms var(--ease-standard), border-color 180ms var(--ease-standard);
+}
+
+.feed-card-thumbnail {
+  margin: -1.05rem -1.05rem 0.78rem;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
+  overflow: hidden;
+  border-bottom: 1px solid #e4ede7;
+}
+
+.feed-card-thumbnail img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  display: block;
 }
 
 .widget-card {
@@ -1716,6 +1733,90 @@ body::before {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
   gap: 0.52rem;
+}
+
+.admin-execution-compass-card {
+  padding-top: 0.82rem;
+  padding-bottom: 0.84rem;
+  border-color: #d3e6dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+}
+
+.admin-execution-compass-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.admin-execution-compass-head .admin-jump-nav-label {
+  margin-bottom: 0;
+}
+
+.admin-execution-compass-grid {
+  margin-top: 0.58rem;
+  display: grid;
+  gap: 0.52rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-execution-compass-item {
+  min-height: 86px;
+  border-radius: 14px;
+  border: 1px solid #d7e7de;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  box-shadow: 0 7px 16px rgba(15, 23, 42, 0.05);
+  padding: 0.6rem 0.66rem;
+  text-decoration: none;
+  display: grid;
+  gap: 0.16rem;
+  color: #143628;
+  transition: transform 170ms var(--ease-standard), box-shadow 170ms var(--ease-standard), border-color 170ms var(--ease-standard);
+}
+
+.admin-execution-compass-item:hover {
+  transform: translateY(-1px);
+  border-color: #badcc9;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.11);
+}
+
+.admin-execution-compass-item span {
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: #5f7267;
+}
+
+.admin-execution-compass-item strong {
+  font-size: 0.94rem;
+  letter-spacing: -0.012em;
+  color: #133628;
+}
+
+.admin-execution-compass-item small {
+  font-size: 0.78rem;
+  color: #607368;
+}
+
+.admin-execution-compass-item.is-danger {
+  border-color: #f1c7c5;
+  background: linear-gradient(180deg, #fffafa 0%, #fff4f4 100%);
+}
+
+.admin-execution-compass-item.is-warning {
+  border-color: #f0dfbd;
+  background: linear-gradient(180deg, #fffef9 0%, #fff9ec 100%);
+}
+
+.admin-execution-compass-item.is-ok {
+  border-color: #cde7d8;
+  background: linear-gradient(180deg, #f8fdfb 0%, #f1fbf5 100%);
+}
+
+.admin-execution-compass-item.is-neutral {
+  border-color: #d5e3db;
+  background: linear-gradient(180deg, #fbfefd 0%, #f3f8f5 100%);
 }
 
 .admin-mode-switcher-card {
@@ -4235,6 +4336,7 @@ body::before {
   .admin-command-grid,
   .admin-lane-grid,
   .admin-mode-switcher-grid,
+  .admin-execution-compass-grid,
   .admin-timeline-grid,
   .admin-cadence-grid,
   .admin-guardrail-grid,

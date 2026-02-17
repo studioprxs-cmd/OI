@@ -538,6 +538,33 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const executionCompass = [
+    {
+      id: "topic-compass-now",
+      label: "Now",
+      title: "OPEN 인입 즉시 분류",
+      detail: `OPEN ${statusCounts.OPEN} · 24h+ ${staleOpenCount}`,
+      href: "/admin/topics?status=OPEN",
+      tone: statusCounts.OPEN > 0 || staleOpenCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "topic-compass-next",
+      label: "Next",
+      title: "LOCKED 정산 확정",
+      detail: `LOCKED ${statusCounts.LOCKED}건 처리`,
+      href: "/admin/topics?status=LOCKED",
+      tone: statusCounts.LOCKED > 0 ? "warning" : "ok",
+    },
+    {
+      id: "topic-compass-later",
+      label: "Later",
+      title: "RESOLVED 무결성 검증",
+      detail: `무결성 ${integrityIssueTotal}건 · 배당률 ${payoutRatio}%`,
+      href: "/admin/topics?status=RESOLVED",
+      tone: integrityIssueTotal > 0 ? "danger" : "neutral",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -636,6 +663,22 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           <a href="#topic-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-execution-compass-card" aria-label="토픽 실행 나침반">
+        <div className="admin-execution-compass-head">
+          <p className="admin-jump-nav-label">Execution compass</p>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>{integrityIssueTotal > 0 ? "Integrity lock" : "Flow steady"}</Pill>
+        </div>
+        <div className="admin-execution-compass-grid">
+          {executionCompass.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-execution-compass-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.title}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-integrity-command-bar" aria-label="토픽 정산 무결성 즉시 명령">
