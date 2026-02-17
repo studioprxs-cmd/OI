@@ -11,6 +11,13 @@ import { ReportActions } from "./ReportActions";
 const STATUSES = ["OPEN", "REVIEWING", "CLOSED", "REJECTED"] as const;
 const ACTIONABLE_STATUSES = ["OPEN", "REVIEWING"] as const;
 
+const STATUS_PRIORITY_WEIGHT: Record<(typeof STATUSES)[number], number> = {
+  OPEN: 3,
+  REVIEWING: 2,
+  CLOSED: 1,
+  REJECTED: 0,
+};
+
 type StatusType = (typeof STATUSES)[number];
 
 type ReportView = {
@@ -97,33 +104,43 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
 
-  const filteredReports = reports.filter((report) => {
-    if (selectedStatus !== "ALL" && report.status !== selectedStatus) return false;
+  const filteredReports = reports
+    .filter((report) => {
+      if (selectedStatus !== "ALL" && report.status !== selectedStatus) return false;
 
-    const reportType = report.commentId ? "COMMENT" : "TOPIC";
-    if (selectedType !== "ALL" && selectedType !== reportType) return false;
+      const reportType = report.commentId ? "COMMENT" : "TOPIC";
+      if (selectedType !== "ALL" && selectedType !== reportType) return false;
 
-    if (!keyword) return true;
+      if (!keyword) return true;
 
-    const haystack = [
-      report.reason,
-      report.detail,
-      report.reporterNickname,
-      report.reporterEmail,
-      report.commentContent,
-      report.topicTitle,
-      report.topicId,
-      report.id,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
+      const haystack = [
+        report.reason,
+        report.detail,
+        report.reporterNickname,
+        report.reporterEmail,
+        report.commentContent,
+        report.topicTitle,
+        report.topicId,
+        report.id,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-    return haystack.includes(keyword);
-  });
+      return haystack.includes(keyword);
+    })
+    .sort((a, b) => {
+      const statusDiff = STATUS_PRIORITY_WEIGHT[b.status] - STATUS_PRIORITY_WEIGHT[a.status];
+      if (statusDiff !== 0) return statusDiff;
+
+      const aTs = new Date(a.createdAt).getTime();
+      const bTs = new Date(b.createdAt).getTime();
+      return bTs - aTs;
+    });
 
   const actionableReports = reports.filter((report) => (ACTIONABLE_STATUSES as readonly string[]).includes(report.status));
   const hiddenCommentReportCount = reports.filter((report) => report.commentHidden).length;
+  const urgentReportCount = reports.filter((report) => report.status === "OPEN").length;
 
   return (
     <PageContainer>
@@ -154,7 +171,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           ))}
         </div>
 
-        <form method="get" className="row" style={{ marginTop: "0.7rem", gap: "0.55rem", flexWrap: "wrap" }}>
+        <form method="get" className="row moderation-filter-form" style={{ marginTop: "0.7rem", gap: "0.55rem", flexWrap: "wrap" }}>
           <input type="hidden" name="status" value={selectedStatus} />
           <select
             name="type"
@@ -204,6 +221,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <SectionTitle>우선 처리 큐</SectionTitle>
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
           <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>처리 필요 {actionableReports.length}</Pill>
+          <Pill tone={urgentReportCount > 0 ? "danger" : "neutral"}>긴급 OPEN {urgentReportCount}</Pill>
           <Pill>숨김 댓글 {hiddenCommentReportCount}</Pill>
           <Pill>토픽 신고 {reports.filter((report) => !report.commentId).length}</Pill>
           <Pill>댓글 신고 {reports.filter((report) => Boolean(report.commentId)).length}</Pill>
@@ -222,6 +240,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </Card>
 
       <div className="list">
+        <small style={{ color: "#6b7280" }}>정렬 기준: 상태 우선순위(OPEN → REVIEWING → CLOSED/REJECTED), 이후 최신순</small>
         {selectedStatus === "ALL" && selectedType === "ALL" && !keyword ? (
           <Card>
             <SectionTitle>즉시 확인 권장</SectionTitle>
@@ -233,7 +252,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
         {filteredReports.map((report) => (
           <Card key={report.id}>
-            <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
+            <div className="row moderation-report-head" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
               <div>
                 <strong>{report.reason}</strong>
                 <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
@@ -251,7 +270,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                   </p>
                 ) : null}
               </div>
-              {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
+              <div className="row" style={{ gap: "0.4rem" }}>
+                {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
+                {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
+              </div>
             </div>
 
             {report.commentContent ? (

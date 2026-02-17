@@ -653,6 +653,14 @@ body::before {
   font-size: 0.84rem;
 }
 
+.moderation-filter-form {
+  align-items: stretch;
+}
+
+.moderation-report-head {
+  align-items: flex-start;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -771,6 +779,19 @@ body::before {
 
   .report-preset-button {
     width: 100%;
+  }
+
+  .moderation-filter-form select,
+  .moderation-filter-form input,
+  .moderation-filter-form button {
+    width: 100%;
+    flex: 1 1 100% !important;
+    min-height: 44px;
+  }
+
+  .moderation-report-head {
+    flex-direction: column;
+    gap: 0.45rem;
   }
 }
 
