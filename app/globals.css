@@ -1341,7 +1341,28 @@ body::before {
   }
 
   .top-nav-links {
-    display: none;
+    display: block;
+    width: 100%;
+    order: 2;
+  }
+
+  .top-nav-tabs {
+    width: 100%;
+    gap: 0.2rem;
+    padding: 0.2rem;
+  }
+
+  .top-nav-link {
+    flex: 1 1 0;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0.5rem 0.45rem;
+    font-size: 0.84rem;
+  }
+
+  .top-nav-link-icon {
+    width: auto;
+    margin-right: 0.18rem;
   }
 
   .app-body {
@@ -1349,7 +1370,7 @@ body::before {
     grid-template-columns: 1fr;
     gap: 0.8rem;
     padding-top: 0.8rem;
-    padding-bottom: 1.2rem;
+    padding-bottom: 1rem;
   }
 
   .topic-detail-main {
@@ -1357,35 +1378,7 @@ body::before {
   }
 
   .side-rail {
-    position: static;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 0;
-    border-radius: 14px;
-    padding: 0.35rem;
-    background: #ffffff;
-    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
-  }
-
-  .rail-item {
-    width: 100%;
-    height: auto;
-    min-height: 44px;
-    border-radius: 10px;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.18rem;
-    padding: 0.32rem 0.2rem;
-  }
-
-  .rail-label {
-    display: block;
-    font-size: 0.69rem;
-    font-weight: 700;
-    line-height: 1;
+    display: none;
   }
 }
 
@@ -1690,14 +1683,19 @@ body::before {
 
   .top-nav-links {
     width: 100%;
-    justify-content: space-between;
-    gap: 0.35rem;
+    display: block;
+  }
+
+  .top-nav-tabs {
+    width: 100%;
+    gap: 0.16rem;
+    padding: 0.16rem;
   }
 
   .top-nav-link {
-    min-height: 44px;
-    padding-inline: 0.68rem;
-    font-size: 0.89rem;
+    min-height: 40px;
+    padding-inline: 0.45rem;
+    font-size: 0.8rem;
   }
 
   .admin-kpi-grid {
