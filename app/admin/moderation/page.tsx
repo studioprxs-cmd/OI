@@ -379,6 +379,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const topIntegrityIncident = integrityWatchItems
+    .slice()
+    .sort((a, b) => b.count - a.count)[0];
+
   const nextActionLabel = urgentReportCount > 0
     ? `OPEN 신고 ${urgentReportCount}건부터 처리`
     : counts.REVIEWING > 0
@@ -638,6 +642,28 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-incident-digest-card">
+        <div className="admin-incident-digest-head">
+          <div>
+            <p className="admin-jump-nav-label">Incident digest</p>
+            <h2 className="admin-command-title">현재 가장 큰 무결성 리스크</h2>
+          </div>
+          <Pill tone={topIntegrityIncident && topIntegrityIncident.count > 0 ? "danger" : "success"}>
+            {topIntegrityIncident && topIntegrityIncident.count > 0 ? "Action needed" : "All clear"}
+          </Pill>
+        </div>
+        <div className="admin-incident-digest-body">
+          <div>
+            <strong>{topIntegrityIncident?.label ?? "무결성 경고 없음"}</strong>
+            <p>{topIntegrityIncident?.description ?? "핵심 무결성 지표가 모두 정상 밴드입니다."}</p>
+          </div>
+          <div className="admin-incident-digest-meta">
+            <span className="admin-watch-count">{topIntegrityIncident?.count ?? 0}</span>
+            <Link href={topIntegrityIncident?.href ?? "/admin/topics?status=RESOLVED"} className="btn btn-secondary">즉시 점검</Link>
+          </div>
+        </div>
       </Card>
 
       <Card className="admin-northstar-card">
@@ -1298,7 +1324,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               "상태/타입은 좁히고 검색어는 비우면 큐를 빠르게 복원할 수 있습니다",
               "보고서 ID 또는 토픽 제목 일부만 입력해도 검색됩니다",
             ]}
-            actions={<Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>}
+            actions={
+              <div className="admin-empty-actions-stack">
+                <Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>
+                <div className="admin-empty-shortcuts">
+                  <Link href="/admin/moderation?status=OPEN&type=ALL" className="filter-chip">OPEN 바로가기</Link>
+                  <Link href="/admin/moderation?status=REVIEWING&type=ALL" className="filter-chip">REVIEWING 바로가기</Link>
+                </div>
+              </div>
+            }
           />
         ) : null}
       </div>

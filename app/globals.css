@@ -2299,6 +2299,55 @@ body::before {
   gap: 0.5rem;
 }
 
+.admin-incident-digest-card {
+  border-color: #d4e6dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fcf9 100%);
+}
+
+.admin-incident-digest-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.admin-incident-digest-body {
+  margin-top: 0.62rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.admin-incident-digest-body strong {
+  color: #15392b;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.admin-incident-digest-body p {
+  margin: 0.32rem 0 0;
+  color: #5f7268;
+  font-size: 0.82rem;
+}
+
+.admin-incident-digest-meta {
+  display: grid;
+  justify-items: end;
+  gap: 0.45rem;
+}
+
+.admin-empty-actions-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-empty-shortcuts {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .chip-row-scroll {
   display: flex;
   gap: 0.48rem;
@@ -3477,6 +3526,26 @@ body::before {
   .admin-filter-summary-head {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .admin-incident-digest-head,
+  .admin-incident-digest-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-incident-digest-meta {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .admin-incident-digest-meta .btn {
+    width: 100%;
+  }
+
+  .admin-empty-shortcuts {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .moderation-filter-form select,
