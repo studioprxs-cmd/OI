@@ -138,7 +138,14 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error("DAILY_LIMIT_EXCEEDED");
       }
 
-      if ((currentUserTopicTotal + amount) / (currentTopicPoolTotal + amount) > BET_LIMITS.MAX_POOL_SHARE) {
+      const projectedPoolTotal = currentTopicPoolTotal + amount;
+      const projectedUserShare = projectedPoolTotal > 0
+        ? (currentUserTopicTotal + amount) / projectedPoolTotal
+        : 0;
+
+      // 초기 풀(시드/첫 베팅) 단계에서는 20% 점유율 제한을 강제하면
+      // 어떤 사용자도 첫 베팅을 할 수 없으므로, 기존 풀이 있을 때만 제한을 적용한다.
+      if (currentTopicPoolTotal > 0 && projectedUserShare > BET_LIMITS.MAX_POOL_SHARE) {
         throw new Error("POOL_SHARE_EXCEEDED");
       }
 
