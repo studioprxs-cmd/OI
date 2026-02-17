@@ -55,15 +55,19 @@ export async function localFindUserById(id: string) {
   return data.users.find((u) => u.id === id) ?? null;
 }
 
-export async function localCreateUser(input: { email: string; nickname: string; passwordHash: string }) {
+export async function localCreateUser(input: { email: string; nickname: string; passwordHash: string; initialPoints?: number }) {
   const data = await readData();
+  const initialPoints = Number.isFinite(input.initialPoints)
+    ? Math.max(0, Math.floor(input.initialPoints ?? 0))
+    : 1000;
+
   const user: LocalUser = {
     id: randomUUID(),
     email: input.email,
     nickname: input.nickname,
     role: "USER",
     passwordHash: input.passwordHash,
-    pointBalance: 1000,
+    pointBalance: initialPoints,
     createdAt: new Date().toISOString(),
   };
   data.users.push(user);

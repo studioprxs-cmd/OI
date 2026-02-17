@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { applySessionCookie, createPasswordHash } from "@/lib/auth";
 import { localCreateUser, localFindUserByEmail } from "@/lib/auth-local";
 import { db } from "@/lib/db";
+import { ONBOARDING_POLICY } from "@/lib/onboarding-policy";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -30,10 +31,22 @@ export async function POST(req: NextRequest) {
       email,
       nickname: nickname || email.split("@")[0],
       passwordHash: createPasswordHash(password),
+      initialPoints: ONBOARDING_POLICY.SIGNUP_BONUS_POINTS,
     });
 
     const response = NextResponse.json(
-      { ok: true, data: { id: user.id, email: user.email, nickname: user.nickname, role: user.role }, error: null },
+      {
+        ok: true,
+        data: {
+          id: user.id,
+          email: user.email,
+          nickname: user.nickname,
+          role: user.role,
+          signupBonus: ONBOARDING_POLICY.SIGNUP_BONUS_POINTS,
+          pointBalance: user.pointBalance,
+        },
+        error: null,
+      },
       { status: 201 },
     );
     applySessionCookie(response, user.id);
@@ -45,18 +58,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, data: null, error: "email already exists" }, { status: 409 });
   }
 
-  const user = await db.user.create({
-    data: {
-      email,
-      nickname: nickname || email.split("@")[0],
-      passwordHash: createPasswordHash(password),
-      role: "USER",
-      pointBalance: 1000,
-    },
-    select: { id: true, email: true, nickname: true, role: true },
+  const user = await db.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: {
+        email,
+        nickname: nickname || email.split("@")[0],
+        passwordHash: createPasswordHash(password),
+        role: "USER",
+        pointBalance: ONBOARDING_POLICY.SIGNUP_BONUS_POINTS,
+      },
+      select: { id: true, email: true, nickname: true, role: true, pointBalance: true },
+    });
+
+    await tx.walletTransaction.create({
+      data: {
+        userId: created.id,
+        type: "SIGNUP_BONUS",
+        amount: ONBOARDING_POLICY.SIGNUP_BONUS_POINTS,
+        balanceAfter: created.pointBalance,
+        note: "회원가입 보너스 지급",
+      },
+    });
+
+    return created;
   });
 
-  const response = NextResponse.json({ ok: true, data: user, error: null }, { status: 201 });
+  const response = NextResponse.json(
+    {
+      ok: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        nickname: user.nickname,
+        role: user.role,
+        signupBonus: ONBOARDING_POLICY.SIGNUP_BONUS_POINTS,
+        pointBalance: user.pointBalance,
+      },
+      error: null,
+    },
+    { status: 201 },
+  );
   applySessionCookie(response, user.id);
   return response;
 }
