@@ -2817,6 +2817,67 @@ body::before {
   padding: 0.48rem 0.52rem;
 }
 
+.resolve-decision-card {
+  border-color: #d4e8dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.resolve-decision-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.resolve-decision-head strong {
+  color: #123829;
+  font-size: 0.95rem;
+}
+
+.resolve-decision-head span {
+  color: #4f6658;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.resolve-decision-grid {
+  margin-top: 0.62rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.resolve-decision-item {
+  border: 1px solid #d8e7de;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.58rem 0.62rem;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.resolve-decision-item small {
+  color: #63756a;
+  font-size: 0.73rem;
+}
+
+.resolve-decision-item strong {
+  color: #133629;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+}
+
+.resolve-decision-item.is-ok {
+  border-color: #bde4cd;
+  background: linear-gradient(180deg, #f7fdf9 0%, #effaf3 100%);
+}
+
+.resolve-decision-item.is-warning {
+  border-color: #f1dfbd;
+  background: linear-gradient(180deg, #fffef9 0%, #fff8ed 100%);
+}
+
 .resolve-submit-bar {
   position: sticky;
   bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-floating-layer-gap));
@@ -3698,6 +3759,16 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .resolve-decision-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .resolve-decision-grid {
+    grid-template-columns: 1fr;
+  }
+
   .resolve-summary-preset-row {
     grid-template-columns: 1fr;
   }
@@ -3902,7 +3973,7 @@ body::before {
     --mobile-resolve-submit-height: 3.2rem;
     --mobile-floating-layer-gap: 0.32rem;
     --mobile-global-nav-height: 4.2rem;
-    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 0.86rem);
+    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 0.86rem);
     --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.75rem);
   }
 

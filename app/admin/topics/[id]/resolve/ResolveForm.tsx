@@ -149,6 +149,17 @@ export function ResolveForm({ topicId }: Props) {
     },
   ];
 
+  const integrityPassCount = integrityChecklist.filter((item) => item.ok).length;
+  const integrityTotalCount = integrityChecklist.length;
+  const canSubmit = !isLoading
+    && !alreadyResolved
+    && !isBlockedStatus
+    && !hasDuplicateBetIds
+    && summaryTrimmed.length >= MIN_SUMMARY_LENGTH
+    && (!requiresNoWinnerConfirm || (confirmNoWinner && noWinnerPhraseMatched))
+    && (!hasPayoutDelta || (confirmPayoutDelta && payoutDeltaPhraseMatched))
+    && (!hasMultiplierOutlier || (confirmMultiplierOutlier && multiplierOutlierPhraseMatched));
+
   useEffect(() => {
     if (!requiresNoWinnerConfirm) {
       setConfirmNoWinner(false);
@@ -498,10 +509,31 @@ export function ResolveForm({ topicId }: Props) {
           ))}
         </div>
       </Field>
+      <Card className="resolve-decision-card">
+        <div className="resolve-decision-head">
+          <strong>Decision readiness</strong>
+          <span>{integrityPassCount}/{integrityTotalCount} checks pass</span>
+        </div>
+        <div className="resolve-decision-grid" aria-live="polite">
+          <div className={`resolve-decision-item ${canSubmit ? "is-ok" : "is-warning"}`}>
+            <small>Submit status</small>
+            <strong>{canSubmit ? "Ready to settle" : "More checks needed"}</strong>
+          </div>
+          <div className="resolve-decision-item">
+            <small>Selected outcome</small>
+            <strong>{result}</strong>
+          </div>
+          <div className="resolve-decision-item">
+            <small>Expected payout</small>
+            <strong>{Number(selectedPreview?.payoutTotal ?? 0).toLocaleString("ko-KR")}pt</strong>
+          </div>
+        </div>
+      </Card>
+
       <div className="resolve-submit-bar">
         <Button
           type="submit"
-          disabled={isLoading || alreadyResolved || isBlockedStatus || hasDuplicateBetIds || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched)) || (hasMultiplierOutlier && (!confirmMultiplierOutlier || !multiplierOutlierPhraseMatched))}
+          disabled={!canSubmit}
         >
           {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
         </Button>
