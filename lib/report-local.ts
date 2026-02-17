@@ -142,6 +142,26 @@ export async function localUpdateReportStatus(input: {
   return report;
 }
 
+export async function localDeleteReport(input: { id: string; reporterId: string }) {
+  const data = await readData();
+  const index = data.reports.findIndex((item) => item.id === input.id);
+  if (index < 0) return null;
+
+  const report = data.reports[index];
+  if (report.reporterId !== input.reporterId) {
+    return null;
+  }
+
+  if (!isActiveReportStatus(report.status)) {
+    return { ok: false as const, reason: "NOT_ACTIONABLE" as const };
+  }
+
+  data.reports.splice(index, 1);
+  await writeData(data);
+
+  return { ok: true as const, report };
+}
+
 export async function localIsCommentHidden(commentId: string) {
   const data = await readData();
   return data.hiddenCommentIds.includes(commentId);

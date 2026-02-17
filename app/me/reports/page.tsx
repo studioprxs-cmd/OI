@@ -6,6 +6,8 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
 
+import { WithdrawReportButton } from "./WithdrawReportButton";
+
 type ReportRow = {
   id: string;
   reason: string;
@@ -31,6 +33,10 @@ function statusHint(status: ReportRow["status"]): string {
   if (status === "REVIEWING") return "검토 진행 중";
   if (status === "CLOSED") return "처리 완료";
   return "반려";
+}
+
+function isActionable(status: ReportRow["status"]) {
+  return status === "OPEN" || status === "REVIEWING";
 }
 
 function moderationOutcome(report: ReportRow): string | null {
@@ -142,6 +148,12 @@ export default async function MyReportsPage() {
             </div>
 
             <p style={{ margin: "0.55rem 0 0", color: "#374151" }}>{statusHint(report.status)}</p>
+
+            {isActionable(report.status) ? (
+              <div style={{ marginTop: "0.5rem" }}>
+                <WithdrawReportButton reportId={report.id} />
+              </div>
+            ) : null}
 
             {moderationOutcome(report) ? (
               <p style={{ margin: "0.35rem 0 0", color: "#065f46", fontWeight: 600 }}>{moderationOutcome(report)}</p>
