@@ -5,6 +5,7 @@ import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel }
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
+import { getInflationSnapshot } from "@/lib/ops-dashboard";
 
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 
@@ -115,6 +116,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const settledWithNullPayoutCount = canUseDb
     ? await db.bet.count({ where: { settled: true, payoutAmount: null } }).catch(() => 0)
     : 0;
+
+  const inflationSnapshot = await getInflationSnapshot(7);
 
   const unresolvedSettledBacklogCount = canUseDb
     ? await db.bet
@@ -337,6 +340,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + missingSettlementLedgerTxCount + duplicateSettlementLedgerTxCount + duplicateRefundLedgerTxCount + orphanTargetReportCount + (hasPayoutRatioOutlier ? 1 : 0);
   const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || missingSettlementLedgerTxCount > 0 || duplicateSettlementLedgerTxCount > 0 || duplicateRefundLedgerTxCount > 0 || hasPayoutRatioOutlier;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
+  const burnRatioPercent = Math.round(inflationSnapshot.totals.burnToIssueRatio * 100);
+  const inflationTone = burnRatioPercent >= 70 ? "ok" : burnRatioPercent >= 50 ? "warning" : "danger";
+  const inflationStateLabel = burnRatioPercent >= 70 ? "Healthy" : burnRatioPercent >= 50 ? "Warning" : "Critical";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
@@ -1100,6 +1106,28 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               <span className="admin-northstar-cta">{item.cta} →</span>
             </Link>
           ))}
+        </div>
+      </Card>
+
+      <Card className="admin-cadence-card" aria-label="포인트 인플레이션 모니터">
+        <SectionTitle>Inflation monitor (7d)</SectionTitle>
+        <p className="admin-card-intro">보상 발행(VOTE/COMMENT) 대비 정산 수수료 소각 비율을 추적해 운영 밴드를 유지합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.68rem" }}>
+          <div className={`ops-health-item is-${inflationTone}`}>
+            <span className="ops-health-label">Burn / Issue</span>
+            <strong className="ops-health-value">{burnRatioPercent}%</strong>
+            <small>{inflationStateLabel} · 기준 70%/50%</small>
+          </div>
+          <div className="ops-health-item is-warning">
+            <span className="ops-health-label">Issued</span>
+            <strong className="ops-health-value">{inflationSnapshot.totals.issuedPoints.toLocaleString()}pt</strong>
+            <small>최근 7일 보상 발행 총합</small>
+          </div>
+          <div className="ops-health-item is-ok">
+            <span className="ops-health-label">Burned</span>
+            <strong className="ops-health-value">{inflationSnapshot.totals.burnedPoints.toLocaleString()}pt</strong>
+            <small>최근 7일 정산 수수료 소각</small>
+          </div>
         </div>
       </Card>
 
