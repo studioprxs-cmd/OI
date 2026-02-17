@@ -213,6 +213,67 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const settlementReadinessScore = Math.max(0, 100 - (unresolvedSettledBacklogCount * 24) - (resolvedWithoutResolutionCount * 16) - (staleOpenCount * 7));
+  const settlementReadinessTone = settlementReadinessScore < 60 ? "danger" : settlementReadinessScore < 85 ? "warning" : "ok";
+  const settlementReadinessLabel = settlementReadinessScore < 60 ? "긴급 점검 필요" : settlementReadinessScore < 85 ? "주의" : "안정";
+
+  const executionTimeline = [
+    {
+      id: "topic-now",
+      label: "Now",
+      title: "OPEN 인입 큐 정리",
+      detail: `OPEN ${statusCounts.OPEN}건 · 24h+ ${staleOpenCount}건`,
+      href: "/admin/topics?status=OPEN",
+      tone: statusCounts.OPEN > 0 || staleOpenCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "topic-next",
+      label: "Next",
+      title: "LOCKED 정산/결과 확정",
+      detail: `LOCKED ${statusCounts.LOCKED}건`,
+      href: "/admin/topics?status=LOCKED",
+      tone: statusCounts.LOCKED > 0 ? "warning" : "ok",
+    },
+    {
+      id: "topic-later",
+      label: "Later",
+      title: "RESOLVED 무결성 검증",
+      detail: `무결성 이슈 ${integrityIssueTotal}건`,
+      href: "/admin/topics?status=RESOLVED",
+      tone: integrityIssueTotal > 0 ? "danger" : "ok",
+    },
+  ] as const;
+
+  const integrityWatchItems = [
+    {
+      key: "resolved-backlog-watch",
+      label: "RESOLVED 미정산",
+      count: unresolvedSettledBacklogCount,
+      description: "RESOLVED 토픽인데 settled=false 베팅이 남은 상태",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "백로그 정산 진행",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "resolution-missing-watch",
+      label: "결과 레코드 누락",
+      count: resolvedWithoutResolutionCount,
+      description: "status=RESOLVED + resolution=null 데이터",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "결과 레코드 복구",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+    {
+      key: "open-aging-watch",
+      label: "OPEN 지연 토픽",
+      count: staleOpenCount,
+      description: "24시간 이상 OPEN으로 남아 있는 토픽",
+      href: "/admin/topics?status=OPEN",
+      actionLabel: "우선 트리아지",
+      tone: staleOpenCount > 0 ? "warning" : "ok",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -276,7 +337,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         <p className="admin-jump-nav-label">Quick jump</p>
         <div className="admin-jump-nav" aria-label="토픽 운영 섹션 바로가기">
           <a href="#topic-priority" className="admin-jump-nav-item">우선순위</a>
-          <a href="#topic-spotlight" className="admin-jump-nav-item">스포트라이트</a>
+          <a href="#topic-execution" className="admin-jump-nav-item">실행 타임라인</a>
           <a href="#topic-integrity-watch" className="admin-jump-nav-item">무결성 워치</a>
           <a href="#topic-list" className="admin-jump-nav-item">토픽 리스트</a>
         </div>
@@ -372,9 +433,40 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         <p className="admin-muted-note">Next best action: {nextActionLabel}</p>
       </Card>
 
+      <Card id="topic-execution" className="admin-timeline-card">
+        <SectionTitle>Execution timeline</SectionTitle>
+        <p className="admin-card-intro">Now → Next → Later 순서로 토픽 운영 흐름을 고정해 모바일에서도 우선순위를 놓치지 않게 합니다.</p>
+        <div className="admin-timeline-grid" style={{ marginTop: "0.68rem" }}>
+          {executionTimeline.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-timeline-item is-${item.tone}`}>
+              <span className="admin-timeline-label">{item.label}</span>
+              <strong>{item.title}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
+      </Card>
+
       <Card id="topic-integrity-watch" className="admin-surface-card admin-guardrail-card">
         <SectionTitle>Settlement integrity watch</SectionTitle>
         <p className="admin-muted-note">정산 전 필수 체크 3가지를 고정해 토픽 상태와 결과 정합성을 빠르게 검증합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.68rem" }}>
+          <div className={`ops-health-item is-${settlementReadinessTone}`}>
+            <span className="ops-health-label">Readiness score</span>
+            <strong className="ops-health-value">{settlementReadinessScore}</strong>
+            <small>{settlementReadinessLabel} · 무결성 이슈 {integrityIssueTotal}건</small>
+          </div>
+          <div className={`ops-health-item ${statusCounts.LOCKED > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Locked queue</span>
+            <strong className="ops-health-value">{statusCounts.LOCKED}건</strong>
+            <small>정산/결과 확정 대기 토픽</small>
+          </div>
+          <div className={`ops-health-item ${staleOpenCount > 0 ? "is-danger" : "is-ok"}`}>
+            <span className="ops-health-label">Open latency</span>
+            <strong className="ops-health-value">{staleOpenCount}건</strong>
+            <small>24시간 이상 OPEN 토픽</small>
+          </div>
+        </div>
         <div className="admin-guardrail-grid" style={{ marginTop: "0.65rem" }}>
           {settlementGuardrails.map((item) => (
             <article key={item.key} className={`admin-guardrail-item is-${item.tone}`}>
@@ -382,6 +474,16 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
               <small>{item.helper}</small>
               <span>{item.count === 0 ? "PASS" : `${item.count}건`}</span>
             </article>
+          ))}
+        </div>
+        <div className="admin-watch-grid" style={{ marginTop: "0.68rem" }}>
+          {integrityWatchItems.map((item) => (
+            <Link key={item.key} href={item.href} className={`admin-watch-card is-${item.tone}`}>
+              <span className="admin-watch-count">{item.count}</span>
+              <strong className="admin-watch-title">{item.label}</strong>
+              <small className="admin-watch-description">{item.description}</small>
+              <span className="admin-watch-action">{item.actionLabel} →</span>
+            </Link>
           ))}
         </div>
       </Card>
