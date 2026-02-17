@@ -705,6 +705,111 @@ body::before {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
+.admin-command-card {
+  padding-top: 0.88rem;
+  padding-bottom: 0.86rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+}
+
+.admin-command-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.admin-command-kicker {
+  margin: 0;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5f7267;
+  font-weight: 700;
+}
+
+.admin-command-title {
+  margin: 0.28rem 0 0;
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+  color: #143426;
+}
+
+.admin-command-warning {
+  margin: 0.58rem 0 0;
+  border: 1px solid #f5dec5;
+  border-radius: 12px;
+  background: #fff8ef;
+  color: #845229;
+  padding: 0.58rem 0.62rem;
+  font-size: 0.81rem;
+  line-height: 1.4;
+}
+
+.admin-command-grid {
+  margin-top: 0.68rem;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-command-item {
+  border: 1px solid #d8e6de;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 0.62rem;
+  display: grid;
+  gap: 0.35rem;
+  position: relative;
+  min-height: 122px;
+}
+
+.admin-command-item strong {
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  color: #17372a;
+}
+
+.admin-command-item p {
+  margin: 0;
+  color: #607269;
+  font-size: 0.79rem;
+  line-height: 1.38;
+}
+
+.admin-command-step {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem;
+  background: #ecf5ef;
+  color: #2c5b43;
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.admin-command-value {
+  margin-top: auto;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #102f22;
+}
+
+.admin-command-item.is-danger {
+  border-color: #f1c8c6;
+  background: linear-gradient(180deg, #fff9f9 0%, #fff3f3 100%);
+}
+
+.admin-command-item.is-warning {
+  border-color: #f1dfbb;
+  background: linear-gradient(180deg, #fffdf6 0%, #fff8ea 100%);
+}
+
+.admin-command-item.is-ok {
+  border-color: #cde6d8;
+  background: linear-gradient(180deg, #f8fdfb 0%, #f1faf5 100%);
+}
+
 .feed-card-head {
   display: flex;
   justify-content: space-between;
@@ -2336,6 +2441,21 @@ body::before {
   .admin-jump-nav-item {
     min-height: 44px;
     font-size: 0.8rem;
+  }
+
+  .admin-command-head {
+    flex-direction: column;
+  }
+
+  .admin-command-grid {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .admin-command-item {
+    border-radius: 12px;
+    min-height: 0;
+    padding: 0.64rem 0.66rem;
   }
 
   .admin-flow-grid,

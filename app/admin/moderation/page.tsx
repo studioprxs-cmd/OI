@@ -288,6 +288,27 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     : staleActionableCount > 0
       ? "주의"
       : "정상";
+  const dataModeLabel = canUseDb ? "Live DB" : "Local fallback";
+  const operationsChecklist = [
+    {
+      label: "OPEN 큐 1차 트리아지",
+      value: `${urgentReportCount}건`,
+      tone: urgentReportCount > 0 ? "danger" : "ok",
+      hint: "신규 신고를 즉시 REVIEWING 또는 종료로 이동",
+    },
+    {
+      label: "48h+ 지연 처리",
+      value: `${superStaleActionableCount}건`,
+      tone: superStaleActionableCount > 0 ? "danger" : staleActionableCount > 0 ? "warning" : "ok",
+      hint: "SLA 위험 신고를 우선 닫아 큐 체류시간 축소",
+    },
+    {
+      label: "정산 무결성 잠금",
+      value: `${integrityIssueTotal}건`,
+      tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
+      hint: "누락 지급/백로그/결과 레코드 정합성 확인",
+    },
+  ] as const;
 
   return (
     <PageContainer>
@@ -339,6 +360,29 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           { href: "/admin/moderation?status=OPEN", label: "긴급 OPEN", badge: urgentReportCount, active: false },
         ]}
       />
+
+      <Card className="admin-command-card">
+        <div className="admin-command-head">
+          <div>
+            <p className="admin-command-kicker">Ops command rail</p>
+            <h2 className="admin-command-title">지금 해야 할 3가지</h2>
+          </div>
+          <Pill tone={canUseDb ? "success" : "neutral"}>{dataModeLabel}</Pill>
+        </div>
+        {!canUseDb ? (
+          <p className="admin-command-warning">DATABASE_URL 미설정 상태라 로컬 fallback 데이터 기준으로 노출됩니다. 운영 점검 전 배포 환경 변수 확인을 권장합니다.</p>
+        ) : null}
+        <div className="admin-command-grid">
+          {operationsChecklist.map((item, index) => (
+            <article key={item.label} className={`admin-command-item is-${item.tone}`}>
+              <span className="admin-command-step">P{index + 1}</span>
+              <strong>{item.label}</strong>
+              <p>{item.hint}</p>
+              <span className="admin-command-value">{item.value}</span>
+            </article>
+          ))}
+        </div>
+      </Card>
 
       <Card className="admin-jump-nav-card">
         <p className="admin-jump-nav-label">Quick jump</p>
