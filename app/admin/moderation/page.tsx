@@ -233,6 +233,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
   const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
+  const priorityReports = filteredReports
+    .filter((report) => {
+      if (report.status !== "OPEN" && report.status !== "REVIEWING") return false;
+      const elapsedHours = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60));
+      return report.status === "OPEN" || elapsedHours >= 24;
+    })
+    .slice(0, 5);
 
   return (
     <PageContainer>
@@ -409,6 +416,32 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </Card>
 
       <Card>
+        <SectionTitle>긴급 인박스</SectionTitle>
+        <p className="admin-muted-note">즉시 처리 대상만 모아서 상단으로 끌어올렸습니다. 오래된 OPEN/REVIEWING 건부터 우선 확인하세요.</p>
+        {priorityReports.length > 0 ? (
+          <ul className="simple-list" style={{ marginTop: "0.55rem" }}>
+            {priorityReports.map((report) => {
+              const elapsedHours = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60));
+              return (
+                <li key={report.id}>
+                  <Link href={`#report-${report.id}`} className="text-link">
+                    [{report.status}] {report.reason}
+                  </Link>
+                  <small style={{ color: "#6b7280" }}> · 경과 {Math.max(elapsedHours, 0)}시간</small>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <StatePanel
+            title="긴급 처리 대상이 없습니다"
+            description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
+            tone="success"
+          />
+        )}
+      </Card>
+
+      <Card>
         <SectionTitle>정산 현황</SectionTitle>
         <p className="admin-muted-note">
           정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {totalSettledAmount.toLocaleString("ko-KR")} pt · 총 지급 {totalPayoutAmount.toLocaleString("ko-KR")} pt
@@ -498,7 +531,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
           return (
             <Card key={report.id}>
-              <article className="moderation-report-card admin-list-card">
+              <article id={`report-${report.id}`} className="moderation-report-card admin-list-card">
                 <div className="moderation-report-headline admin-list-card-head">
                   <div>
                     <p className="admin-list-card-kicker">신고 #{report.id.slice(0, 8)}</p>
