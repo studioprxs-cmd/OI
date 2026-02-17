@@ -4199,6 +4199,10 @@ body::before {
     --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
   }
 
+  .app-shell[data-has-admin-dock="true"] .resolve-submit-bar {
+    bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2));
+  }
+
   .app-shell[data-has-admin-dock="true"][data-has-resolve-submit="true"] {
     --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
   }
@@ -4214,6 +4218,10 @@ body::before {
 
     .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
       --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
+    }
+
+    .app-shell:has(.admin-mobile-dock) .resolve-submit-bar {
+      bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2));
     }
   }
 

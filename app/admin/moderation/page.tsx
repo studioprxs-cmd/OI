@@ -150,6 +150,30 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .catch(() => 0)
     : 0;
 
+  const missingSettlementLedgerTxCount = canUseDb
+    ? await Promise.all([
+      db.bet
+        .findMany({
+          where: { settled: true, payoutAmount: { gt: 0 } },
+          select: { id: true },
+          take: 2000,
+          orderBy: { createdAt: "desc" },
+        })
+        .catch(() => []),
+      db.walletTransaction
+        .findMany({
+          where: { type: "BET_SETTLE", relatedBetId: { not: null } },
+          select: { relatedBetId: true },
+          take: 4000,
+          orderBy: { createdAt: "desc" },
+        })
+        .catch(() => []),
+    ]).then(([winningBets, txs]) => {
+      const txBetIds = new Set(txs.map((tx) => tx.relatedBetId).filter((betId): betId is string => Boolean(betId)));
+      return winningBets.reduce((count, bet) => count + (txBetIds.has(bet.id) ? 0 : 1), 0);
+    })
+    : 0;
+
   const unresolvedSettledBacklogTopics = canUseDb
     ? await db.topic
       .findMany({
@@ -274,14 +298,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const settlementGapAbs = Math.abs(settlementGapAmount);
   const settlementBalanceLabel = settlementGapAbs === 0 ? "균형" : settlementGapAmount > 0 ? "미지급 여지" : "과지급 의심";
   const hasPayoutRatioOutlier = settlement._count.id >= 5 && (payoutRatio < 90 || payoutRatio > 110);
-  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + (hasPayoutRatioOutlier ? 1 : 0);
-  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || hasPayoutRatioOutlier;
+  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + missingSettlementLedgerTxCount + (hasPayoutRatioOutlier ? 1 : 0);
+  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || missingSettlementLedgerTxCount > 0 || hasPayoutRatioOutlier;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
   const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
-  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30) + (hasPayoutRatioOutlier ? 20 : 0));
+  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30) + (missingSettlementLedgerTxCount * 32) + (hasPayoutRatioOutlier ? 20 : 0));
   const queueStressScore = Math.min(100, (urgentReportCount * 10) + (superStaleActionableCount * 24) + (staleActionableCount * 8));
   const settlementConfidence = integrityRiskScore === 0 ? "높음" : integrityRiskScore <= 30 ? "보통" : "낮음";
   const priorityReports = filteredReports
@@ -340,6 +364,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
       cta: "데이터 점검",
     },
+    {
+      id: "recovery-ledger",
+      label: "정산 원장 트랜잭션 복구",
+      count: missingSettlementLedgerTxCount,
+      detail: "payout > 0인데 BET_SETTLE 원장 미기록",
+      href: "/admin/topics?status=RESOLVED",
+      tone: missingSettlementLedgerTxCount > 0 ? "danger" : "ok",
+      cta: "원장 복구",
+    },
   ] as const;
 
   const integrityWatchItems = [
@@ -378,6 +411,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       href: "/admin/topics?status=ALL",
       actionLabel: "베팅 데이터 점검",
       tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "missing-ledger-transaction",
+      label: "정산 원장 누락",
+      count: missingSettlementLedgerTxCount,
+      description: "payout > 0인데 BET_SETTLE 원장 트랜잭션이 없는 건",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "원장 트랜잭션 복구",
+      tone: missingSettlementLedgerTxCount > 0 ? "danger" : "ok",
     },
     {
       key: "payout-ratio-outlier",
@@ -508,6 +550,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       count: nonPositiveBetAmountCount,
       helper: "bet.amount <= 0",
       tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "ledger-transaction",
+      label: "정산 원장 기록 일치",
+      count: missingSettlementLedgerTxCount,
+      helper: "payout > 0 bet 대비 BET_SETTLE 트랜잭션",
+      tone: missingSettlementLedgerTxCount > 0 ? "danger" : "ok",
     },
     {
       key: "payout-band",
@@ -676,8 +725,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">정산 무결성</p>
-            <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건</strong>
-            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액 · 배당률</span>
+            <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + missingSettlementLedgerTxCount}건</strong>
+            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액 · 원장 누락 · 배당률</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">배당률</p>
