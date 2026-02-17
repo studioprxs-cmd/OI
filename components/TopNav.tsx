@@ -22,10 +22,13 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/market", label: "마켓", icon: "▣" },
 ];
 
-export function TopNav({ viewer: _viewer }: { viewer: Viewer }) {
+export function TopNav({ viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const initialSearch = useMemo(() => {
     if (pathname.startsWith("/topics")) {
@@ -46,6 +49,29 @@ export function TopNav({ viewer: _viewer }: { viewer: Viewer }) {
   useEffect(() => {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!profileMenuRef.current) return;
+      if (profileMenuRef.current.contains(event.target as Node)) return;
+      setProfileMenuOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [profileMenuOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -155,6 +181,17 @@ export function TopNav({ viewer: _viewer }: { viewer: Viewer }) {
     };
   }, [pathname]);
 
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.refresh();
+      router.push("/");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -188,6 +225,51 @@ export function TopNav({ viewer: _viewer }: { viewer: Viewer }) {
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </form>
+
+          <div className="profile-menu-wrap" ref={profileMenuRef}>
+            <button
+              type="button"
+              className={`top-search-auth-btn ${profileMenuOpen ? "is-active" : ""}`}
+              onClick={() => setProfileMenuOpen((prev) => !prev)}
+              aria-haspopup="menu"
+              aria-expanded={profileMenuOpen}
+              aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
+            >
+              {viewer ? viewer.nickname : "로그인"}
+            </button>
+            {profileMenuOpen ? (
+              <div className="profile-menu" role="menu">
+                {viewer ? (
+                  <>
+                    <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      내 활동
+                    </Link>
+                    <button
+                      className="profile-menu-item"
+                      type="button"
+                      role="menuitem"
+                      onClick={async () => {
+                        setProfileMenuOpen(false);
+                        await handleLogout();
+                      }}
+                      disabled={isLoggingOut}
+                    >
+                      {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/auth/signin" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      로그인
+                    </Link>
+                    <Link href="/auth/signup" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
+                      회원가입
+                    </Link>
+                  </>
+                )}
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
