@@ -3197,6 +3197,44 @@ body::before {
   flex-wrap: wrap;
 }
 
+.topic-kind-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  background: rgba(6, 84, 44, 0.2);
+}
+
+.topic-kind-tab {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 11px;
+  text-decoration: none;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  color: #ecfff3;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  transition: transform 170ms var(--ease-standard), box-shadow 170ms var(--ease-standard), border-color 170ms var(--ease-standard), background-color 170ms var(--ease-standard), color 170ms var(--ease-standard);
+}
+
+.topic-kind-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(7, 63, 35, 0.2);
+}
+
+.topic-kind-tab.is-active {
+  background: #ffffff;
+  color: #07502f;
+  border-color: #d7f2e2;
+}
+
 .topic-filter-chip {
   min-height: 40px;
   display: inline-flex;
@@ -3791,8 +3829,13 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .topic-kind-tabs {
+    grid-template-columns: 1fr;
+  }
+
   .filter-chip,
-  .topic-filter-chip {
+  .topic-filter-chip,
+  .topic-kind-tab {
     justify-content: center;
     min-height: 44px;
   }

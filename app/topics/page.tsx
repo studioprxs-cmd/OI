@@ -109,20 +109,31 @@ export default async function TopicsPage({ searchParams }: Props) {
               </Link>
               <Link href={buildTopicFilterHref({ status: "ALL" })} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>상태 초기화</Link>
             </div>
-            <div className="topic-filter-row" style={{ marginTop: "0.42rem" }}>
+            <div className="topic-kind-tabs" style={{ marginTop: "0.42rem" }} role="tablist" aria-label="이슈 유형 탭">
               <Link
                 href={buildTopicFilterHref({ kind: "BETTING" })}
-                className={`topic-filter-chip ${kindFilter === "BETTING" ? "is-active" : ""}`}
+                className={`topic-kind-tab ${kindFilter === "BETTING" ? "is-active" : ""}`}
+                role="tab"
+                aria-selected={kindFilter === "BETTING"}
               >
-                베팅 이슈
+                베팅 가능 이슈
               </Link>
               <Link
                 href={buildTopicFilterHref({ kind: "POLL" })}
-                className={`topic-filter-chip ${kindFilter === "POLL" ? "is-active" : ""}`}
+                className={`topic-kind-tab ${kindFilter === "POLL" ? "is-active" : ""}`}
+                role="tab"
+                aria-selected={kindFilter === "POLL"}
               >
                 여론 투표 이슈
               </Link>
-              <Link href={buildTopicFilterHref({ kind: "ALL" })} className={`topic-filter-chip ${kindFilter === "ALL" ? "is-active" : ""}`}>유형 초기화</Link>
+              <Link
+                href={buildTopicFilterHref({ kind: "ALL" })}
+                className={`topic-kind-tab ${kindFilter === "ALL" ? "is-active" : ""}`}
+                role="tab"
+                aria-selected={kindFilter === "ALL"}
+              >
+                전체
+              </Link>
             </div>
           </section>
 
