@@ -95,6 +95,16 @@ export default async function TopicsPage({ searchParams }: Props) {
     })
     .slice(0, 4);
 
+  const topicsHeroReels = filteredTopics
+    .slice()
+    .sort((a, b) => {
+      const aScore = (a.status === "OPEN" ? 1200 : 0) + (a.voteCount * 2) + (a.betCount * 3) + a.commentCount;
+      const bScore = (b.status === "OPEN" ? 1200 : 0) + (b.voteCount * 2) + (b.betCount * 3) + b.commentCount;
+      if (bScore !== aScore) return bScore - aScore;
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    })
+    .slice(0, 3);
+
   const topicExperienceSignals = [
     {
       id: "hierarchy",
@@ -203,6 +213,33 @@ export default async function TopicsPage({ searchParams }: Props) {
                     <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
                     <small>{topic.kind === "BETTING" ? "베팅형" : "여론형"} · 투표 {topic.voteCount} · 댓글 {topic.commentCount}</small>
                     <Link href={`/topics/${topic.id}`} className="btn btn-primary topics-banner-cta">바로 참여</Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="topics-reel-stage" aria-label="토픽 히어로 릴 스테이지">
+            <div className="section-header topics-reel-stage-header">
+              <p className="section-kicker">TOPICS Hero Reels</p>
+              <h2>썸네일 기반 참여 우선순위</h2>
+            </div>
+            <div className="topics-reel-grid" role="list">
+              {topicsHeroReels.map((topic, index) => (
+                <article key={`topics-reel-${topic.id}`} className="topics-reel-card" role="listitem">
+                  <Link href={`/topics/${topic.id}`} className="topics-reel-media" aria-label={`${topic.title} 릴 카드 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 릴 배너`} loading="lazy" />
+                    <span className="topics-reel-rank">REEL {index + 1}</span>
+                  </Link>
+                  <div className="topics-reel-body">
+                    <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
+                    <small>{topic.status === "OPEN" ? "지금 참여 가능" : "결과 확인"} · {topic.kind === "BETTING" ? "베팅형" : "여론형"}</small>
+                    <div className="topics-reel-metrics" aria-label="릴 참여 지표">
+                      <span>투표 {topic.voteCount}</span>
+                      <span>베팅 {topic.betCount}</span>
+                      <span>댓글 {topic.commentCount}</span>
+                    </div>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary topics-reel-cta">참여 액션</Link>
                   </div>
                 </article>
               ))}

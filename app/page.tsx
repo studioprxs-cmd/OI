@@ -69,6 +69,16 @@ export default async function HomePage() {
     })
     .slice(0, 3);
 
+  const visualPulseRail = combined
+    .slice()
+    .sort((a, b) => {
+      const aScore = (a.status === "OPEN" ? 1200 : 0) + (a.voteCount * 2) + (a.betCount * 3) + a.commentCount;
+      const bScore = (b.status === "OPEN" ? 1200 : 0) + (b.voteCount * 2) + (b.betCount * 3) + b.commentCount;
+      if (bScore !== aScore) return bScore - aScore;
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    })
+    .slice(0, 4);
+
   const hotTopic = combined
     .slice()
     .sort((a, b) => {
@@ -120,6 +130,32 @@ export default async function HomePage() {
                     <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
                     <small>{topic.status === "OPEN" ? "지금 참여 가능" : "결과 확인"} · 투표 {topic.voteCount} · 베팅 {topic.betCount}</small>
                     <Link href={`/topics/${topic.id}`} className="btn btn-primary home-banner-cta">참여하기</Link>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="home-pulse-rail" aria-label="홈 비주얼 펄스 레일">
+            <div className="section-header home-pulse-rail-header">
+              <p className="section-kicker">HOME Visual Pulse</p>
+              <h2>이미지 우선 참여 큐</h2>
+            </div>
+            <div className="home-pulse-grid" role="list">
+              {visualPulseRail.map((topic, index) => (
+                <article key={`home-pulse-${topic.id}`} className="home-pulse-card" role="listitem">
+                  <Link href={`/topics/${topic.id}`} className="home-pulse-media" aria-label={`${topic.title} 참여 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 펄스 배너`} loading="lazy" />
+                    <span className="home-pulse-index">#{index + 1}</span>
+                  </Link>
+                  <div className="home-pulse-body">
+                    <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
+                    <small>{topic.status === "OPEN" ? "참여 오픈" : "결과 확인"} · 댓글 {topic.commentCount}</small>
+                    <div className="home-pulse-stats" aria-label="참여 지표">
+                      <span>투표 {topic.voteCount}</span>
+                      <span>베팅 {topic.betCount}</span>
+                    </div>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary home-pulse-cta">바로 참여</Link>
                   </div>
                 </article>
               ))}
