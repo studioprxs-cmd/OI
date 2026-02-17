@@ -125,6 +125,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     })
     .slice(0, 5);
   const spotlightTopics = priorityTopics.slice(0, 3);
+  const staleLockedCount = topics.filter((topic) => topic.status === "LOCKED" && Date.now() - new Date(topic.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
   const nextActionLabel = staleOpenCount > 0
     ? `24h+ OPEN ${staleOpenCount}건부터 우선 정리`
     : statusCounts.LOCKED > 0
@@ -132,6 +133,60 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       : pendingResolveCount > 0
         ? `OPEN/LOCKED ${pendingResolveCount}건 순차 정리`
         : "긴급 토픽 없음 · 신규 생성/품질 관리 권장";
+  const topicQueueStressScore = Math.min(100, (statusCounts.OPEN * 11) + (staleOpenCount * 24) + (staleLockedCount * 12));
+  const topicIntegrityRiskScore = Math.min(100, (unresolvedSettledBacklogCount * 35) + (resolvedWithoutResolutionCount * 20));
+  const topicConfidence = topicIntegrityRiskScore === 0 ? "높음" : topicIntegrityRiskScore <= 30 ? "보통" : "낮음";
+
+  const queueLaneItems = [
+    {
+      id: "topic-open-lane",
+      label: "Intake",
+      title: "OPEN",
+      value: statusCounts.OPEN,
+      meta: staleOpenCount > 0 ? `24h+ ${staleOpenCount}건` : "신규 토픽 점검",
+      tone: statusCounts.OPEN > 0 ? "danger" : "ok",
+      href: "/admin/topics?status=OPEN",
+    },
+    {
+      id: "topic-locked-lane",
+      label: "Settle",
+      title: "LOCKED",
+      value: statusCounts.LOCKED,
+      meta: staleLockedCount > 0 ? `24h+ ${staleLockedCount}건` : "정산/결과 확정",
+      tone: statusCounts.LOCKED > 0 ? "warning" : "ok",
+      href: "/admin/topics?status=LOCKED",
+    },
+    {
+      id: "topic-resolved-lane",
+      label: "Verify",
+      title: "RESOLVED",
+      value: statusCounts.RESOLVED,
+      meta: integrityIssueTotal > 0 ? `무결성 ${integrityIssueTotal}건` : "무결성 유지",
+      tone: integrityIssueTotal > 0 ? "danger" : "ok",
+      href: "/admin/topics?status=RESOLVED",
+    },
+  ] as const;
+
+  const operationsChecklist = [
+    {
+      label: "OPEN 토픽 우선 분류",
+      value: `${statusCounts.OPEN}건`,
+      tone: statusCounts.OPEN > 0 ? "danger" : "ok",
+      hint: "신규 이슈를 빠르게 검수하고 필요 시 LOCKED로 전환",
+    },
+    {
+      label: "LOCKED 정산 처리",
+      value: `${statusCounts.LOCKED}건`,
+      tone: statusCounts.LOCKED > 0 ? "warning" : "ok",
+      hint: "베팅 정산과 결과 기록을 묶어서 완료",
+    },
+    {
+      label: "정산 무결성 점검",
+      value: `${integrityIssueTotal}건`,
+      tone: integrityIssueTotal > 0 ? "danger" : "ok",
+      hint: "RESOLVED 미정산/결과 누락을 우선 복구",
+    },
+  ] as const;
 
   return (
     <PageContainer>
@@ -180,6 +235,78 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-jump-nav-card">
+        <p className="admin-jump-nav-label">Quick jump</p>
+        <div className="admin-jump-nav" aria-label="토픽 운영 섹션 바로가기">
+          <a href="#topic-priority" className="admin-jump-nav-item">우선순위</a>
+          <a href="#topic-spotlight" className="admin-jump-nav-item">스포트라이트</a>
+          <a href="#topic-filter" className="admin-jump-nav-item">필터</a>
+          <a href="#topic-list" className="admin-jump-nav-item">토픽 리스트</a>
+        </div>
+      </Card>
+
+      <Card className="admin-surface-card admin-surface-card-priority">
+        <SectionTitle>토픽 운영 온도계</SectionTitle>
+        <p className="admin-card-intro">큐 체류 시간과 정산 무결성을 점수화해 모바일에서 즉시 대응 우선순위를 고정합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.72rem" }}>
+          <div className={`ops-health-item ${topicQueueStressScore >= 60 ? "is-danger" : topicQueueStressScore >= 30 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Queue Stress</span>
+            <strong className="ops-health-value">{topicQueueStressScore}</strong>
+            <small>OPEN {statusCounts.OPEN} · 24h+ OPEN {staleOpenCount}</small>
+          </div>
+          <div className={`ops-health-item ${topicIntegrityRiskScore >= 45 ? "is-danger" : topicIntegrityRiskScore > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Integrity Risk</span>
+            <strong className="ops-health-value">{topicIntegrityRiskScore}</strong>
+            <small>미정산 백로그 {unresolvedSettledBacklogCount} · 결과 누락 {resolvedWithoutResolutionCount}</small>
+          </div>
+          <div className={`ops-health-item ${topicConfidence === "낮음" ? "is-danger" : topicConfidence === "보통" ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Settlement Confidence</span>
+            <strong className="ops-health-value">{topicConfidence}</strong>
+            <small>토픽 정산 신뢰도 상태</small>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="admin-command-card">
+        <div className="admin-command-head">
+          <div>
+            <p className="admin-command-kicker">Topic command rail</p>
+            <h2 className="admin-command-title">지금 처리할 핵심 3단계</h2>
+          </div>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>Integrity {integrityIssueTotal}</Pill>
+        </div>
+        <div className="admin-command-grid">
+          {operationsChecklist.map((item, index) => (
+            <article key={item.label} className={`admin-command-item is-${item.tone}`}>
+              <span className="admin-command-step">P{index + 1}</span>
+              <strong>{item.label}</strong>
+              <p>{item.hint}</p>
+              <span className="admin-command-value">{item.value}</span>
+            </article>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="admin-lane-card">
+        <div className="admin-lane-head">
+          <div>
+            <p className="admin-jump-nav-label">Topic lanes</p>
+            <h2 className="admin-command-title">한 손 우선순위 처리 레인</h2>
+          </div>
+          <Pill tone={pendingResolveCount > 0 ? "danger" : "success"}>Actionable {pendingResolveCount}</Pill>
+        </div>
+        <div className="admin-lane-grid" style={{ marginTop: "0.62rem" }}>
+          {queueLaneItems.map((lane) => (
+            <Link key={lane.id} href={lane.href} className={`admin-lane-item is-${lane.tone}`}>
+              <span className="admin-lane-label">{lane.label}</span>
+              <strong className="admin-lane-title">{lane.title}</strong>
+              <span className="admin-lane-value">{lane.value}건</span>
+              <small>{lane.meta}</small>
+            </Link>
+          ))}
+        </div>
+      </Card>
+
       <StatePanel
         title={integrityIssueTotal > 0 ? "토픽 정산 무결성 점검 필요" : "토픽 정산 무결성 안정"}
         description={integrityIssueTotal > 0
@@ -194,7 +321,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         )}
       />
 
-      <Card className="admin-surface-card admin-surface-card-priority">
+      <Card id="topic-priority" className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>오늘의 우선순위</SectionTitle>
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
           <Pill tone={pendingResolveCount > 0 ? "danger" : "success"}>처리 필요 {pendingResolveCount}</Pill>
@@ -205,7 +332,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         <p className="admin-muted-note">Next best action: {nextActionLabel}</p>
       </Card>
 
-      <Card>
+      <Card id="topic-spotlight">
         <SectionTitle>모바일 스포트라이트</SectionTitle>
         <p className="admin-muted-note">엄지 한 번으로 지금 처리해야 할 토픽으로 이동합니다.</p>
         {spotlightTopics.length > 0 ? (
@@ -255,7 +382,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         </div>
       </Card>
 
-      <Card>
+      <Card id="topic-filter">
         <SectionTitle>토픽 필터</SectionTitle>
         <div className="chip-row-scroll" style={{ marginTop: "0.72rem" }} aria-label="토픽 상태 필터">
           <Link
@@ -292,7 +419,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         </form>
       </Card>
 
-      <div className="list">
+      <div id="topic-list" className="list">
         {selectedStatus === "ALL" && !keyword ? (
           <StatePanel
             title="오늘의 실행 루틴"
@@ -347,11 +474,14 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           );
         })}
         {filteredTopics.length === 0 ? (
-          <StatePanel
-            title="조건에 맞는 토픽이 없습니다"
-            description="검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요."
-            actions={<Link className="btn btn-secondary" href="/admin/topics?status=ALL">필터 초기화</Link>}
-          />
+          <div className="admin-empty-pattern" role="status">
+            <p className="admin-empty-kicker">No topic match</p>
+            <strong>조건에 맞는 토픽이 없습니다</strong>
+            <p>검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요.</p>
+            <div>
+              <Link className="btn btn-secondary" href="/admin/topics?status=ALL">필터 초기화</Link>
+            </div>
+          </div>
         ) : null}
       </div>
 

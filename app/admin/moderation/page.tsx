@@ -240,6 +240,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
   const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
+  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15));
+  const queueStressScore = Math.min(100, (urgentReportCount * 10) + (superStaleActionableCount * 24) + (staleActionableCount * 8));
+  const settlementConfidence = integrityRiskScore === 0 ? "높음" : integrityRiskScore <= 30 ? "보통" : "낮음";
   const priorityReports = filteredReports
     .filter((report) => {
       if (report.status !== "OPEN" && report.status !== "REVIEWING") return false;
@@ -393,6 +396,28 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           { href: "/admin/moderation?status=OPEN", label: "긴급 OPEN", badge: urgentReportCount, active: false },
         ]}
       />
+
+      <Card className="admin-surface-card admin-surface-card-priority">
+        <SectionTitle>운영 온도계</SectionTitle>
+        <p className="admin-card-intro">큐 체류 시간과 정산 무결성을 점수로 요약해 즉시 대응 우선순위를 고정합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.72rem" }}>
+          <div className={`ops-health-item ${queueStressScore >= 60 ? "is-danger" : queueStressScore >= 30 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Queue Stress</span>
+            <strong className="ops-health-value">{queueStressScore}</strong>
+            <small>OPEN {urgentReportCount} · 48h+ {superStaleActionableCount}</small>
+          </div>
+          <div className={`ops-health-item ${integrityRiskScore >= 45 ? "is-danger" : integrityRiskScore > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Integrity Risk</span>
+            <strong className="ops-health-value">{integrityRiskScore}</strong>
+            <small>누락/백로그/불일치 기반 산출</small>
+          </div>
+          <div className={`ops-health-item ${settlementConfidence === "낮음" ? "is-danger" : settlementConfidence === "보통" ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Settlement Confidence</span>
+            <strong className="ops-health-value">{settlementConfidence}</strong>
+            <small>운영 기준 정산 신뢰도</small>
+          </div>
+        </div>
+      </Card>
 
       <Card className="admin-command-card">
         <div className="admin-command-head">
