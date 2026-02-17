@@ -24,6 +24,25 @@ export function SectionTitle({ children }: LayoutProps) {
   return <h2 className="section-title">{children}</h2>;
 }
 
+type StatePanelProps = {
+  title: ReactNode;
+  description?: ReactNode;
+  tone?: "neutral" | "success" | "warning";
+  actions?: ReactNode;
+};
+
+export function StatePanel({ title, description, tone = "neutral", actions }: StatePanelProps) {
+  return (
+    <section className={`state-panel state-panel-${tone}`}>
+      <div className="state-panel-head">
+        <h3 className="state-panel-title">{title}</h3>
+        {description ? <p className="state-panel-description">{description}</p> : null}
+      </div>
+      {actions ? <div className="state-panel-actions">{actions}</div> : null}
+    </section>
+  );
+}
+
 type ButtonProps = {
   type?: "button" | "submit";
   children: ReactNode;

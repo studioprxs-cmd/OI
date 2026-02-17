@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Card, PageContainer, Pill, SectionTitle } from "@/components/ui";
+import { Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
@@ -179,13 +179,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <select
             name="type"
             defaultValue={selectedType}
-            style={{
-              border: "1px solid rgba(15, 23, 42, 0.15)",
-              borderRadius: "0.65rem",
-              padding: "0.45rem 0.6rem",
-              minWidth: "7.2rem",
-              flex: "1 1 120px",
-            }}
+            className="input moderation-filter-type"
           >
             <option value="ALL">전체 타입</option>
             <option value="COMMENT">댓글 신고</option>
@@ -195,25 +189,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             name="q"
             defaultValue={query?.q ?? ""}
             placeholder="신고/토픽/유저 검색"
-            style={{
-              border: "1px solid rgba(15, 23, 42, 0.15)",
-              borderRadius: "0.65rem",
-              padding: "0.45rem 0.6rem",
-              minWidth: "0",
-              width: "100%",
-              flex: "2 1 220px",
-            }}
+            className="input moderation-filter-search"
           />
           <button
             type="submit"
-            style={{
-              border: "1px solid rgba(15, 23, 42, 0.18)",
-              borderRadius: "0.65rem",
-              background: "#111827",
-              color: "#fff",
-              padding: "0.45rem 0.8rem",
-              fontWeight: 600,
-            }}
+            className="btn btn-primary moderation-filter-submit"
           >
             필터 적용
           </button>
@@ -256,12 +236,16 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
         <small style={{ color: "#6b7280" }}>정렬 기준: 상태 우선순위(OPEN → REVIEWING → CLOSED/REJECTED), 이후 최신순</small>
         {selectedStatus === "ALL" && selectedType === "ALL" && !keyword ? (
-          <Card>
-            <SectionTitle>즉시 확인 권장</SectionTitle>
-            <p style={{ margin: "0.45rem 0 0", color: "#6b7280" }}>
-              OPEN/REVIEWING 신고 {actionableReports.length}건이 대기 중입니다.
-            </p>
-          </Card>
+          <StatePanel
+            title="즉시 확인 권장"
+            description={`OPEN/REVIEWING 신고 ${actionableReports.length}건이 대기 중입니다.`}
+            tone={actionableReports.length > 0 ? "warning" : "success"}
+            actions={
+              actionableReports.length > 0
+                ? <Link href="/admin/moderation?status=OPEN" className="btn btn-primary">OPEN 신고 먼저 보기</Link>
+                : null
+            }
+          />
         ) : null}
 
         {filteredReports.map((report) => (
@@ -309,7 +293,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             </div>
           </Card>
         ))}
-        {filteredReports.length === 0 ? <Card>조건에 맞는 신고가 없습니다.</Card> : null}
+        {filteredReports.length === 0 ? (
+          <StatePanel
+            title="조건에 맞는 신고가 없습니다"
+            description="필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요."
+            actions={<Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>}
+          />
+        ) : null}
       </div>
     </PageContainer>
   );

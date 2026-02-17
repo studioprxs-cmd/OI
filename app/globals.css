@@ -420,7 +420,8 @@ body::before {
 
 .feed-card,
 .widget-card,
-.card {
+.card,
+.state-panel {
   background: linear-gradient(180deg, #fff 0%, #fcfefd 100%);
   border: 1px solid #e2ebe4;
   border-radius: 17px;
@@ -481,6 +482,44 @@ body::before {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
   border-color: #cde6d7;
+}
+
+.state-panel {
+  display: grid;
+  gap: 0.78rem;
+}
+
+.state-panel-head {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.state-panel-title {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
+.state-panel-description {
+  margin: 0;
+  color: #4e6156;
+  font-size: 0.93rem;
+}
+
+.state-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.state-panel-warning {
+  border-color: #f0d8aa;
+  background: linear-gradient(180deg, #fffdf7 0%, #fffaf0 100%);
+}
+
+.state-panel-success {
+  border-color: #cae8d7;
+  background: linear-gradient(180deg, #f8fffb 0%, #f2fcf6 100%);
 }
 
 .feed-card-head {
@@ -772,6 +811,21 @@ body::before {
 
 .moderation-filter-form {
   align-items: stretch;
+}
+
+.moderation-filter-type {
+  min-width: 8.2rem;
+  flex: 1 1 130px;
+}
+
+.moderation-filter-search {
+  min-width: 0;
+  width: 100%;
+  flex: 2 1 240px;
+}
+
+.moderation-filter-submit {
+  min-width: 124px;
 }
 
 .moderation-bulk-row {
@@ -1073,6 +1127,14 @@ body::before {
   .report-preset-row {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .state-panel-actions {
+    width: 100%;
+  }
+
+  .state-panel-actions .btn {
+    width: 100%;
   }
 
   .report-preset-button {

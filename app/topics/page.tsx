@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
-import { OiBadge, Pill, PageContainer } from "@/components/ui";
+import { OiBadge, Pill, PageContainer, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
@@ -87,7 +87,12 @@ export default async function TopicsPage({ searchParams }: Props) {
           </section>
 
           {topics.length === 0 ? (
-            <FeedCard title="아직 생성된 토픽이 없습니다." description="관리자 화면에서 첫 토픽을 생성해보세요." />
+            <StatePanel
+              title="아직 생성된 토픽이 없습니다"
+              description="관리자 화면에서 첫 토픽을 생성해 피드를 시작해보세요."
+              tone="warning"
+              actions={canManage ? <Link href="/admin/topics/new" className="btn btn-primary">첫 토픽 만들기</Link> : null}
+            />
           ) : null}
 
           <section className="feed-section">
@@ -99,10 +104,10 @@ export default async function TopicsPage({ searchParams }: Props) {
               </h2>
             </div>
             {filteredTopics.length === 0 ? (
-              <FeedCard
-                title="검색 결과가 없습니다"
-                description="검색어를 줄이거나 상태 필터를 ALL로 바꿔보세요."
-                meta={`현재 필터: ${statusFilter}${keyword ? ` · 키워드: ${keyword}` : ""}`}
+              <StatePanel
+                title="조건에 맞는 토픽이 없습니다"
+                description={`현재 필터: ${statusFilter}${keyword ? ` · 키워드: ${keyword}` : ""}`}
+                actions={<Link href="/topics" className="btn btn-secondary">전체 토픽 보기</Link>}
               />
             ) : (
               <div className="feed-list">
