@@ -3741,6 +3741,17 @@ body::before {
   white-space: nowrap;
 }
 
+@media (max-width: 640px) {
+  .hot-join-stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hot-join-stack-btn {
+    width: 100%;
+  }
+}
+
 .topic-floating-comment {
   display: none;
 }

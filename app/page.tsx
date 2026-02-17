@@ -102,12 +102,18 @@ export default async function HomePage() {
                 badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}
                 meta={`투표 ${hotTopic.voteCount} · 베팅 ${hotTopic.betCount} · 댓글 ${hotTopic.commentCount}`}
                 footer={
-                  <div className="row" style={{ justifyContent: "space-between", width: "100%" }}>
-                    <small style={{ color: "#5f7468" }}>
-                      지금 참여해서 여론/마켓 흐름을 먼저 잡아보세요
-                    </small>
-                    <Link href={`/topics/${hotTopic.id}`} className="btn btn-primary" style={{ minHeight: "40px" }}>
-                      참여하기
+                  <div className="hot-join-stack">
+                    <div className="hot-join-stack-copy">
+                      <p className="hot-join-stack-title">지금 바로 참여 스택</p>
+                      <small>초반 참여로 흐름을 먼저 선점하세요</small>
+                      <div className="hot-join-stack-chips" aria-label="참여 신호">
+                        <span>투표 {hotTopic.voteCount}</span>
+                        <span>베팅 {hotTopic.betCount}</span>
+                        <span>댓글 {hotTopic.commentCount}</span>
+                      </div>
+                    </div>
+                    <Link href={`/topics/${hotTopic.id}`} className="btn btn-primary hot-join-stack-btn">
+                      지금 참여
                     </Link>
                   </div>
                 }
