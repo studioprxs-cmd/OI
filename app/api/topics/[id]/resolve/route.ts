@@ -165,6 +165,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   try {
     const resolved = await db.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`resolve-topic:${id}`}))`;
+
     const currentTopic = await tx.topic.findUnique({
       where: { id },
       select: {
@@ -246,13 +248,20 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error("DUPLICATE_SETTLEMENT_TX_DETECTED");
       }
 
-      await tx.bet.update({
-        where: { id: bet.id },
+      const settlementUpdate = await tx.bet.updateMany({
+        where: {
+          id: bet.id,
+          settled: false,
+        },
         data: {
           settled: true,
           payoutAmount: bet.payout,
         },
       });
+
+      if (settlementUpdate.count !== 1) {
+        throw new Error("BET_ALREADY_SETTLED_RACE");
+      }
 
       if (bet.payout > 0) {
         const updatedUser = await tx.user.update({
@@ -372,6 +381,17 @@ export async function POST(req: NextRequest, { params }: Params) {
           ok: false,
           data: null,
           error: "동일 베팅에 대한 중복 정산 트랜잭션이 감지되어 정산을 차단했습니다. 원장 정합성을 점검한 뒤 다시 시도하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "BET_ALREADY_SETTLED_RACE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "정산 처리 중 동시성 충돌이 발생해 일부 베팅이 이미 정산되었습니다. 잠시 후 다시 시도하세요.",
         },
         { status: 409 },
       );
