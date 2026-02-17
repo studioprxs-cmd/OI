@@ -77,6 +77,38 @@ export default async function TopicsPage({ searchParams }: Props) {
   const resolvedTopics = topics.filter((topic) => topic.status === "RESOLVED").length;
   const bettingTopics = topics.filter((topic) => topic.kind === "BETTING").length;
   const pollTopics = topics.filter((topic) => topic.kind === "POLL").length;
+  const filteredOpenCount = filteredTopics.filter((topic) => topic.status === "OPEN").length;
+
+  const topicExperienceSignals = [
+    {
+      id: "hierarchy",
+      label: "Visual hierarchy",
+      value: filteredOpenCount > 0 ? "Active" : "Calm",
+      hint: filteredOpenCount > 0 ? `지금 참여 가능 ${filteredOpenCount}건 우선 노출` : "핵심 요약 중심 정돈 상태",
+      tone: filteredOpenCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "spacing",
+      label: "Spacing rhythm",
+      value: "Premium cadence",
+      hint: "카드 간격과 텍스트 리듬을 모바일 기준으로 유지",
+      tone: "neutral",
+    },
+    {
+      id: "thumb",
+      label: "Thumb reach",
+      value: "Primary ready",
+      hint: keyword ? `검색어 “${keyword}” 결과로 바로 진입` : "필터 → 탭 → 리스트 동선 최소화",
+      tone: keyword ? "warning" : "ok",
+    },
+    {
+      id: "states",
+      label: "State clarity",
+      value: filteredTopics.length === 0 ? "Empty" : "Stable",
+      hint: filteredTopics.length === 0 ? "필터 초기화 CTA를 상단에 노출" : "빈 상태/오류 상태 패턴 정돈",
+      tone: filteredTopics.length === 0 ? "danger" : "ok",
+    },
+  ] as const;
 
   return (
     <PageContainer>
@@ -137,6 +169,34 @@ export default async function TopicsPage({ searchParams }: Props) {
                 전체
               </Link>
             </div>
+          </section>
+
+          <section className="topic-command-grid" aria-label="토픽 탐색 빠른 실행">
+            <Link href={buildTopicFilterHref({ status: "OPEN", kind: "ALL" })} className="topic-command-card is-primary">
+              <span>Now</span>
+              <strong>참여 가능한 이슈 보기</strong>
+              <small>OPEN {activeTopics}건 · 지금 바로 참여</small>
+            </Link>
+            <Link href={buildTopicFilterHref({ status: "RESOLVED", kind: "ALL" })} className="topic-command-card is-secondary">
+              <span>Next</span>
+              <strong>종료 이슈 결과 확인</strong>
+              <small>RESOLVED {resolvedTopics}건 · 정산/결과 체크</small>
+            </Link>
+            <Link href={buildTopicFilterHref({})} className="topic-command-card is-neutral">
+              <span>Mode</span>
+              <strong>{statusFilter} · {kindFilter}</strong>
+              <small>{keyword ? `검색어 “${keyword}” 적용` : "필터 없이 전체 탐색"}</small>
+            </Link>
+          </section>
+
+          <section className="topic-polish-strip" aria-label="제품 완성도 신호">
+            {topicExperienceSignals.map((item) => (
+              <article key={item.id} className={`topic-polish-item is-${item.tone}`}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.hint}</small>
+              </article>
+            ))}
           </section>
 
           <section className="topic-summary-grid" aria-label="토픽 요약 지표">
