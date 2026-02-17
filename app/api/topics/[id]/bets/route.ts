@@ -2,8 +2,9 @@ import { Choice } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
-import { BET_LIMITS, getBetLimitError } from "@/lib/betting-policy";
+import { BET_LIMITS } from "@/lib/betting-policy";
 import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
+import { assertBetAmount, assertDailyLimit, assertLossCooldown, assertPoolShare } from "@/lib/betting/validation";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
@@ -49,9 +50,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "choice must be YES or NO" }, { status: 400 });
   }
 
-  const amountError = getBetLimitError(amount);
-  if (amountError) {
-    return NextResponse.json({ ok: false, data: null, error: amountError }, { status: 400 });
+  try {
+    assertBetAmount(amount);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "BET_AMOUNT_INVALID:amount must be a positive integer";
+    return NextResponse.json({ ok: false, data: null, error: message.replace("BET_AMOUNT_INVALID:", "") }, { status: 400 });
   }
 
   const dbUser = await db.user.findUnique({ where: { id: authUser.id } });
@@ -97,18 +100,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         select: { payoutAmount: true, createdAt: true },
       });
 
-      const hasLossStreak =
-        recentSettledBets.length >= BET_LIMITS.COOLDOWN_AFTER_LOSSES
-        && recentSettledBets.every((bet) => (bet.payoutAmount ?? 0) <= 0);
-
-      if (hasLossStreak) {
-        const lastLossAt = recentSettledBets[0]?.createdAt;
-        const elapsedMs = lastLossAt ? Date.now() - new Date(lastLossAt).getTime() : Number.POSITIVE_INFINITY;
-        if (elapsedMs < BET_LIMITS.COOLDOWN_DURATION_MS) {
-          const remainingMs = BET_LIMITS.COOLDOWN_DURATION_MS - elapsedMs;
-          throw new Error(`COOLDOWN_ACTIVE:${remainingMs}`);
-        }
-      }
+      assertLossCooldown(recentSettledBets);
 
       const { start: todayStartKst, end: todayEndKst } = getKstDayRange();
 
@@ -137,20 +129,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       const currentTopicPoolTotal = topicPoolTotal._sum.amount ?? 0;
       const currentUserTodayTotal = userTodayTotal._sum.amount ?? 0;
 
-      if (currentUserTodayTotal + amount > BET_LIMITS.DAILY_LIMIT) {
-        throw new Error("DAILY_LIMIT_EXCEEDED");
-      }
-
-      const projectedPoolTotal = currentTopicPoolTotal + amount;
-      const projectedUserShare = projectedPoolTotal > 0
-        ? (currentUserTopicTotal + amount) / projectedPoolTotal
-        : 0;
-
+      assertDailyLimit(currentUserTodayTotal, amount);
       // 초기 풀(시드/첫 베팅) 단계에서는 20% 점유율 제한을 강제하면
       // 어떤 사용자도 첫 베팅을 할 수 없으므로, 기존 풀이 있을 때만 제한을 적용한다.
-      if (currentTopicPoolTotal > 0 && projectedUserShare > BET_LIMITS.MAX_POOL_SHARE) {
-        throw new Error("POOL_SHARE_EXCEEDED");
-      }
+      assertPoolShare(currentTopicPoolTotal, currentUserTopicTotal, amount);
 
       const [yesPoolAgg, noPoolAgg] = await Promise.all([
         tx.bet.aggregate({
