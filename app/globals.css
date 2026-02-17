@@ -67,16 +67,12 @@ body::before {
 
 .app-shell {
   min-height: 100vh;
-  padding-top: var(--top-nav-height);
   padding-bottom: calc(var(--mobile-safe-bottom) + 0.35rem);
 }
 
 .top-nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 70;
+  position: static;
+  z-index: 40;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(252, 255, 253, 0.9) 100%);
   border-bottom: 1px solid #e3ebe5;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
@@ -2468,6 +2464,67 @@ body::before {
   font-size: 0.82rem;
 }
 
+.admin-context-bar {
+  border-color: #d2e5da;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+}
+
+.admin-context-grid {
+  display: grid;
+  gap: 0.52rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.admin-context-item {
+  border: 1px solid #d7e6de;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
+  padding: 0.64rem 0.68rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-context-item span {
+  color: #607369;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.admin-context-item strong {
+  color: #143629;
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+}
+
+.admin-context-item small {
+  color: #5f7268;
+  font-size: 0.77rem;
+  line-height: 1.35;
+}
+
+.admin-context-item.is-danger {
+  border-color: #f1c7c5;
+  background: linear-gradient(180deg, #fff9f9 0%, #fff3f3 100%);
+}
+
+.admin-context-item.is-warning {
+  border-color: #f0dfbd;
+  background: linear-gradient(180deg, #fffef8 0%, #fff9eb 100%);
+}
+
+.admin-context-item.is-neutral {
+  border-color: #d8e4dc;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8f6 100%);
+}
+
+.admin-context-item.is-ok {
+  border-color: #cde7d8;
+  background: linear-gradient(180deg, #f8fefb 0%, #f1fbf5 100%);
+}
+
 .admin-northstar-card {
   border-color: #d2e5da;
   background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
@@ -3212,10 +3269,6 @@ body::before {
 }
 
 @media (max-width: 900px) {
-  .app-shell {
-    padding-top: 172px;
-  }
-
   .top-nav-inner {
     grid-template-columns: 1fr;
     width: min(100%, 100% - 1.2rem);
@@ -4112,6 +4165,14 @@ body::before {
 @media (max-width: 640px) {
   .admin-error-quick-links {
     grid-template-columns: 1fr;
+  }
+
+  .admin-context-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-context-item {
+    border-radius: 12px;
   }
 }
 
