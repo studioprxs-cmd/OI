@@ -923,9 +923,11 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       </div>
 
       <div className="admin-mobile-dock" aria-label="모바일 토픽 운영 빠른 실행">
-        <Link href="/admin/topics?status=OPEN" className="admin-quick-action-btn">OPEN {statusCounts.OPEN}</Link>
-        <Link href="/admin/topics?status=LOCKED" className="admin-quick-action-btn">LOCKED {statusCounts.LOCKED}</Link>
-        <Link href="/admin/topics/new" className="admin-quick-action-btn">새 토픽</Link>
+        <Link href="/admin/topics?status=OPEN" className={`admin-quick-action-btn${selectedStatus === "OPEN" ? " is-active" : ""}`}>OPEN {statusCounts.OPEN}</Link>
+        <Link href="/admin/topics?status=LOCKED" className={`admin-quick-action-btn${selectedStatus === "LOCKED" ? " is-active" : ""}`}>LOCKED {statusCounts.LOCKED}</Link>
+        <Link href={integrityIssueTotal > 0 ? "#topic-integrity-watch" : "/admin/topics/new"} className="admin-quick-action-btn">
+          {integrityIssueTotal > 0 ? `정산 ${integrityIssueTotal}건` : "새 토픽"}
+        </Link>
       </div>
       <div className="admin-mobile-dock-spacer" aria-hidden />
     </PageContainer>

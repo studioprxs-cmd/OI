@@ -293,12 +293,16 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     .slice(0, 5);
   const spotlightReports = priorityReports.slice(0, 3);
   const nextPriorityReport = priorityReports[0] ?? filteredReports[0] ?? null;
-  const mobileDockTertiaryHref = nextPriorityReport
-    ? `#report-${nextPriorityReport.id}`
-    : "/admin/topics?status=RESOLVED";
-  const mobileDockTertiaryLabel = nextPriorityReport
-    ? "다음 처리"
-    : "정산 점검";
+  const mobileDockTertiaryHref = integrityIssueTotal > 0
+    ? "#integrity-watch"
+    : nextPriorityReport
+      ? `#report-${nextPriorityReport.id}`
+      : "/admin/topics?status=RESOLVED";
+  const mobileDockTertiaryLabel = integrityIssueTotal > 0
+    ? `정산 ${integrityIssueTotal}건`
+    : nextPriorityReport
+      ? "다음 처리"
+      : "정산 점검";
   const settlementRecoveryQueue = [
     {
       id: "recovery-payout-null",

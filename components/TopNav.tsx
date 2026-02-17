@@ -209,7 +209,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             {visibleNavItems.map((item) => {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
-                <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`}>
+                <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
                   <span className="top-nav-link-icon" aria-hidden>{item.icon}</span>
                   <span>{item.label}</span>
                 </Link>

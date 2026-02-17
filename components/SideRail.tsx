@@ -35,6 +35,7 @@ export function SideRail({ viewerRole }: { viewerRole?: string }) {
             key={item.href}
             href={item.href}
             className={`rail-item ${active ? "is-active" : ""}`}
+            aria-current={active ? "page" : undefined}
             aria-label={item.label}
             title={item.label}
           >
