@@ -42,6 +42,12 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
+  const visibleNavItems = NAV_ITEMS.filter((item) => {
+    if (item.adminOnly && viewer?.role !== "ADMIN") return false;
+    if (item.authOnly && !viewer) return false;
+    return true;
+  });
+
   useEffect(() => {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
@@ -117,11 +123,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
         <nav className="top-nav-links" aria-label="글로벌 탐색">
           <div className="top-nav-tabs">
-            {NAV_ITEMS.filter((item) => {
-              if (item.adminOnly && viewer?.role !== "ADMIN") return false;
-              if (item.authOnly && !viewer) return false;
-              return true;
-            }).map((item) => {
+            {visibleNavItems.map((item) => {
               const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
               return (
                 <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`}>
@@ -198,6 +200,18 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           </div>
         </div>
       </div>
+
+      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색">
+        {visibleNavItems.map((item) => {
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <Link key={`mobile-${item.href}`} href={item.href} className={`mobile-bottom-nav-item ${active ? "is-active" : ""}`}>
+              <span className="mobile-bottom-nav-icon" aria-hidden>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </header>
   );
 }
