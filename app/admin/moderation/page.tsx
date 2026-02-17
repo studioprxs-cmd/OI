@@ -207,6 +207,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const counts = Object.fromEntries(
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
+  const nowTs = Date.now();
 
   const filteredReports = reports
     .filter((report) => {
@@ -239,13 +240,21 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
       const aTs = new Date(a.createdAt).getTime();
       const bTs = new Date(b.createdAt).getTime();
+      const aAgeMs = nowTs - aTs;
+      const bAgeMs = nowTs - bTs;
+      const isActionableA = (ACTIONABLE_STATUSES as readonly string[]).includes(a.status);
+      const isActionableB = (ACTIONABLE_STATUSES as readonly string[]).includes(b.status);
+
+      if (isActionableA && isActionableB) {
+        if (bAgeMs !== aAgeMs) return bAgeMs - aAgeMs;
+      }
+
       return bTs - aTs;
     });
 
   const actionableReports = reports.filter((report) => (ACTIONABLE_STATUSES as readonly string[]).includes(report.status));
   const hiddenCommentReportCount = reports.filter((report) => report.commentHidden).length;
   const urgentReportCount = reports.filter((report) => report.status === "OPEN").length;
-  const nowTs = Date.now();
   const staleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
   const superStaleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 48 * 60 * 60 * 1000).length;
   const filteredOpenIds = filteredReports.filter((report) => report.status === "OPEN").map((report) => report.id);

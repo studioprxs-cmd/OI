@@ -102,6 +102,8 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     STATUS_ORDER.map((status) => [status, topics.filter((topic) => topic.status === status).length]),
   ) as Record<(typeof STATUS_ORDER)[number], number>;
 
+  const nowTs = Date.now();
+
   const filteredTopics = topics
     .filter((topic) => {
       if (selectedStatus !== "ALL" && topic.status !== selectedStatus) return false;
@@ -113,7 +115,19 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     .sort((a, b) => {
       const statusDiff = (STATUS_WEIGHT[b.status] ?? -1) - (STATUS_WEIGHT[a.status] ?? -1);
       if (statusDiff !== 0) return statusDiff;
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+
+      const aTs = new Date(a.createdAt).getTime();
+      const bTs = new Date(b.createdAt).getTime();
+      const aAgeMs = nowTs - aTs;
+      const bAgeMs = nowTs - bTs;
+      const prioritizeAgingA = a.status === "OPEN" || a.status === "LOCKED";
+      const prioritizeAgingB = b.status === "OPEN" || b.status === "LOCKED";
+
+      if (prioritizeAgingA && prioritizeAgingB) {
+        if (bAgeMs !== aAgeMs) return bAgeMs - aAgeMs;
+      }
+
+      return bTs - aTs;
     });
 
   const pendingResolveCount = topics.filter((topic) => topic.status === "OPEN" || topic.status === "LOCKED").length;
