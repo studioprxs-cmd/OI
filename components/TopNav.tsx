@@ -107,7 +107,8 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }
 
   return (
-    <header className="top-nav">
+    <>
+      <header className="top-nav">
       <div className="top-nav-inner">
         <Link href="/" className="brand-lockup" aria-label="오늘의 이슈 홈">
           <Image
@@ -200,7 +201,24 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           </div>
         </div>
       </div>
+      </header>
 
-    </header>
+      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색">
+        {visibleNavItems.map((item) => {
+          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          return (
+            <Link
+              key={`mobile-${item.href}`}
+              href={item.href}
+              className={`mobile-bottom-nav-item ${active ? "is-active" : ""}`}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="mobile-bottom-nav-icon" aria-hidden>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
   );
 }

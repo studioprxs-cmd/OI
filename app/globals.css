@@ -26,9 +26,10 @@
   --mobile-comment-cta-height: 3.1rem;
   --mobile-resolve-submit-height: 3.4rem;
   --mobile-floating-layer-gap: 0.42rem;
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 1.05rem);
+  --mobile-global-nav-height: 0px;
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 1.05rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
-  --mobile-floating-stack-offset: 0px;
+  --mobile-floating-stack-offset: var(--mobile-global-nav-height);
 }
 
 html, body {
@@ -84,6 +85,15 @@ body::before {
 
 .mobile-bottom-nav-item {
   text-decoration: none;
+  color: #385145;
+}
+
+.mobile-bottom-nav-icon {
+  width: 1.05rem;
+  display: inline-flex;
+  justify-content: center;
+  font-size: 0.98rem;
+  line-height: 1;
 }
 
 .top-nav-inner {
@@ -2335,7 +2345,7 @@ body::before {
 
 .resolve-submit-bar {
   position: sticky;
-  bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+  bottom: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height) + var(--mobile-floating-layer-gap));
   z-index: 57;
   min-height: var(--mobile-resolve-submit-height);
   padding: 0.48rem;
@@ -2686,6 +2696,49 @@ body::before {
     font-size: 0.92rem;
     flex: 0 0 auto;
     scroll-snap-align: start;
+  }
+
+  .mobile-bottom-nav {
+    --mobile-global-nav-height: 4.45rem;
+    position: fixed;
+    left: 0.7rem;
+    right: 0.7rem;
+    bottom: var(--mobile-safe-bottom);
+    z-index: 56;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding: 0.35rem;
+    border-radius: 14px;
+    border: 1px solid #d6e7de;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+  }
+
+  .mobile-bottom-nav-item {
+    min-height: 48px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.18rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    transition: transform 160ms var(--ease-standard), background-color 160ms var(--ease-standard), border-color 160ms var(--ease-standard), color 160ms var(--ease-standard);
+  }
+
+  .mobile-bottom-nav-item.is-active {
+    color: #066336;
+    border-color: #9fdeb9;
+    background: linear-gradient(180deg, #effcf4 0%, #e4f8ec 100%);
+  }
+
+  .mobile-bottom-nav-item:active {
+    transform: scale(0.98);
   }
 
   .search-field {
@@ -3040,7 +3093,7 @@ body::before {
     position: fixed;
     left: 0.7rem;
     right: 0.7rem;
-    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height) + var(--mobile-floating-layer-gap));
     z-index: 58;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3055,15 +3108,15 @@ body::before {
   }
 
   .app-shell:has(.admin-mobile-dock) {
-    --mobile-floating-stack-offset: calc(var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
   }
 
   .app-shell:has(.resolve-submit-bar) {
-    --mobile-floating-stack-offset: calc(var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
   }
 
   .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
-    --mobile-floating-stack-offset: calc(var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
   }
 
   .admin-mobile-dock .admin-quick-action-btn {
@@ -3122,7 +3175,8 @@ body::before {
     --mobile-comment-cta-height: 2.95rem;
     --mobile-resolve-submit-height: 3.2rem;
     --mobile-floating-layer-gap: 0.32rem;
-    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.86rem);
+    --mobile-global-nav-height: 4.2rem;
+    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 0.86rem);
     --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.75rem);
   }
 
@@ -3211,7 +3265,7 @@ body::before {
   .admin-mobile-dock {
     left: 0.45rem;
     right: 0.45rem;
-    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height) + var(--mobile-floating-layer-gap));
     border-radius: 12px;
     padding: 0.4rem;
     gap: 0.36rem;
