@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { BET_LIMITS, getBetLimitError } from "@/lib/betting-policy";
+import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
@@ -114,6 +115,23 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error("POOL_SHARE_EXCEEDED");
       }
 
+      const [yesPoolAgg, noPoolAgg] = await Promise.all([
+        tx.bet.aggregate({
+          _sum: { amount: true },
+          where: { topicId: id, choice: "YES" },
+        }),
+        tx.bet.aggregate({
+          _sum: { amount: true },
+          where: { topicId: id, choice: "NO" },
+        }),
+      ]);
+
+      const beforeYesPool = yesPoolAgg._sum.amount ?? 0;
+      const beforeNoPool = noPoolAgg._sum.amount ?? 0;
+      const priceSnapshot = calcPrices(beforeYesPool, beforeNoPool);
+      const priceCents = choice === "YES" ? priceSnapshot.yesCents : priceSnapshot.noCents;
+      const estimatedPayout = calcEstimatedPayout(amount, choice, beforeYesPool, beforeNoPool);
+
       const balanceGuard = await tx.user.updateMany({
         where: {
           id: authUser.id,
@@ -155,7 +173,21 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       });
 
-      return { bet, walletTx, balance: updatedUser.pointBalance };
+      const nextYesPool = choice === "YES" ? beforeYesPool + amount : beforeYesPool;
+      const nextNoPool = choice === "NO" ? beforeNoPool + amount : beforeNoPool;
+
+      return {
+        bet,
+        walletTx,
+        balance: updatedUser.pointBalance,
+        priceCents,
+        estimatedPayout,
+        newPoolStats: {
+          yesPool: nextYesPool,
+          noPool: nextNoPool,
+          totalPool: nextYesPool + nextNoPool,
+        },
+      };
     });
 
     return NextResponse.json({ ok: true, data: result, error: null }, { status: 201 });

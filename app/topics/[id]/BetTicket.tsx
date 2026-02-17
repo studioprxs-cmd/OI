@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 
 import { Button, Message } from "@/components/ui";
+import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 
 type Choice = "YES" | "NO";
 
@@ -23,21 +24,15 @@ export function BetTicket({ topicId, yesPool, noPool, canBet, isAuthenticated, b
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const totalPool = yesPool + noPool;
-  const yesPrice = totalPool > 0 ? yesPool / totalPool : 0.5;
-  const noPrice = totalPool > 0 ? noPool / totalPool : 0.5;
+  const { yesCents, noCents } = calcPrices(yesPool, noPool);
 
   const parsedAmount = Number(amount);
   const safeAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? Math.floor(parsedAmount) : 0;
 
-  const estimatedPayout = useMemo(() => {
-    if (!safeAmount) return 0;
-    const selectedPool = choice === "YES" ? yesPool : noPool;
-    const nextTotal = totalPool + safeAmount;
-    const nextSelected = selectedPool + safeAmount;
-    if (nextSelected <= 0) return 0;
-    return Math.floor((safeAmount * nextTotal) / nextSelected);
-  }, [choice, noPool, safeAmount, totalPool, yesPool]);
+  const estimatedPayout = useMemo(
+    () => calcEstimatedPayout(safeAmount, choice, yesPool, noPool),
+    [choice, noPool, safeAmount, yesPool],
+  );
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -78,10 +73,10 @@ export function BetTicket({ topicId, yesPool, noPool, canBet, isAuthenticated, b
     <form className="bet-ticket" onSubmit={onSubmit}>
       <div className="bet-choice-row" role="tablist" aria-label="베팅 선택">
         <button type="button" className={`bet-choice ${choice === "YES" ? "is-active yes" : ""}`} onClick={() => setChoice("YES")}>
-          YES <small>{(yesPrice * 100).toFixed(0)}¢</small>
+          YES <small>{yesCents}¢</small>
         </button>
         <button type="button" className={`bet-choice ${choice === "NO" ? "is-active no" : ""}`} onClick={() => setChoice("NO")}>
-          NO <small>{(noPrice * 100).toFixed(0)}¢</small>
+          NO <small>{noCents}¢</small>
         </button>
       </div>
 
