@@ -73,8 +73,29 @@ export function ResolveForm({ topicId }: Props) {
   const topicStatus = previewData?.topic?.status ?? "";
   const resolvedSettlement = previewData?.resolvedSettlement ?? null;
   const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
-  const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && Number(previewData?.unsettledBetCount ?? 0) > 0;
+  const unsettledCount = Number(previewData?.unsettledBetCount ?? 0);
+  const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && unsettledCount > 0;
   const noWinnerPhraseMatched = noWinnerConfirmPhrase.trim() === NO_WINNER_CONFIRM_PHRASE;
+
+  const integrityChecklist = [
+    {
+      label: "토픽 상태가 정산 가능 상태인지",
+      hint: isBlockedStatus ? `${topicStatus} 상태에서는 정산 불가` : `현재 상태: ${topicStatus || "UNKNOWN"}`,
+      ok: !isBlockedStatus,
+    },
+    {
+      label: "중복 정산 방지",
+      hint: alreadyResolved ? "이미 해결/정산 완료됨" : "아직 해결 기록 없음",
+      ok: !alreadyResolved,
+    },
+    {
+      label: "승리 풀(당첨자 존재) 검증",
+      hint: requiresNoWinnerConfirm
+        ? "승리 베팅 없음 (0pt 지급 정산, 추가 확인 필요)"
+        : `승리 풀 ${Number(selectedPreview?.winnerPool ?? 0).toLocaleString("ko-KR")}pt`,
+      ok: !requiresNoWinnerConfirm,
+    },
+  ];
 
   useEffect(() => {
     if (!requiresNoWinnerConfirm) {
@@ -182,46 +203,60 @@ export function ResolveForm({ topicId }: Props) {
   return (
     <form className="list" onSubmit={onSubmit}>
       <Card>
-        <strong style={{ display: "block", marginBottom: "0.45rem" }}>정산 미리보기</strong>
+        <div className="resolve-preview-head">
+          <strong>정산 미리보기</strong>
+          <small>베팅/지급 영향도 먼저 확인한 뒤 확정하세요.</small>
+        </div>
         {previewLoading ? <p style={{ margin: 0, color: "#6b7280" }}>불러오는 중...</p> : null}
         {previewError ? <Message text={previewError} tone="error" /> : null}
         {!previewLoading && !previewError && previewData?.preview ? (
-          <div className="list" style={{ gap: "0.65rem" }}>
-            <small style={{ color: "#6b7280" }}>
-              토픽 상태 {topicStatus || "UNKNOWN"} · 미정산 베팅 {previewData.unsettledBetCount ?? 0}건
-            </small>
-            <div className="row" style={{ gap: "0.7rem", flexWrap: "wrap" }}>
+          <div className="list" style={{ gap: "0.7rem" }}>
+            <div className="resolve-health-row">
+              <span>토픽 상태 {topicStatus || "UNKNOWN"}</span>
+              <span>미정산 베팅 {unsettledCount}건</span>
+              <span>선택 결과 {result}</span>
+            </div>
+
+            <div className="resolve-choice-grid">
               {(Object.entries(previewData.preview) as Array<[ResultValue, SettlementPreviewSummary]>).map(([side, item]) => {
                 const isSelected = side === result;
                 const multiplier = payoutMultiplier(item);
 
                 return (
-                  <div
+                  <button
                     key={side}
-                    style={{
-                      flex: "1 1 220px",
-                      border: isSelected ? "1px solid #2563eb" : "1px solid rgba(15, 23, 42, 0.08)",
-                      borderRadius: "0.85rem",
-                      boxShadow: isSelected ? "0 0 0 1px rgba(37, 99, 235, 0.15)" : undefined,
-                    }}
+                    type="button"
+                    className={`resolve-choice-card${isSelected ? " is-active" : ""}`}
+                    onClick={() => setResult(side)}
                   >
-                    <Card>
-                      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                        <strong>{side} 승리 시</strong>
-                        <small style={{ color: isSelected ? "#2563eb" : "#6b7280" }}>{isSelected ? "선택됨" : ""}</small>
-                      </div>
-                      <ul className="simple-list muted" style={{ marginTop: "0.5rem" }}>
-                        <li>총 풀 {item.totalPool.toLocaleString("ko-KR")}pt</li>
-                        <li>승리 풀 {item.winnerPool.toLocaleString("ko-KR")}pt</li>
-                        <li>승자 {item.winnerCount}명</li>
-                        <li>예상 총지급 {item.payoutTotal.toLocaleString("ko-KR")}pt</li>
-                        <li>배당 배율 {multiplier > 0 ? `${multiplier.toFixed(2)}x` : "0x"}</li>
-                      </ul>
-                    </Card>
-                  </div>
+                    <div className="resolve-choice-head">
+                      <strong>{side} 승리 시</strong>
+                      <small>{isSelected ? "선택됨" : "탭하여 선택"}</small>
+                    </div>
+                    <div className="resolve-choice-kpi-grid">
+                      <span>총 풀 {item.totalPool.toLocaleString("ko-KR")}pt</span>
+                      <span>승리 풀 {item.winnerPool.toLocaleString("ko-KR")}pt</span>
+                      <span>승자 {item.winnerCount}명</span>
+                      <span>예상 총지급 {item.payoutTotal.toLocaleString("ko-KR")}pt</span>
+                      <span>배당 {multiplier > 0 ? `${multiplier.toFixed(2)}x` : "0x"}</span>
+                    </div>
+                  </button>
                 );
               })}
             </div>
+
+            <div className="integrity-grid">
+              {integrityChecklist.map((item) => (
+                <div key={item.label} className="integrity-card">
+                  <p className="admin-kpi-label" style={{ marginBottom: "0.2rem" }}>{item.label}</p>
+                  <p style={{ margin: 0, color: "#4f6258", fontSize: "0.86rem" }}>{item.hint}</p>
+                  <p style={{ margin: "0.32rem 0 0", fontSize: "0.78rem", fontWeight: 700, color: item.ok ? "#0f6a3d" : "#a7362f" }}>
+                    {item.ok ? "검증 통과" : "추가 확인 필요"}
+                  </p>
+                </div>
+              ))}
+            </div>
+
             {alreadyResolved && resolvedSettlement ? (
               <div className="resolved-settlement-card">
                 <strong style={{ display: "block" }}>확정 정산 결과</strong>
@@ -247,6 +282,7 @@ export function ResolveForm({ topicId }: Props) {
                 ) : null}
               </div>
             ) : null}
+
             {isBlockedStatus ? (
               <Message
                 text={topicStatus === "CANCELED" ? "CANCELED 토픽은 정산할 수 없습니다." : "DRAFT 토픽은 정산할 수 없습니다."}
@@ -296,12 +332,14 @@ export function ResolveForm({ topicId }: Props) {
           placeholder="정산 근거/요약"
         />
       </Field>
-      <Button
-        type="submit"
-        disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
-      >
-        {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
-      </Button>
+      <div className="resolve-submit-bar">
+        <Button
+          type="submit"
+          disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
+        >
+          {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
+        </Button>
+      </div>
       {message ? <Message text={message} tone={message.includes("실패") || message.includes("오류") ? "error" : "info"} /> : null}
     </form>
   );
