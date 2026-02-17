@@ -1974,6 +1974,23 @@ body::before {
   font-size: 0.88rem;
 }
 
+.admin-empty-icon {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  color: #1f5c42;
+  border: 1px solid #beddcc;
+  background: #f2faf5;
+}
+
+.admin-empty-actions {
+  margin-top: 0.32rem;
+}
+
 .admin-critical-banner {
   border: 1px solid #f1c7c5;
   background: linear-gradient(180deg, #fffafa 0%, #fff4f4 100%);

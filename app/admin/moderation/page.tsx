@@ -6,6 +6,8 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
 
+import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
+
 import { BulkModerationActions } from "./BulkModerationActions";
 import { ReportActions } from "./ReportActions";
 
@@ -950,11 +952,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             })}
           </ul>
         ) : (
-          <div className="admin-empty-pattern" role="status">
-            <p className="admin-empty-kicker">Queue stable</p>
-            <strong>긴급 처리 대상이 없습니다</strong>
-            <p>OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다.</p>
-          </div>
+          <AdminEmptyState
+            icon="✓"
+            kicker="Queue stable"
+            title="긴급 처리 대상이 없습니다"
+            description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
+          />
         )}
       </Card>
 
@@ -975,11 +978,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             })}
           </div>
         ) : (
-          <div className="admin-empty-pattern" role="status">
-            <p className="admin-empty-kicker">Spotlight clear</p>
-            <strong>스포트라이트 대상이 없습니다</strong>
-            <p>긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다.</p>
-          </div>
+          <AdminEmptyState
+            icon="✦"
+            kicker="Spotlight clear"
+            title="스포트라이트 대상이 없습니다"
+            description="긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다."
+          />
         )}
       </Card>
 
@@ -1177,14 +1181,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           );
         })}
         {filteredReports.length === 0 ? (
-          <div className="admin-empty-pattern" role="status">
-            <p className="admin-empty-kicker">No matches</p>
-            <strong>조건에 맞는 신고가 없습니다</strong>
-            <p>필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요.</p>
-            <div>
-              <Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>
-            </div>
-          </div>
+          <AdminEmptyState
+            icon="⌕"
+            kicker="No matches"
+            title="조건에 맞는 신고가 없습니다"
+            description="필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요."
+            actions={<Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>}
+          />
         ) : null}
       </div>
 

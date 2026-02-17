@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -505,10 +506,11 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
             })}
           </div>
         ) : (
-          <StatePanel
+          <AdminEmptyState
+            icon="✓"
+            kicker="Spotlight clear"
             title="스포트라이트 대상이 없습니다"
             description="긴급 처리할 OPEN/LOCKED 토픽이 없습니다. 신규 토픽 품질 점검을 진행하세요."
-            tone="success"
           />
         )}
       </Card>
@@ -630,14 +632,13 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           );
         })}
         {filteredTopics.length === 0 ? (
-          <div className="admin-empty-pattern" role="status">
-            <p className="admin-empty-kicker">No topic match</p>
-            <strong>조건에 맞는 토픽이 없습니다</strong>
-            <p>검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요.</p>
-            <div>
-              <Link className="btn btn-secondary" href="/admin/topics?status=ALL">필터 초기화</Link>
-            </div>
-          </div>
+          <AdminEmptyState
+            icon="⌕"
+            kicker="No topic match"
+            title="조건에 맞는 토픽이 없습니다"
+            description="검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요."
+            actions={<Link className="btn btn-secondary" href="/admin/topics?status=ALL">필터 초기화</Link>}
+          />
         ) : null}
       </div>
 
