@@ -292,6 +292,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     })
     .slice(0, 5);
   const spotlightReports = priorityReports.slice(0, 3);
+  const nextPriorityReport = priorityReports[0] ?? filteredReports[0] ?? null;
+  const mobileDockTertiaryHref = nextPriorityReport
+    ? `#report-${nextPriorityReport.id}`
+    : "/admin/topics?status=RESOLVED";
+  const mobileDockTertiaryLabel = nextPriorityReport
+    ? "다음 처리"
+    : "정산 점검";
   const settlementRecoveryQueue = [
     {
       id: "recovery-payout-null",
@@ -1338,9 +1345,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       </div>
 
       <div className="admin-mobile-dock" aria-label="모바일 운영 빠른 실행">
-        <Link href="/admin/moderation?status=OPEN" className="admin-quick-action-btn">OPEN {urgentReportCount}</Link>
-        <Link href="/admin/moderation?status=REVIEWING" className="admin-quick-action-btn">REVIEW {counts.REVIEWING}</Link>
-        <Link href="/admin/topics" className="admin-quick-action-btn">정산 점검</Link>
+        <Link href="/admin/moderation?status=OPEN" className={`admin-quick-action-btn${selectedStatus === "OPEN" ? " is-active" : ""}`}>OPEN {urgentReportCount}</Link>
+        <Link href="/admin/moderation?status=REVIEWING" className={`admin-quick-action-btn${selectedStatus === "REVIEWING" ? " is-active" : ""}`}>REVIEW {counts.REVIEWING}</Link>
+        <Link href={mobileDockTertiaryHref} className="admin-quick-action-btn">
+          {mobileDockTertiaryLabel}
+        </Link>
       </div>
       <div className="admin-mobile-dock-spacer" aria-hidden />
     </PageContainer>

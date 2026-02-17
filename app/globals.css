@@ -3732,6 +3732,16 @@ body::before {
     font-size: 0.78rem;
     justify-content: center;
     padding: 0.5rem 0.45rem;
+    border-color: #cde2d6;
+    background: linear-gradient(180deg, #ffffff 0%, #f4faf6 100%);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  .admin-mobile-dock .admin-quick-action-btn.is-active {
+    border-color: #8fd9af;
+    background: linear-gradient(180deg, #ecfbf3 0%, #def6e8 100%);
+    color: #0e6137;
+    box-shadow: 0 8px 18px rgba(13, 104, 60, 0.16);
   }
 
   .topic-floating-comment {
