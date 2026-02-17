@@ -87,8 +87,8 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section className="feed-section">
-            <div className="section-heading-row section-header">
+          <section className="feed-section hot-issue-section">
+            <div className="section-heading-row section-header hot-issue-header">
               <div>
                 <p className="section-kicker">오늘 가장 뜨거운 이슈</p>
                 <h2>지금 바로 참여</h2>
@@ -96,28 +96,30 @@ export default async function HomePage() {
               <Link href="/topics" className="text-link">전체 보기</Link>
             </div>
             {hotTopic ? (
-              <FeedCard
-                title={<Link href={`/topics/${hotTopic.id}`} className="title-link">{hotTopic.title}</Link>}
-                description={hotTopic.description}
-                badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}
-                meta={`투표 ${hotTopic.voteCount} · 베팅 ${hotTopic.betCount} · 댓글 ${hotTopic.commentCount}`}
-                footer={
-                  <div className="hot-join-stack">
-                    <div className="hot-join-stack-copy">
-                      <p className="hot-join-stack-title">⚡ 지금 바로 참여 스택</p>
-                      <small>초반 참여로 흐름을 먼저 선점하세요 · 마감 전 참여 혜택 구간</small>
-                      <div className="hot-join-stack-chips" aria-label="참여 신호">
-                        <span>투표 {hotTopic.voteCount}</span>
-                        <span>베팅 {hotTopic.betCount}</span>
-                        <span>댓글 {hotTopic.commentCount}</span>
+              <div className="hot-issue-focus">
+                <FeedCard
+                  title={<Link href={`/topics/${hotTopic.id}`} className="title-link">{hotTopic.title}</Link>}
+                  description={hotTopic.description}
+                  badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}
+                  meta={`투표 ${hotTopic.voteCount} · 베팅 ${hotTopic.betCount} · 댓글 ${hotTopic.commentCount}`}
+                  footer={
+                    <div className="hot-join-stack">
+                      <div className="hot-join-stack-copy">
+                        <p className="hot-join-stack-title">⚡ 지금 바로 참여 스택</p>
+                        <small>초반 참여로 흐름을 먼저 선점하세요 · 마감 전 참여 혜택 구간</small>
+                        <div className="hot-join-stack-chips" aria-label="참여 신호">
+                          <span>투표 {hotTopic.voteCount}</span>
+                          <span>베팅 {hotTopic.betCount}</span>
+                          <span>댓글 {hotTopic.commentCount}</span>
+                        </div>
                       </div>
+                      <Link href={`/topics/${hotTopic.id}`} className="btn btn-primary hot-join-stack-btn">
+                        지금 참여
+                      </Link>
                     </div>
-                    <Link href={`/topics/${hotTopic.id}`} className="btn btn-primary hot-join-stack-btn">
-                      지금 참여
-                    </Link>
-                  </div>
-                }
-              />
+                  }
+                />
+              </div>
             ) : null}
           </section>
 

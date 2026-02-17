@@ -3687,6 +3687,35 @@ body::before {
   font-weight: 650;
 }
 
+.hot-issue-section {
+  border: 1px solid #cde9d8;
+  border-radius: 18px;
+  padding: 0.85rem;
+  background: linear-gradient(180deg, #f4fff8 0%, #effbf4 100%);
+  box-shadow: 0 14px 28px rgba(10, 110, 60, 0.08);
+}
+
+.hot-issue-header .section-kicker {
+  color: #0a7240;
+  font-weight: 800;
+}
+
+.hot-issue-header h2 {
+  color: #094f2e;
+  font-size: 1.35rem;
+}
+
+.hot-issue-header .text-link {
+  color: #0a7240;
+  font-weight: 800;
+}
+
+.hot-issue-focus {
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(8, 99, 54, 0.15);
+}
+
 .hot-join-stack {
   width: 100%;
   border: 1px solid #8fd9af;
@@ -3746,6 +3775,15 @@ body::before {
 }
 
 @media (max-width: 640px) {
+  .hot-issue-section {
+    padding: 0.62rem;
+    border-radius: 14px;
+  }
+
+  .hot-issue-header h2 {
+    font-size: 1.2rem;
+  }
+
   .hot-join-stack {
     flex-direction: column;
     align-items: stretch;
