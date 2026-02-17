@@ -126,9 +126,15 @@ export default async function TopicDetailPage({ params }: Props) {
               </div>
               {canReport ? <TopicReportButton topicId={topic.id} /> : null}
             </div>
+            <nav className="topic-anchor-nav" aria-label="토픽 빠른 이동">
+              <a href="#topic-metrics">지표</a>
+              {resolution ? <a href="#topic-settlement">정산</a> : null}
+              <a href="#topic-comment-form">댓글 작성</a>
+              <a href="#topic-comments">최근 댓글</a>
+            </nav>
           </section>
 
-          <section className="feed-section">
+          <section id="topic-metrics" className="feed-section">
             <div className="section-header">
               <p className="section-kicker">실시간 현황</p>
               <h2>투표 · 베팅 지표</h2>
@@ -147,19 +153,24 @@ export default async function TopicDetailPage({ params }: Props) {
           </section>
 
           {resolution ? (
-            <FeedCard title="결과 확정">
-              <div className="list" style={{ gap: "0.5rem" }}>
-                <div className="row" style={{ gap: "0.5rem" }}>
-                  <Pill tone="danger">결과 {resolution.result}</Pill>
-                  <small style={{ color: "#6b7280" }}>{new Date(resolution.resolvedAt).toLocaleString("ko-KR")} 확정</small>
+            <div id="topic-settlement">
+              <FeedCard title="결과 확정">
+                <div className="list" style={{ gap: "0.5rem" }}>
+                  <div className="row" style={{ gap: "0.5rem" }}>
+                    <Pill tone="danger">결과 {resolution.result}</Pill>
+                    <small style={{ color: "#6b7280" }}>{new Date(resolution.resolvedAt).toLocaleString("ko-KR")} 확정</small>
+                  </div>
+                  <p style={{ margin: 0 }}>{resolution.summary}</p>
+                  <small style={{ color: "#6b7280" }}>
+                    정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt · 승리 풀 {winnerPool.toLocaleString("ko-KR")} pt
+                    {winnerPayoutMultiplier > 0 ? ` · 배당 배율 ${winnerPayoutMultiplier.toFixed(2)}x` : " · 배당 없음"}
+                  </small>
+                  <small style={{ color: "#6b7280" }}>
+                    정산 공식: 개인 지급 = 개인 베팅 × (총 베팅 풀 ÷ 승리 선택 풀)
+                  </small>
                 </div>
-                <p style={{ margin: 0 }}>{resolution.summary}</p>
-                <small style={{ color: "#6b7280" }}>
-                  정산 완료 베팅 {settledBetCount}건 · 총 지급 {totalPayout.toLocaleString("ko-KR")} pt · 승리 풀 {winnerPool.toLocaleString("ko-KR")} pt
-                  {winnerPayoutMultiplier > 0 ? ` · 배당 배율 ${winnerPayoutMultiplier.toFixed(2)}x` : " · 배당 없음"}
-                </small>
-              </div>
-            </FeedCard>
+              </FeedCard>
+            </div>
           ) : null}
 
           {viewer && canUseDb && viewerBets.length > 0 ? (
@@ -192,12 +203,15 @@ export default async function TopicDetailPage({ params }: Props) {
             }
           />
 
-          <FeedCard title="댓글 작성">
-            <CommentForm topicId={topic.id} />
-          </FeedCard>
+          <div id="topic-comment-form">
+            <FeedCard title="댓글 작성">
+              <CommentForm topicId={topic.id} />
+            </FeedCard>
+          </div>
 
-          <FeedCard title="최근 댓글">
-            <div className="comment-list">
+          <div id="topic-comments">
+            <FeedCard title="최근 댓글">
+              <div className="comment-list">
               {topic.comments.length === 0 ? <p style={{ margin: 0, color: "#6b7280" }}>아직 댓글이 없습니다.</p> : null}
               {topic.comments.map((comment) => (
                 <article key={comment.id} className="comment-item">
@@ -208,8 +222,11 @@ export default async function TopicDetailPage({ params }: Props) {
                   </div>
                 </article>
               ))}
-            </div>
-          </FeedCard>
+              </div>
+            </FeedCard>
+          </div>
+
+          <a className="topic-floating-comment" href="#topic-comment-form">댓글 쓰기</a>
         </section>
 
         <aside className="widget-column">

@@ -711,6 +711,31 @@ body::before {
   padding: 0.65rem 0.72rem;
 }
 
+.topic-anchor-nav {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.topic-anchor-nav a {
+  text-decoration: none;
+  color: #ebfff3;
+  border: 1px solid rgba(230, 255, 240, 0.55);
+  background: rgba(9, 93, 48, 0.24);
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0.42rem 0.72rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.topic-floating-comment {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -883,6 +908,37 @@ body::before {
   .resolve-confirm-check {
     font-size: 0.85rem;
     padding: 0.58rem 0.62rem;
+  }
+
+  .topic-anchor-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: thin;
+  }
+
+  .topic-anchor-nav a {
+    white-space: nowrap;
+    min-height: 38px;
+  }
+
+  .topic-floating-comment {
+    position: fixed;
+    right: 0.9rem;
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    z-index: 44;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    min-height: 46px;
+    padding: 0.65rem 0.95rem;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #03c75a 0%, #04ab52 100%);
+    box-shadow: 0 10px 26px rgba(5, 80, 40, 0.3);
   }
 }
 
