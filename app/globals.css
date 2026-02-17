@@ -71,7 +71,7 @@ body::before {
 
 .app-shell {
   min-height: 100vh;
-  padding-top: 64px;
+  padding-top: var(--top-nav-height, 64px);
   padding-bottom: calc(var(--mobile-safe-bottom) + 0.35rem);
 }
 
@@ -152,6 +152,7 @@ body::before {
   display: inline-flex;
   align-items: center;
   gap: 0.42rem;
+  flex-shrink: 0;
 }
 
 .top-wallet-chip {
@@ -179,6 +180,9 @@ body::before {
   font-weight: 800;
   padding: 0.34rem 0.66rem;
   white-space: nowrap;
+  max-width: 132px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .top-search-login-btn.is-active {
@@ -4826,19 +4830,24 @@ body::before {
   }
 
   .top-search-actions {
-    gap: 0.28rem;
+    gap: 0.24rem;
   }
 
   .top-wallet-chip {
-    min-height: 38px;
-    padding-inline: 0.54rem;
-    font-size: 0.74rem;
+    min-height: 36px;
+    padding-inline: 0.48rem;
+    font-size: 0.72rem;
+  }
+
+  .top-wallet-chip span:last-child {
+    display: none;
   }
 
   .top-search-login-btn {
-    min-height: 38px;
-    padding-inline: 0.62rem;
-    font-size: 0.8rem;
+    min-height: 36px;
+    padding-inline: 0.54rem;
+    font-size: 0.76rem;
+    max-width: 92px;
   }
 
   .auth-chip-row {
