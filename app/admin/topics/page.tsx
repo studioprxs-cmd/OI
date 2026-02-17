@@ -217,6 +217,38 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
   const settlementReadinessScore = Math.max(0, 100 - (unresolvedSettledBacklogCount * 24) - (resolvedWithoutResolutionCount * 16) - (staleOpenCount * 7));
   const settlementReadinessTone = settlementReadinessScore < 60 ? "danger" : settlementReadinessScore < 85 ? "warning" : "ok";
   const settlementReadinessLabel = settlementReadinessScore < 60 ? "긴급 점검 필요" : settlementReadinessScore < 85 ? "주의" : "안정";
+  const queueSlaLabel = staleOpenCount > 0 || staleLockedCount > 0
+    ? staleOpenCount > 0
+      ? "위험"
+      : "주의"
+    : "정상";
+
+  const topicResponseCadence = [
+    {
+      id: "topic-critical-cadence",
+      label: "Critical",
+      metric: `${staleOpenCount}건`,
+      hint: "24h+ OPEN 토픽",
+      href: "/admin/topics?status=OPEN",
+      tone: staleOpenCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "topic-active-cadence",
+      label: "Active",
+      metric: `${staleLockedCount}건`,
+      hint: "24h+ LOCKED 토픽",
+      href: "/admin/topics?status=LOCKED",
+      tone: staleLockedCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "topic-healthy-cadence",
+      label: "Healthy",
+      metric: `${Math.max(pendingResolveCount - staleOpenCount - staleLockedCount, 0)}건`,
+      hint: "24h 이내 처리 큐",
+      href: "/admin/topics?status=ALL",
+      tone: pendingResolveCount > 0 ? "neutral" : "ok",
+    },
+  ] as const;
 
   const executionTimeline = [
     {
@@ -448,6 +480,42 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         </div>
       </Card>
 
+      <Card className="admin-cadence-card">
+        <SectionTitle>Queue SLA snapshot</SectionTitle>
+        <p className="admin-card-intro">OPEN/LOCKED 체류 시간을 3단계로 분리해 모바일에서도 지연 징후를 빠르게 확인합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.68rem" }}>
+          <div className={`ops-health-item ${staleOpenCount > 0 ? "is-danger" : staleLockedCount > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">SLA 상태</span>
+            <strong className="ops-health-value">{queueSlaLabel}</strong>
+            <small>24h+ OPEN {staleOpenCount} · 24h+ LOCKED {staleLockedCount}</small>
+          </div>
+          <div className={`ops-health-item ${statusCounts.OPEN > 0 ? "is-danger" : "is-ok"}`}>
+            <span className="ops-health-label">OPEN backlog</span>
+            <strong className="ops-health-value">{statusCounts.OPEN}건</strong>
+            <small>신규/미해결 인입 큐</small>
+          </div>
+          <div className={`ops-health-item ${statusCounts.LOCKED > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">LOCKED settle</span>
+            <strong className="ops-health-value">{statusCounts.LOCKED}건</strong>
+            <small>정산/결과 확정 대기</small>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="admin-cadence-card">
+        <SectionTitle>Response cadence</SectionTitle>
+        <p className="admin-card-intro">토픽 대응 우선순위를 Critical → Active → Healthy 흐름으로 고정합니다.</p>
+        <div className="admin-cadence-grid" style={{ marginTop: "0.68rem" }}>
+          {topicResponseCadence.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-cadence-item is-${item.tone}`}>
+              <span className="admin-cadence-label">{item.label}</span>
+              <strong>{item.metric}</strong>
+              <small>{item.hint}</small>
+            </Link>
+          ))}
+        </div>
+      </Card>
+
       <Card id="topic-integrity-watch" className="admin-surface-card admin-guardrail-card">
         <SectionTitle>Settlement integrity watch</SectionTitle>
         <p className="admin-muted-note">정산 전 필수 체크 3가지를 고정해 토픽 상태와 결과 정합성을 빠르게 검증합니다.</p>
@@ -486,6 +554,28 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
               <span className="admin-watch-action">{item.actionLabel} →</span>
             </Link>
           ))}
+        </div>
+      </Card>
+
+      <Card className="admin-settlement-sla-card">
+        <SectionTitle>Settlement SLA</SectionTitle>
+        <p className="admin-muted-note">정산 신뢰도를 유지하기 위한 운영 기준입니다. 기준을 넘기면 즉시 RESOLVED/LOCKED 큐로 이동해 복구하세요.</p>
+        <div className="admin-settlement-sla-grid" style={{ marginTop: "0.66rem" }}>
+          <article className={`admin-settlement-sla-item ${unresolvedSettledBacklogCount > 0 ? "is-danger" : "is-ok"}`}>
+            <span className="admin-settlement-sla-label">RESOLVED 미정산</span>
+            <strong className="admin-settlement-sla-value">{unresolvedSettledBacklogCount}건</strong>
+            <small>목표 0건 · 초과 시 즉시 정산 재실행</small>
+          </article>
+          <article className={`admin-settlement-sla-item ${resolvedWithoutResolutionCount > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="admin-settlement-sla-label">결과 레코드 누락</span>
+            <strong className="admin-settlement-sla-value">{resolvedWithoutResolutionCount}건</strong>
+            <small>목표 0건 · RESOLVED 전 resolution 연결 필수</small>
+          </article>
+          <article className={`admin-settlement-sla-item ${staleLockedCount > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="admin-settlement-sla-label">LOCKED 체류 24h+</span>
+            <strong className="admin-settlement-sla-value">{staleLockedCount}건</strong>
+            <small>목표 0건 · 장기 LOCKED는 우선 Resolve</small>
+          </article>
         </div>
       </Card>
 
