@@ -168,6 +168,95 @@ export function getMarketProductById(productId: string) {
   return getRuntimeCatalog().find((product) => product.id === productId) ?? null;
 }
 
+export type StockReservationResult =
+  | {
+      ok: true;
+      reservation: {
+        productId: string;
+        quantity: number;
+        previousStock: number | null;
+      };
+      product: MarketProduct;
+    }
+  | {
+      ok: false;
+      error: "PRODUCT_NOT_FOUND" | "PRODUCT_UNAVAILABLE" | "OUT_OF_STOCK";
+      product: MarketProduct | null;
+    };
+
+export function reserveMarketProductStock(productId: string, quantity: number): StockReservationResult {
+  const products = getRuntimeCatalog();
+  const index = products.findIndex((item) => item.id === productId);
+  if (index < 0) {
+    return { ok: false, error: "PRODUCT_NOT_FOUND", product: null };
+  }
+
+  const product = products[index];
+
+  if (!product.isActive || !isProductWithinWindow(product)) {
+    return { ok: false, error: "PRODUCT_UNAVAILABLE", product };
+  }
+
+  if (product.stock !== null && quantity > product.stock) {
+    return { ok: false, error: "OUT_OF_STOCK", product };
+  }
+
+  const previousStock = product.stock;
+  const nextStock = previousStock === null ? null : previousStock - quantity;
+  const updatedProduct = {
+    ...product,
+    stock: nextStock,
+  };
+
+  runtimeCatalog = [
+    ...products.slice(0, index),
+    updatedProduct,
+    ...products.slice(index + 1),
+  ];
+  persistCatalog(runtimeCatalog);
+
+  return {
+    ok: true,
+    reservation: {
+      productId,
+      quantity,
+      previousStock,
+    },
+    product: updatedProduct,
+  };
+}
+
+export function rollbackMarketProductStock(reservation: {
+  productId: string;
+  quantity: number;
+  previousStock: number | null;
+}) {
+  const products = getRuntimeCatalog();
+  const index = products.findIndex((item) => item.id === reservation.productId);
+  if (index < 0) {
+    return;
+  }
+
+  const product = products[index];
+  let restoredStock: number | null = reservation.previousStock;
+
+  if (reservation.previousStock === null && product.stock !== null) {
+    restoredStock = product.stock + reservation.quantity;
+  }
+
+  const restored = {
+    ...product,
+    stock: restoredStock,
+  };
+
+  runtimeCatalog = [
+    ...products.slice(0, index),
+    restored,
+    ...products.slice(index + 1),
+  ];
+  persistCatalog(runtimeCatalog);
+}
+
 export function createMarketProduct(input: NewMarketProductInput) {
   const normalizedName = input.name.trim();
   const baseId = normalizedName

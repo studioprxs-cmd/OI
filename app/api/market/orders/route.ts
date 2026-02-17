@@ -4,8 +4,8 @@ import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
   calculateMarketOrderPoints,
-  getMarketProductById,
-  isProductWithinWindow,
+  reserveMarketProductStock,
+  rollbackMarketProductStock,
 } from "@/lib/market/catalog";
 
 type CreateOrderBody = {
@@ -49,73 +49,99 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const product = getMarketProductById(productId);
+  const reservationResult = reserveMarketProductStock(productId, quantity);
 
-  if (!product) {
-    return NextResponse.json({ ok: false, data: null, error: "Product not found" }, { status: 404 });
-  }
+  if (!reservationResult.ok) {
+    if (reservationResult.error === "PRODUCT_NOT_FOUND") {
+      return NextResponse.json({ ok: false, data: null, error: "Product not found" }, { status: 404 });
+    }
 
-  if (!product.isActive || !isProductWithinWindow(product)) {
-    return NextResponse.json({ ok: false, data: null, error: "Product is not currently available" }, { status: 409 });
-  }
+    if (reservationResult.error === "PRODUCT_UNAVAILABLE") {
+      return NextResponse.json({ ok: false, data: null, error: "Product is not currently available" }, { status: 409 });
+    }
 
-  if (product.stock !== null && quantity > product.stock) {
     return NextResponse.json({ ok: false, data: null, error: "Requested quantity exceeds available stock" }, { status: 409 });
   }
 
   const authUser = user!;
-  const totalPoints = calculateMarketOrderPoints(product.pricePoints, quantity);
+  const reservedProduct = reservationResult.product;
+  const totalPoints = calculateMarketOrderPoints(reservedProduct.pricePoints, quantity);
 
-  const result = await db.$transaction(async (tx) => {
-    const currentUser = await tx.user.findUnique({
-      where: { id: authUser.id },
-      select: { id: true, pointBalance: true },
-    });
-
-    if (!currentUser) {
-      throw new Error("USER_NOT_FOUND");
-    }
-
-    if (currentUser.pointBalance < totalPoints) {
-      return {
-        ok: false as const,
-        error: "INSUFFICIENT_POINTS",
-        currentBalance: currentUser.pointBalance,
+  let result:
+    | {
+        ok: true;
+        order: {
+          id: string;
+          productId: string;
+          quantity: number;
+          totalPoints: number;
+          status: string;
+        };
+        balanceAfter: number;
+      }
+    | {
+        ok: false;
+        error: "INSUFFICIENT_POINTS";
+        currentBalance: number;
       };
-    }
 
-    const updated = await tx.user.update({
-      where: { id: authUser.id },
-      data: { pointBalance: { decrement: totalPoints } },
-      select: { pointBalance: true },
-    });
+  try {
+    result = await db.$transaction(async (tx) => {
+      const currentUser = await tx.user.findUnique({
+        where: { id: authUser.id },
+        select: { id: true, pointBalance: true },
+      });
 
-    const orderRef = `market:${product.id}:${Date.now()}`;
+      if (!currentUser) {
+        throw new Error("USER_NOT_FOUND");
+      }
 
-    await tx.walletTransaction.create({
-      data: {
-        userId: authUser.id,
-        type: "MARKET_PURCHASE",
-        amount: -totalPoints,
+      if (currentUser.pointBalance < totalPoints) {
+        return {
+          ok: false as const,
+          error: "INSUFFICIENT_POINTS",
+          currentBalance: currentUser.pointBalance,
+        };
+      }
+
+      const updated = await tx.user.update({
+        where: { id: authUser.id },
+        data: { pointBalance: { decrement: totalPoints } },
+        select: { pointBalance: true },
+      });
+
+      const orderRef = `market:${reservedProduct.id}:${Date.now()}`;
+
+      await tx.walletTransaction.create({
+        data: {
+          userId: authUser.id,
+          type: "MARKET_PURCHASE",
+          amount: -totalPoints,
+          balanceAfter: updated.pointBalance,
+          note: `Market order ${orderRef} qty:${quantity}`,
+        },
+      });
+
+      return {
+        ok: true as const,
+        order: {
+          id: orderRef,
+          productId: reservedProduct.id,
+          quantity,
+          totalPoints,
+          status: "COMPLETED",
+        },
         balanceAfter: updated.pointBalance,
-        note: `Market order ${orderRef} qty:${quantity}`,
-      },
+      };
     });
-
-    return {
-      ok: true as const,
-      order: {
-        id: orderRef,
-        productId: product.id,
-        quantity,
-        totalPoints,
-        status: "COMPLETED",
-      },
-      balanceAfter: updated.pointBalance,
-    };
-  });
+  } catch (error) {
+    rollbackMarketProductStock(reservationResult.reservation);
+    throw error;
+  }
 
   if (!result.ok) {
+    rollbackMarketProductStock(reservationResult.reservation);
+
     return NextResponse.json(
       {
         ok: false,
@@ -135,11 +161,12 @@ export async function POST(req: NextRequest) {
       data: {
         ...result.order,
         product: {
-          id: product.id,
-          name: product.name,
-          zone: product.zone,
+          id: reservedProduct.id,
+          name: reservedProduct.name,
+          zone: reservedProduct.zone,
         },
         balanceAfter: result.balanceAfter,
+        remainingStock: reservedProduct.stock,
       },
       error: null,
     },
