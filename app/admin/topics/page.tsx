@@ -361,6 +361,40 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const topTopicIntegrityIncident = integrityWatchItems
+    .slice()
+    .sort((a, b) => b.count - a.count)[0];
+
+  const settlementActionPack = [
+    {
+      id: "topic-pack-backlog",
+      label: "Backlog repair",
+      count: unresolvedSettledBacklogCount,
+      value: `${unresolvedSettledBacklogCount}건`,
+      hint: "RESOLVED 미정산 우선 복구",
+      href: "/admin/topics?status=RESOLVED",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "topic-pack-resolution",
+      label: "Resolution sync",
+      count: resolvedWithoutResolutionCount,
+      value: `${resolvedWithoutResolutionCount}건`,
+      hint: "결과 레코드 누락 연결",
+      href: "/admin/topics?status=RESOLVED",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "topic-pack-latency",
+      label: "Latency sweep",
+      count: staleOpenCount + staleLockedCount,
+      value: `${staleOpenCount + staleLockedCount}건`,
+      hint: "24h+ OPEN/LOCKED 체류 정리",
+      href: "/admin/topics?status=OPEN",
+      tone: staleOpenCount + staleLockedCount > 0 ? "warning" : "ok",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -418,6 +452,52 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           <a href="#topic-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-incident-digest-card">
+        <div className="admin-incident-digest-head">
+          <div>
+            <p className="admin-jump-nav-label">Incident digest</p>
+            <h2 className="admin-command-title">현재 가장 큰 토픽 무결성 리스크</h2>
+          </div>
+          <Pill tone={topTopicIntegrityIncident && topTopicIntegrityIncident.count > 0 ? "danger" : "success"}>
+            {topTopicIntegrityIncident && topTopicIntegrityIncident.count > 0 ? "Action needed" : "All clear"}
+          </Pill>
+        </div>
+        <div className="admin-incident-digest-body">
+          <div>
+            <strong>{topTopicIntegrityIncident?.label ?? "토픽 무결성 경고 없음"}</strong>
+            <p>{topTopicIntegrityIncident?.description ?? "토픽 무결성 지표가 정상 범위를 유지합니다."}</p>
+          </div>
+          <div className="admin-incident-digest-meta">
+            <span className="admin-watch-count">{topTopicIntegrityIncident?.count ?? 0}</span>
+            <Link href={topTopicIntegrityIncident?.href ?? "/admin/topics?status=RESOLVED"} className="btn btn-secondary">즉시 점검</Link>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="admin-recovery-card">
+        <div className="admin-recovery-head">
+          <div>
+            <p className="admin-jump-nav-label">Settlement action pack</p>
+            <h2 className="admin-command-title">엄지 우선 복구 패키지</h2>
+          </div>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>{integrityIssueTotal > 0 ? `복구 ${integrityIssueTotal}건` : "복구 대상 없음"}</Pill>
+        </div>
+        <p className="admin-card-intro">리스크가 큰 순서대로 카드가 정렬됩니다. 모바일에서 위에서 아래로 누르며 복구하세요.</p>
+        <div className="admin-recovery-grid" style={{ marginTop: "0.68rem" }}>
+          {settlementActionPack
+            .slice()
+            .sort((a, b) => b.count - a.count)
+            .map((item) => (
+              <Link key={item.id} href={item.href} className={`admin-recovery-item is-${item.tone}`}>
+                <span className="admin-recovery-label">{item.label}</span>
+                <strong className="admin-recovery-value">{item.value}</strong>
+                <small>{item.hint}</small>
+                <span className="admin-recovery-cta">즉시 처리 →</span>
+              </Link>
+            ))}
+        </div>
       </Card>
 
       <Card className="admin-northstar-card">
@@ -833,6 +913,10 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
             kicker="No topic match"
             title="조건에 맞는 토픽이 없습니다"
             description="검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요."
+            tips={[
+              "OPEN 또는 LOCKED로 빠르게 전환해 운영 큐부터 점검",
+              "검색어 대신 상태 필터만 적용해 누락 토픽 확인",
+            ]}
             actions={<Link className="btn btn-secondary" href="/admin/topics?status=ALL">필터 초기화</Link>}
           />
         ) : null}
