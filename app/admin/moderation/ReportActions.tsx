@@ -135,8 +135,8 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
 
   return (
     <div className="list" style={{ gap: "0.45rem" }}>
-      <div className="row" style={{ gap: "0.55rem", flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ minWidth: "9rem", flex: "1 1 9rem" }}>
+      <div className="report-actions-grid">
+        <div className="report-actions-select report-actions-select-status">
           <SelectField
             id={`report-status-${reportId}`}
             name={`report-status-${reportId}`}
@@ -147,7 +147,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
         </div>
 
         {hasComment ? (
-          <div style={{ minWidth: "11rem", flex: "1 1 11rem" }}>
+          <div className="report-actions-select report-actions-select-comment">
             <SelectField
               id={`report-comment-visibility-${reportId}`}
               name={`report-comment-visibility-${reportId}`}
@@ -159,7 +159,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
         ) : null}
 
         {hasTopic ? (
-          <div style={{ minWidth: "13rem", flex: "1 1 13rem" }}>
+          <div className="report-actions-select report-actions-select-topic">
             <SelectField
               id={`report-topic-action-${reportId}`}
               name={`report-topic-action-${reportId}`}
@@ -173,7 +173,7 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
           </div>
         ) : null}
 
-        <Button type="button" disabled={isLoading || !hasChanges} onClick={submit}>
+        <Button type="button" className="report-actions-save-btn" disabled={isLoading || !hasChanges} onClick={submit}>
           {isLoading ? "저장 중..." : hasChanges ? "변경 저장" : "변경 없음"}
         </Button>
       </div>

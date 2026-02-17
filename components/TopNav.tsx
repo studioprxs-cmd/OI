@@ -107,6 +107,9 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       const keyboardVisible = keyboardInset > 120;
 
       root.style.setProperty("--mobile-global-nav-height", `${isMobile && keyboardVisible ? 0 : mobileBottomNavHeight}px`);
+      if (shell) {
+        shell.dataset.keyboardVisible = isMobile && keyboardVisible ? "true" : "false";
+      }
       syncFloatingLayerFlags();
     };
 
@@ -149,6 +152,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       if (shell) {
         delete shell.dataset.hasAdminDock;
         delete shell.dataset.hasResolveSubmit;
+        delete shell.dataset.keyboardVisible;
       }
     };
   }, [viewer, pathname, visibleNavItems.length]);

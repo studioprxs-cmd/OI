@@ -2570,18 +2570,22 @@ body::before {
 
 .admin-report-card {
   border-color: #dbe8e1;
+  border-left-width: 4px;
+  border-left-style: solid;
+  border-left-color: transparent;
+  background: linear-gradient(180deg, #ffffff 0%, #fcfefd 100%);
 }
 
 .admin-report-card.admin-report-card-priority-danger {
-  border-left: 4px solid #df5348;
+  border-left-color: #df5348;
 }
 
 .admin-report-card.admin-report-card-priority-neutral {
-  border-left: 4px solid #d49a34;
+  border-left-color: #d49a34;
 }
 
 .admin-report-card.admin-report-card-priority-success {
-  border-left: 4px solid #34a26b;
+  border-left-color: #34a26b;
 }
 
 .admin-report-card.is-open {
@@ -2687,9 +2691,39 @@ body::before {
 }
 
 .moderation-report-actions {
-  margin-top: 0.25rem;
-  padding-top: 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.62rem;
   border-top: 1px dashed #d8e5dd;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.report-actions-grid {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+}
+
+.report-actions-select {
+  min-width: 0;
+}
+
+.report-actions-select-status {
+  grid-column: span 3;
+}
+
+.report-actions-select-comment {
+  grid-column: span 4;
+}
+
+.report-actions-select-topic {
+  grid-column: span 3;
+}
+
+.report-actions-save-btn {
+  grid-column: span 2;
+  width: 100%;
 }
 
 .resolve-preview-head {
@@ -3619,6 +3653,21 @@ body::before {
     min-height: 44px;
   }
 
+  .report-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .report-actions-select-status,
+  .report-actions-select-comment,
+  .report-actions-select-topic,
+  .report-actions-save-btn {
+    grid-column: 1 / -1;
+  }
+
+  .report-actions-save-btn {
+    min-height: 46px;
+  }
+
   .moderation-report-head,
   .moderation-report-headline,
   .admin-list-card-head {
@@ -3750,6 +3799,22 @@ body::before {
     background: linear-gradient(180deg, #ecfbf3 0%, #def6e8 100%);
     color: #0e6137;
     box-shadow: 0 8px 18px rgba(13, 104, 60, 0.16);
+  }
+
+  .mobile-bottom-nav,
+  .admin-mobile-dock,
+  .topic-floating-comment,
+  .resolve-submit-bar {
+    transition: opacity 180ms var(--ease-standard), transform 180ms var(--ease-standard);
+  }
+
+  .app-shell[data-keyboard-visible="true"] .mobile-bottom-nav,
+  .app-shell[data-keyboard-visible="true"] .admin-mobile-dock,
+  .app-shell[data-keyboard-visible="true"] .topic-floating-comment,
+  .app-shell[data-keyboard-visible="true"] .resolve-submit-bar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
   }
 
   .topic-floating-comment {
