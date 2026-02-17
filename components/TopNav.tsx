@@ -41,6 +41,8 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLElement | null>(null);
+  const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
   const visibleNavItems = NAV_ITEMS.filter((item) => {
     if (item.adminOnly && viewer?.role !== "ADMIN") return false;
@@ -75,6 +77,43 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     };
   }, [profileMenuOpen]);
 
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const root = document.documentElement;
+
+    const applyLayoutMetrics = () => {
+      const topNavHeight = `${Math.ceil(header.getBoundingClientRect().height)}px`;
+      root.style.setProperty("--top-nav-height", topNavHeight);
+
+      const mobileBottomNavHeight = mobileBottomNavRef.current
+        ? Math.ceil(mobileBottomNavRef.current.getBoundingClientRect().height)
+        : 0;
+      root.style.setProperty("--mobile-global-nav-height", `${mobileBottomNavHeight}px`);
+    };
+
+    applyLayoutMetrics();
+
+    const resizeObserver = new ResizeObserver(() => {
+      applyLayoutMetrics();
+    });
+
+    resizeObserver.observe(header);
+    if (mobileBottomNavRef.current) {
+      resizeObserver.observe(mobileBottomNavRef.current);
+    }
+
+    window.addEventListener("resize", applyLayoutMetrics);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", applyLayoutMetrics);
+      root.style.removeProperty("--top-nav-height");
+      root.style.removeProperty("--mobile-global-nav-height");
+    };
+  }, [viewer, pathname, visibleNavItems.length]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
@@ -108,7 +147,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
   return (
     <>
-      <header className="top-nav">
+      <header className="top-nav" ref={headerRef}>
       <div className="top-nav-inner">
         <Link href="/" className="brand-lockup" aria-label="오늘의 이슈 홈">
           <Image
@@ -203,7 +242,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       </div>
       </header>
 
-      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색">
+      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색" ref={mobileBottomNavRef}>
         {visibleNavItems.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (

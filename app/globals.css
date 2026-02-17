@@ -22,6 +22,7 @@
   --shadow-card-hover: 0 14px 34px rgba(15, 23, 42, 0.1);
   --ease-standard: cubic-bezier(0.2, 0.72, 0.22, 1);
   --mobile-safe-bottom: max(0.55rem, env(safe-area-inset-bottom));
+  --top-nav-height: 84px;
   --mobile-admin-dock-height: 4.6rem;
   --mobile-comment-cta-height: 3.1rem;
   --mobile-resolve-submit-height: 3.4rem;
@@ -63,7 +64,7 @@ body::before {
 
 .app-shell {
   min-height: 100vh;
-  padding-top: 84px;
+  padding-top: var(--top-nav-height);
   padding-bottom: calc(var(--mobile-safe-bottom) + 0.35rem);
 }
 
