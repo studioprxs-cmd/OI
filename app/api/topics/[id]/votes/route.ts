@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 
 type Params = { params: Promise<{ id: string }> };
 
-const VOTE_REWARD = 50;
 
 export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: Params) {
 
       const updatedUser = await tx.user.update({
         where: { id: authUser.id },
-        data: { pointBalance: { increment: VOTE_REWARD } },
+        data: { pointBalance: { increment: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS } },
         select: { pointBalance: true },
       });
 
@@ -94,13 +94,13 @@ export async function POST(req: NextRequest, { params }: Params) {
         data: {
           userId: authUser.id,
           type: "VOTE_REWARD",
-          amount: VOTE_REWARD,
+          amount: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS,
           balanceAfter: updatedUser.pointBalance,
           note: `Vote reward topic:${id}`,
         },
       });
 
-      return { vote, rewarded: true, reward: VOTE_REWARD };
+      return { vote, rewarded: true, reward: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS };
     });
 
     return NextResponse.json({ ok: true, data: voteResult, error: null }, { status: 201 });

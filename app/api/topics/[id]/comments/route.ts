@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
 import { findMockTopic } from "@/lib/mock-data";
 
 type Params = { params: Promise<{ id: string }> };
+
+function getStartOfToday() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
 
 export async function GET(_: Request, { params }: Params) {
   const { id } = await params;
@@ -67,13 +75,62 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "content is required" }, { status: 400 });
   }
 
-  const comment = await db.comment.create({
-    data: {
-      topicId: id,
-      userId: authUser.id,
-      content,
-    },
+  const result = await db.$transaction(async (tx) => {
+    const comment = await tx.comment.create({
+      data: {
+        topicId: id,
+        userId: authUser.id,
+        content,
+      },
+    });
+
+    const rewardWindowStart = getStartOfToday();
+    const rewardedCountToday = await tx.walletTransaction.count({
+      where: {
+        userId: authUser.id,
+        type: "COMMENT_REWARD",
+        createdAt: { gte: rewardWindowStart },
+      },
+    });
+
+    if (rewardedCountToday >= ENGAGEMENT_POLICY.COMMENT_REWARD_DAILY_LIMIT) {
+      return {
+        comment,
+        reward: {
+          granted: false,
+          amount: 0,
+          reason: "COMMENT_REWARD_DAILY_LIMIT_REACHED",
+          remainingToday: 0,
+        },
+      };
+    }
+
+    const updatedUser = await tx.user.update({
+      where: { id: authUser.id },
+      data: { pointBalance: { increment: ENGAGEMENT_POLICY.COMMENT_REWARD_POINTS } },
+      select: { pointBalance: true },
+    });
+
+    await tx.walletTransaction.create({
+      data: {
+        userId: authUser.id,
+        type: "COMMENT_REWARD",
+        amount: ENGAGEMENT_POLICY.COMMENT_REWARD_POINTS,
+        balanceAfter: updatedUser.pointBalance,
+        note: `Comment reward topic:${id} comment:${comment.id}`,
+      },
+    });
+
+    return {
+      comment,
+      reward: {
+        granted: true,
+        amount: ENGAGEMENT_POLICY.COMMENT_REWARD_POINTS,
+        reason: null,
+        remainingToday: Math.max(0, ENGAGEMENT_POLICY.COMMENT_REWARD_DAILY_LIMIT - (rewardedCountToday + 1)),
+      },
+    };
   });
 
-  return NextResponse.json({ ok: true, data: comment, error: null }, { status: 201 });
+  return NextResponse.json({ ok: true, data: result, error: null }, { status: 201 });
 }
