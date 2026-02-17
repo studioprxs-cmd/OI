@@ -75,12 +75,24 @@ export function ReportActions({ reportId, initialStatus, hasComment, hasTopic, c
           topicAction: hasTopic ? topicAction : "KEEP",
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as {
+        error?: string;
+        data?: { refundSummary?: { refundedBetCount?: number; refundedAmount?: number } | null };
+      };
       if (!res.ok) {
         setMessage(data.error ?? "상태 변경에 실패했습니다.");
         return;
       }
-      setMessage("신고 상태/연관 조치가 업데이트되었습니다.");
+
+      const refundedBetCount = Number(data?.data?.refundSummary?.refundedBetCount ?? 0);
+      const refundedAmount = Number(data?.data?.refundSummary?.refundedAmount ?? 0);
+
+      if (topicAction === "CANCEL") {
+        setMessage(`신고/토픽 상태를 업데이트했습니다. 환불 ${refundedBetCount}건 · ${refundedAmount.toLocaleString("ko-KR")}pt`);
+      } else {
+        setMessage("신고 상태/연관 조치가 업데이트되었습니다.");
+      }
+
       router.refresh();
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");

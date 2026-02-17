@@ -92,6 +92,9 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       const report = await tx.report.findUnique({ where: { id } });
       if (!report) return null;
 
+      let refundedBetCount = 0;
+      let refundedAmount = 0;
+
       await tx.report.update({
         where: { id },
         data: {
@@ -125,6 +128,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           throw new Error("RESOLVED_TOPIC_REOPEN_BLOCKED");
         }
 
+        if (topicAction === "CANCEL" && (currentTopic.status === "RESOLVED" || currentTopic.resolution)) {
+          throw new Error("RESOLVED_TOPIC_CANCEL_BLOCKED");
+        }
+
         const nextTopicStatus: TopicStatus = topicAction === "LOCK"
           ? "LOCKED"
           : topicAction === "CANCEL"
@@ -137,15 +144,64 @@ export async function PATCH(req: NextRequest, { params }: Params) {
             status: nextTopicStatus,
           },
         });
+
+        if (topicAction === "CANCEL") {
+          const unsettledBets = await tx.bet.findMany({
+            where: { topicId: report.topicId, settled: false },
+            select: { id: true, userId: true, amount: true },
+          });
+
+          for (const bet of unsettledBets) {
+            await tx.bet.update({
+              where: { id: bet.id },
+              data: {
+                settled: true,
+                payoutAmount: bet.amount,
+              },
+            });
+
+            const updatedUser = await tx.user.update({
+              where: { id: bet.userId },
+              data: { pointBalance: { increment: bet.amount } },
+              select: { pointBalance: true },
+            });
+
+            await tx.walletTransaction.create({
+              data: {
+                userId: bet.userId,
+                type: "BET_REFUND",
+                amount: bet.amount,
+                balanceAfter: updatedUser.pointBalance,
+                relatedBetId: bet.id,
+                note: `Topic canceled refund for topic:${report.topicId}`,
+              },
+            });
+
+            refundedBetCount += 1;
+            refundedAmount += bet.amount;
+          }
+        }
       }
 
-      return tx.report.findUnique({
+      const refreshed = await tx.report.findUnique({
         where: { id },
         include: {
           comment: { select: { id: true, isHidden: true } },
           topic: { select: { id: true, status: true } },
         },
       });
+
+      if (!refreshed) return null;
+
+      return {
+        ...refreshed,
+        refundSummary: topicAction === "CANCEL"
+          ? {
+            refundedBetCount,
+            refundedAmount,
+          }
+          : null,
+      };
     });
 
     if (!updated) {
@@ -163,6 +219,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (message === "RESOLVED_TOPIC_REOPEN_BLOCKED") {
       return NextResponse.json(
         { ok: false, data: null, error: "이미 정산 완료된 토픽은 REOPEN 할 수 없습니다." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "RESOLVED_TOPIC_CANCEL_BLOCKED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 정산 완료된 토픽은 CANCEL 할 수 없습니다." },
         { status: 409 },
       );
     }

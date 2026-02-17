@@ -163,7 +163,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               border: "1px solid rgba(15, 23, 42, 0.15)",
               borderRadius: "0.65rem",
               padding: "0.45rem 0.6rem",
-              minWidth: "8rem",
+              minWidth: "7.2rem",
+              flex: "1 1 120px",
             }}
           >
             <option value="ALL">전체 타입</option>
@@ -178,8 +179,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               border: "1px solid rgba(15, 23, 42, 0.15)",
               borderRadius: "0.65rem",
               padding: "0.45rem 0.6rem",
-              minWidth: "15rem",
-              flex: "1 1 220px",
+              minWidth: "0",
+              width: "100%",
+              flex: "2 1 220px",
             }}
           />
           <button
