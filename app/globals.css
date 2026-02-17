@@ -606,10 +606,17 @@ body::before {
 }
 
 .admin-section-tabs {
+  position: sticky;
+  top: 88px;
+  z-index: 34;
   display: flex;
   gap: 0.42rem;
   overflow-x: auto;
-  padding: 0.15rem 0.05rem 0.2rem;
+  padding: 0.25rem 0.2rem 0.3rem;
+  margin: -0.15rem -0.15rem 0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(245, 250, 247, 0.94) 0%, rgba(245, 250, 247, 0.65) 100%);
+  backdrop-filter: blur(6px);
   scrollbar-width: thin;
 }
 
@@ -1273,6 +1280,18 @@ body::before {
   gap: 0.48rem;
 }
 
+.admin-surface-card {
+  border-radius: 20px;
+  border-color: #dce9e2;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.admin-surface-card-priority {
+  border-color: #c6e4d3;
+  background: linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+}
+
 .admin-list-card {
   display: grid;
   gap: 0.58rem;
@@ -1462,6 +1481,44 @@ body::before {
   gap: 0.2rem;
   color: #496056;
   font-size: 0.82rem;
+}
+
+.resolve-summary-meta {
+  display: grid;
+  gap: 0.15rem;
+  margin-top: 0.42rem;
+}
+
+.resolve-summary-meta span {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.resolve-summary-meta span.is-ok {
+  color: #0f6a3d;
+}
+
+.resolve-summary-meta span.is-warning {
+  color: #9a3412;
+}
+
+.resolve-summary-meta small {
+  color: #66766d;
+  font-size: 0.77rem;
+}
+
+.resolve-summary-preset-row {
+  margin-top: 0.45rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+.resolve-summary-preset-btn {
+  min-height: 40px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.48rem 0.52rem;
 }
 
 .resolve-submit-bar {
@@ -1882,6 +1939,7 @@ body::before {
   }
 
   .admin-section-tabs {
+    top: 176px;
     margin-inline: -0.1rem;
     padding-inline: 0.1rem;
   }
@@ -2124,6 +2182,14 @@ body::before {
 
   .resolve-choice-grid {
     grid-template-columns: 1fr;
+  }
+
+  .resolve-summary-preset-row {
+    grid-template-columns: 1fr;
+  }
+
+  .resolve-summary-preset-btn {
+    min-height: 44px;
   }
 
   .resolve-submit-bar {

@@ -55,6 +55,12 @@ function payoutMultiplier(summary?: SettlementPreviewSummary) {
 }
 
 const NO_WINNER_CONFIRM_PHRASE = "0PT 지급 승인";
+const MIN_SUMMARY_LENGTH = 12;
+const SUMMARY_PRESETS = [
+  { label: "공식 근거", text: "공식 발표 및 검증된 근거를 토대로 결과를 확정합니다." },
+  { label: "이의기간 종료", text: "이의 제기 기간 종료 후 운영팀 검토를 거쳐 결과를 확정합니다." },
+  { label: "무결성 점검", text: "중복/무효 베팅 점검 완료, 정산 무결성 확인 후 확정합니다." },
+] as const;
 
 export function ResolveForm({ topicId }: Props) {
   const [result, setResult] = useState<ResultValue>("YES");
@@ -76,6 +82,8 @@ export function ResolveForm({ topicId }: Props) {
   const unsettledCount = Number(previewData?.unsettledBetCount ?? 0);
   const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && unsettledCount > 0;
   const noWinnerPhraseMatched = noWinnerConfirmPhrase.trim() === NO_WINNER_CONFIRM_PHRASE;
+  const summaryTrimmed = summary.trim();
+  const summaryTooShort = summaryTrimmed.length > 0 && summaryTrimmed.length < MIN_SUMMARY_LENGTH;
 
   const integrityChecklist = [
     {
@@ -151,8 +159,13 @@ export function ResolveForm({ topicId }: Props) {
       return;
     }
 
-    if (!summary.trim()) {
-      setMessage("summary는 필수입니다.");
+    if (!summaryTrimmed) {
+      setMessage("요약은 필수입니다.");
+      return;
+    }
+
+    if (summaryTrimmed.length < MIN_SUMMARY_LENGTH) {
+      setMessage(`요약은 최소 ${MIN_SUMMARY_LENGTH}자 이상 작성해주세요.`);
       return;
     }
 
@@ -174,7 +187,7 @@ export function ResolveForm({ topicId }: Props) {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ result, summary, confirmNoWinner }),
+        body: JSON.stringify({ result, summary: summaryTrimmed, confirmNoWinner }),
       });
 
       const data = (await res.json()) as {
@@ -331,11 +344,22 @@ export function ResolveForm({ topicId }: Props) {
           rows={5}
           placeholder="정산 근거/요약"
         />
+        <div className="resolve-summary-meta" aria-live="polite">
+          <span className={summaryTooShort ? "is-warning" : "is-ok"}>최소 {MIN_SUMMARY_LENGTH}자 · 현재 {summaryTrimmed.length}자</span>
+          <small>사후 감사 대비를 위해 판단 근거를 명확히 남겨주세요.</small>
+        </div>
+        <div className="resolve-summary-preset-row" role="group" aria-label="요약 템플릿">
+          {SUMMARY_PRESETS.map((preset) => (
+            <button key={preset.label} type="button" className="btn btn-secondary resolve-summary-preset-btn" onClick={() => setSummary(preset.text)}>
+              {preset.label}
+            </button>
+          ))}
+        </div>
       </Field>
       <div className="resolve-submit-bar">
         <Button
           type="submit"
-          disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
+          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
         >
           {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
         </Button>

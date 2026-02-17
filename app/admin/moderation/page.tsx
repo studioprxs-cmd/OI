@@ -313,7 +313,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         )}
       />
 
-      <Card>
+      <Card className="admin-surface-card">
         <SectionTitle>모바일 빠른 실행</SectionTitle>
         <p className="admin-card-intro">엄지 동선 기준으로 자주 쓰는 운영 작업을 한 번에 배치했습니다.</p>
         <div className="admin-quick-action-grid" style={{ marginTop: "0.75rem" }}>
@@ -405,7 +405,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </form>
       </Card>
 
-      <Card>
+      <Card className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>우선 처리 큐</SectionTitle>
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
           <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>처리 필요 {actionableReports.length}</Pill>
@@ -420,7 +420,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-muted-note">기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.</p>
       </Card>
 
-      <Card>
+      <Card className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>긴급 인박스</SectionTitle>
         <p className="admin-muted-note">즉시 처리 대상만 모아서 상단으로 끌어올렸습니다. 오래된 OPEN/REVIEWING 건부터 우선 확인하세요.</p>
         {priorityReports.length > 0 ? (

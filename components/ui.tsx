@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 type LayoutProps = { children: ReactNode };
+type WithClassName = { className?: string };
 
 export function PageContainer({ children }: LayoutProps) {
   return <main className="page-container">{children}</main>;
@@ -16,8 +17,8 @@ export function OiBadge({ label = "OI" }: { label?: string }) {
   );
 }
 
-export function Card({ children }: LayoutProps) {
-  return <section className="card">{children}</section>;
+export function Card({ children, className }: LayoutProps & WithClassName) {
+  return <section className={`card${className ? ` ${className}` : ""}`}>{children}</section>;
 }
 
 export function SectionTitle({ children }: LayoutProps) {
