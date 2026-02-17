@@ -238,7 +238,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     <PageContainer>
       <section className="admin-hero-shell">
         <div className="row admin-header-row">
-          <h1 style={{ margin: 0 }}>Admin · Moderation & Settlement</h1>
+          <div>
+            <p className="admin-hero-eyebrow">Operations Console</p>
+            <h1 className="admin-hero-title">Admin · Moderation & Settlement</h1>
+            <p className="admin-hero-subtitle">신고 큐와 정산 무결성을 모바일 우선 동선으로 빠르게 점검하고 처리하세요.</p>
+          </div>
           <div className="row admin-header-links">
             <Link className="text-link" href="/admin/topics">
               토픽 관리로 이동
@@ -299,9 +303,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
       <Card>
         <SectionTitle>모바일 빠른 실행</SectionTitle>
-        <p style={{ margin: "0.5rem 0 0", color: "#4b6355" }}>
-          엄지 동선 기준으로 자주 쓰는 운영 작업을 한 번에 배치했습니다.
-        </p>
+        <p className="admin-card-intro">엄지 동선 기준으로 자주 쓰는 운영 작업을 한 번에 배치했습니다.</p>
         <div className="admin-quick-action-grid" style={{ marginTop: "0.75rem" }}>
           <Link href="/admin/moderation?status=OPEN" className="admin-quick-action-btn">
             OPEN 즉시 처리 ({urgentReportCount})
@@ -320,9 +322,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
       <Card>
         <SectionTitle>운영 컨트롤 타워</SectionTitle>
-        <p style={{ margin: "0.5rem 0 0", color: "#4b6355" }}>
-          모바일/운영 환경 기준으로 즉시 대응 큐와 정산 무결성 상태를 한 번에 점검합니다.
-        </p>
+        <p className="admin-card-intro">모바일/운영 환경 기준으로 즉시 대응 큐와 정산 무결성 상태를 한 번에 점검합니다.</p>
         <div className="admin-kpi-grid" style={{ marginTop: "0.8rem" }}>
           <div className="admin-kpi-tile">
             <p className="admin-kpi-label">즉시 처리</p>
@@ -405,14 +405,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill>토픽 신고 {reports.filter((report) => !report.commentId).length}</Pill>
           <Pill>댓글 신고 {reports.filter((report) => Boolean(report.commentId)).length}</Pill>
         </div>
-        <p style={{ margin: "0.65rem 0 0", color: "#6b7280" }}>
-          기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.
-        </p>
+        <p className="admin-muted-note">기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.</p>
       </Card>
 
       <Card>
         <SectionTitle>정산 현황</SectionTitle>
-        <p style={{ margin: "0.55rem 0", color: "#6b7280" }}>
+        <p className="admin-muted-note">
           정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {totalSettledAmount.toLocaleString("ko-KR")} pt · 총 지급 {totalPayoutAmount.toLocaleString("ko-KR")} pt
         </p>
         <div className="row" style={{ gap: "0.45rem", flexWrap: "wrap" }}>
@@ -479,7 +477,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </div>
         </Card>
 
-        <small style={{ color: "#6b7280" }}>정렬 기준: 상태 우선순위(OPEN → REVIEWING → CLOSED/REJECTED), 이후 최신순</small>
+        <small className="admin-list-footnote">정렬 기준: 상태 우선순위(OPEN → REVIEWING → CLOSED/REJECTED), 이후 최신순</small>
         {selectedStatus === "ALL" && selectedType === "ALL" && !keyword ? (
           <StatePanel
             title="즉시 확인 권장"
@@ -493,53 +491,61 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           />
         ) : null}
 
-        {filteredReports.map((report) => (
-          <Card key={report.id}>
-            <article className="moderation-report-card">
-              <div className="moderation-report-headline">
-                <div>
-                  <h3 className="moderation-report-title">{report.reason}</h3>
-                  <p className="moderation-report-detail">{report.detail ?? "상세 설명 없음"}</p>
-                  <small className="moderation-report-meta">
-                    {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
-                    {report.reporterNickname ? ` · 신고자 ${report.reporterNickname}` : ""}
-                    {report.reporterEmail ? ` (${report.reporterEmail})` : ""}
-                  </small>
-                  {report.topicId ? (
-                    <p className="moderation-report-context">
-                      <Link href={`/topics/${report.topicId}`} className="text-link">
-                        토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
-                      </Link>
-                      {report.topicStatus ? <span style={{ marginLeft: "0.4rem", color: "#6b7280" }}>({report.topicStatus})</span> : null}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="row" style={{ gap: "0.4rem" }}>
-                  {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
-                  {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
-                </div>
-              </div>
+        {filteredReports.map((report) => {
+          const createdAt = new Date(report.createdAt);
+          const elapsedHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
+          const isStale = (report.status === "OPEN" || report.status === "REVIEWING") && elapsedHours >= 24;
 
-              {report.commentContent ? (
-                <p className="moderation-report-comment">
-                  코멘트: {report.commentContent}
-                  {report.commentHidden ? " (숨김 처리됨)" : ""}
-                </p>
-              ) : null}
+          return (
+            <Card key={report.id}>
+              <article className="moderation-report-card admin-list-card">
+                <div className="moderation-report-headline admin-list-card-head">
+                  <div>
+                    <p className="admin-list-card-kicker">신고 #{report.id.slice(0, 8)}</p>
+                    <h3 className="moderation-report-title admin-list-card-title">{report.reason}</h3>
+                    <p className="moderation-report-detail admin-list-card-description">{report.detail ?? "상세 설명 없음"}</p>
+                    <small className="moderation-report-meta admin-list-card-meta-row">
+                      <span>{createdAt.toLocaleString("ko-KR")}</span>
+                      <span>경과 {Math.max(elapsedHours, 0)}시간</span>
+                      {report.reporterNickname ? <span>신고자 {report.reporterNickname}</span> : null}
+                    </small>
+                    {report.topicId ? (
+                      <p className="moderation-report-context">
+                        <Link href={`/topics/${report.topicId}`} className="text-link">
+                          토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
+                        </Link>
+                        {report.topicStatus ? <span style={{ marginLeft: "0.4rem", color: "#6b7280" }}>({report.topicStatus})</span> : null}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="row" style={{ gap: "0.4rem" }}>
+                    {isStale ? <Pill tone="danger">24h+ 지연</Pill> : null}
+                    {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
+                    <Pill>{report.commentId ? "comment" : "topic"}</Pill>
+                  </div>
+                </div>
 
-              <div className="moderation-report-actions">
-                <ReportActions
-                  reportId={report.id}
-                  initialStatus={report.status}
-                  hasComment={Boolean(report.commentId)}
-                  hasTopic={Boolean(report.topicId)}
-                  commentHidden={Boolean(report.commentHidden)}
-                  topicStatus={report.topicStatus}
-                />
-              </div>
-            </article>
-          </Card>
-        ))}
+                {report.commentContent ? (
+                  <p className="moderation-report-comment">
+                    코멘트: {report.commentContent}
+                    {report.commentHidden ? " (숨김 처리됨)" : ""}
+                  </p>
+                ) : null}
+
+                <div className="moderation-report-actions">
+                  <ReportActions
+                    reportId={report.id}
+                    initialStatus={report.status}
+                    hasComment={Boolean(report.commentId)}
+                    hasTopic={Boolean(report.topicId)}
+                    commentHidden={Boolean(report.commentHidden)}
+                    topicStatus={report.topicStatus}
+                  />
+                </div>
+              </article>
+            </Card>
+          );
+        })}
         {filteredReports.length === 0 ? (
           <StatePanel
             title="조건에 맞는 신고가 없습니다"

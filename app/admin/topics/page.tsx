@@ -123,7 +123,11 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     <PageContainer>
       <section className="admin-hero-shell">
         <div className="row admin-header-row">
-          <h1 style={{ margin: 0 }}>Admin · Topics</h1>
+          <div>
+            <p className="admin-hero-eyebrow">Topic Operations</p>
+            <h1 className="admin-hero-title">Admin · Topics</h1>
+            <p className="admin-hero-subtitle">토픽 생애주기와 정산 위험 신호를 한 화면에서 확인하고 우선순위대로 정리하세요.</p>
+          </div>
           <div className="row admin-header-links">
             <Link className="text-link" href="/admin/topics/new">+ Create Topic</Link>
             <Link className="text-link" href="/admin/topics?status=ALL">필터 초기화</Link>
@@ -239,28 +243,47 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       </Card>
 
       <div className="list">
-        {filteredTopics.map((topic) => (
-          <Card key={topic.id}>
-            <div className="row moderation-report-head" style={{ justifyContent: "space-between", gap: "0.55rem", flexWrap: "wrap" }}>
-              <strong>{topic.title}</strong>
-              <div className="row" style={{ gap: "0.45rem" }}>
-                {topic.status === "OPEN" ? <Pill tone="danger">우선 확인</Pill> : null}
-                <small style={{ color: "#6b7280" }}>{topic.status}</small>
-              </div>
-            </div>
-            <p style={{ margin: "0.45rem 0", color: "#6b7280" }}>{topic.description}</p>
-            <div className="row admin-topic-link-row">
-              <Link className="text-link" href={`/topics/${topic.id}`}>상세 보기</Link>
-              <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>
-                {topic.status === "RESOLVED" ? "정산 결과 보기" : "Resolve"}
-              </Link>
-            </div>
+        {filteredTopics.map((topic) => {
+          const createdAt = new Date(topic.createdAt);
+          const ageHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
+          const isAgingOpen = topic.status === "OPEN" && ageHours >= 24;
 
-            <div style={{ marginTop: "0.74rem" }}>
-              <TopicQuickActions topicId={topic.id} topicStatus={topic.status} />
-            </div>
-          </Card>
-        ))}
+          return (
+            <Card key={topic.id}>
+              <article className="admin-list-card">
+                <div className="admin-list-card-head">
+                  <div className="admin-list-card-title-wrap">
+                    <p className="admin-list-card-kicker">{topic.id}</p>
+                    <h3 className="admin-list-card-title">{topic.title}</h3>
+                  </div>
+                  <div className="row" style={{ gap: "0.45rem" }}>
+                    {isAgingOpen ? <Pill tone="danger">24h+ 지연</Pill> : null}
+                    {topic.status === "OPEN" ? <Pill tone="danger">우선 확인</Pill> : null}
+                    <Pill tone={topic.status === "RESOLVED" ? "success" : "neutral"}>{topic.status}</Pill>
+                  </div>
+                </div>
+
+                <p className="admin-list-card-description">{topic.description}</p>
+
+                <div className="admin-list-card-meta-row">
+                  <span>생성 {createdAt.toLocaleDateString("ko-KR")}</span>
+                  <span>경과 {Math.max(ageHours, 0)}시간</span>
+                </div>
+
+                <div className="row admin-topic-link-row">
+                  <Link className="text-link" href={`/topics/${topic.id}`}>상세 보기</Link>
+                  <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>
+                    {topic.status === "RESOLVED" ? "정산 결과 보기" : "Resolve"}
+                  </Link>
+                </div>
+
+                <div style={{ marginTop: "0.74rem" }}>
+                  <TopicQuickActions topicId={topic.id} topicStatus={topic.status} />
+                </div>
+              </article>
+            </Card>
+          );
+        })}
         {filteredTopics.length === 0 ? (
           <StatePanel
             title="조건에 맞는 토픽이 없습니다"
