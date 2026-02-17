@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
+import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
@@ -272,6 +272,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <AdminSectionTabs
+        items={[
+          { href: "/admin/topics", label: "토픽 운영", active: false },
+          { href: "/admin/moderation", label: "신고/정산", badge: actionableReports.length, active: true },
+          { href: "/admin/moderation?status=OPEN", label: "긴급 OPEN", badge: urgentReportCount, active: false },
+        ]}
+      />
 
       <StatePanel
         title={hasCriticalIntegrityIssue ? "정산/무결성 긴급 점검" : "정산 무결성 상태 안정"}

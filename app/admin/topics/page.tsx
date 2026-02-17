@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
+import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
@@ -153,6 +153,14 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <AdminSectionTabs
+        items={[
+          { href: "/admin/topics", label: "토픽 운영", badge: pendingResolveCount, active: true },
+          { href: "/admin/moderation", label: "신고/정산", active: false },
+          { href: "/admin/topics/new", label: "새 토픽", active: false },
+        ]}
+      />
 
       <StatePanel
         title={integrityIssueTotal > 0 ? "토픽 정산 무결성 점검 필요" : "토픽 정산 무결성 안정"}

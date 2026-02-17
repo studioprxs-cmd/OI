@@ -24,6 +24,45 @@ export function SectionTitle({ children }: LayoutProps) {
   return <h2 className="section-title">{children}</h2>;
 }
 
+type AdminTabItem = {
+  href: string;
+  label: string;
+  badge?: number;
+  active?: boolean;
+};
+
+export function AdminSectionTabs({ items }: { items: AdminTabItem[] }) {
+  return (
+    <nav className="admin-section-tabs" aria-label="관리자 섹션 이동">
+      {items.map((item) => (
+        <Link key={`${item.href}-${item.label}`} href={item.href} className={`admin-section-tab${item.active ? " is-active" : ""}`}>
+          <span>{item.label}</span>
+          {typeof item.badge === "number" ? <span className="admin-section-tab-badge">{item.badge}</span> : null}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+type AppStateCardProps = {
+  eyebrow?: ReactNode;
+  title: ReactNode;
+  description?: ReactNode;
+  tone?: "neutral" | "success" | "warning" | "danger";
+  actions?: ReactNode;
+};
+
+export function AppStateCard({ eyebrow, title, description, tone = "neutral", actions }: AppStateCardProps) {
+  return (
+    <section className={`app-state-card app-state-card-${tone}`}>
+      {eyebrow ? <p className="app-state-eyebrow">{eyebrow}</p> : null}
+      <h2 className="app-state-title">{title}</h2>
+      {description ? <p className="app-state-description">{description}</p> : null}
+      {actions ? <div className="app-state-actions">{actions}</div> : null}
+    </section>
+  );
+}
+
 type StatePanelProps = {
   title: ReactNode;
   description?: ReactNode;
