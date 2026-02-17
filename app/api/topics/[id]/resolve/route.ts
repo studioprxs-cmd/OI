@@ -7,6 +7,8 @@ import { calculateSettlement } from "@/lib/settlement";
 
 type Params = { params: Promise<{ id: string }> };
 
+const MIN_RESOLUTION_SUMMARY_LENGTH = 12;
+
 async function requireAdminUser(req: NextRequest) {
   const user = await getAuthUser(req);
   const guard = requireAdmin(user);
@@ -150,6 +152,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (!summary) {
     return NextResponse.json({ ok: false, data: null, error: "summary is required" }, { status: 400 });
+  }
+
+  if (summary.length < MIN_RESOLUTION_SUMMARY_LENGTH) {
+    return NextResponse.json(
+      { ok: false, data: null, error: `summary must be at least ${MIN_RESOLUTION_SUMMARY_LENGTH} characters` },
+      { status: 400 },
+    );
   }
 
   try {

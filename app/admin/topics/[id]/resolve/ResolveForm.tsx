@@ -75,11 +75,16 @@ export function ResolveForm({ topicId }: Props) {
   const [previewData, setPreviewData] = useState<PreviewResponse | null>(null);
 
   const selectedPreview = useMemo(() => previewData?.preview?.[result], [previewData, result]);
+  const payoutDelta = useMemo(() => {
+    if (!selectedPreview) return 0;
+    return selectedPreview.totalPool - selectedPreview.payoutTotal;
+  }, [selectedPreview]);
   const alreadyResolved = Boolean(previewData?.topic?.resolution);
   const topicStatus = previewData?.topic?.status ?? "";
   const resolvedSettlement = previewData?.resolvedSettlement ?? null;
   const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
   const unsettledCount = Number(previewData?.unsettledBetCount ?? 0);
+  const hasPayoutDelta = unsettledCount > 0 && payoutDelta !== 0;
   const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && unsettledCount > 0;
   const noWinnerPhraseMatched = noWinnerConfirmPhrase.trim() === NO_WINNER_CONFIRM_PHRASE;
   const summaryTrimmed = summary.trim();
@@ -102,6 +107,18 @@ export function ResolveForm({ topicId }: Props) {
         ? "승리 베팅 없음 (0pt 지급 정산, 추가 확인 필요)"
         : `승리 풀 ${Number(selectedPreview?.winnerPool ?? 0).toLocaleString("ko-KR")}pt`,
       ok: !requiresNoWinnerConfirm,
+    },
+    {
+      label: "정산 보존식 점검 (총 풀 = 총 지급)",
+      hint: hasPayoutDelta
+        ? `차이 ${payoutDelta > 0 ? "+" : ""}${payoutDelta.toLocaleString("ko-KR")}pt · 배당 계산 재확인 필요`
+        : "총 풀과 총 지급이 일치합니다.",
+      ok: !hasPayoutDelta,
+    },
+    {
+      label: "감사 로그 품질(요약 길이)",
+      hint: summaryTrimmed.length >= MIN_SUMMARY_LENGTH ? "감사 최소 길이 충족" : `최소 ${MIN_SUMMARY_LENGTH}자 필요`,
+      ok: summaryTrimmed.length >= MIN_SUMMARY_LENGTH,
     },
   ];
 
@@ -304,6 +321,12 @@ export function ResolveForm({ topicId }: Props) {
             ) : null}
             {selectedPreview?.winnerPool === 0 ? (
               <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
+            ) : null}
+            {hasPayoutDelta ? (
+              <Message
+                text={`총 풀과 예상 총지급이 ${payoutDelta > 0 ? "+" : ""}${payoutDelta.toLocaleString("ko-KR")}pt 차이 납니다. 배당/무효 베팅 처리 정책을 다시 확인하세요.`}
+                tone="error"
+              />
             ) : null}
             {requiresNoWinnerConfirm ? (
               <div className="list" style={{ gap: "0.52rem" }}>
