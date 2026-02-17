@@ -118,6 +118,20 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
   const pendingResolveCount = topics.filter((topic) => topic.status === "OPEN" || topic.status === "LOCKED").length;
   const staleOpenCount = topics.filter((topic) => topic.status === "OPEN" && Date.now() - new Date(topic.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
   const integrityIssueTotal = unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
+  const priorityTopics = filteredTopics
+    .filter((topic) => {
+      const ageHours = Math.floor((Date.now() - new Date(topic.createdAt).getTime()) / (1000 * 60 * 60));
+      return topic.status === "LOCKED" || topic.status === "OPEN" || (topic.status === "RESOLVED" && ageHours <= 24);
+    })
+    .slice(0, 5);
+  const spotlightTopics = priorityTopics.slice(0, 3);
+  const nextActionLabel = staleOpenCount > 0
+    ? `24h+ OPEN ${staleOpenCount}건부터 우선 정리`
+    : statusCounts.LOCKED > 0
+      ? `LOCKED ${statusCounts.LOCKED}건 정산/해결 처리`
+      : pendingResolveCount > 0
+        ? `OPEN/LOCKED ${pendingResolveCount}건 순차 정리`
+        : "긴급 토픽 없음 · 신규 생성/품질 관리 권장";
 
   return (
     <PageContainer>
@@ -179,6 +193,42 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           </>
         )}
       />
+
+      <Card className="admin-surface-card admin-surface-card-priority">
+        <SectionTitle>오늘의 우선순위</SectionTitle>
+        <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
+          <Pill tone={pendingResolveCount > 0 ? "danger" : "success"}>처리 필요 {pendingResolveCount}</Pill>
+          <Pill tone={staleOpenCount > 0 ? "danger" : "neutral"}>24h+ OPEN {staleOpenCount}</Pill>
+          <Pill tone={statusCounts.LOCKED > 0 ? "danger" : "neutral"}>LOCKED {statusCounts.LOCKED}</Pill>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>무결성 이슈 {integrityIssueTotal}</Pill>
+        </div>
+        <p className="admin-muted-note">Next best action: {nextActionLabel}</p>
+      </Card>
+
+      <Card>
+        <SectionTitle>모바일 스포트라이트</SectionTitle>
+        <p className="admin-muted-note">엄지 한 번으로 지금 처리해야 할 토픽으로 이동합니다.</p>
+        {spotlightTopics.length > 0 ? (
+          <div className="admin-spotlight-grid" style={{ marginTop: "0.65rem" }}>
+            {spotlightTopics.map((topic) => {
+              const ageHours = Math.floor((Date.now() - new Date(topic.createdAt).getTime()) / (1000 * 60 * 60));
+              return (
+                <Link key={topic.id} href={`/admin/topics/${topic.id}/resolve`} className="admin-spotlight-link">
+                  <span className="admin-spotlight-status">{topic.status}</span>
+                  <strong className="admin-spotlight-title">{topic.title}</strong>
+                  <small className="admin-spotlight-meta">경과 {Math.max(ageHours, 0)}시간 · Resolve 바로가기</small>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <StatePanel
+            title="스포트라이트 대상이 없습니다"
+            description="긴급 처리할 OPEN/LOCKED 토픽이 없습니다. 신규 토픽 품질 점검을 진행하세요."
+            tone="success"
+          />
+        )}
+      </Card>
 
       {unresolvedSettledBacklogTopics.length > 0 ? (
         <Card>
@@ -243,6 +293,18 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       </Card>
 
       <div className="list">
+        {selectedStatus === "ALL" && !keyword ? (
+          <StatePanel
+            title="오늘의 실행 루틴"
+            description={`OPEN/LOCKED ${pendingResolveCount}건을 우선 정리하고, RESOLVED 무결성 이슈 ${integrityIssueTotal}건을 이어서 점검하세요.`}
+            tone={pendingResolveCount > 0 || integrityIssueTotal > 0 ? "warning" : "success"}
+            actions={
+              pendingResolveCount > 0
+                ? <Link className="btn btn-primary" href="/admin/topics?status=OPEN">OPEN 토픽 먼저 보기</Link>
+                : <Link className="btn btn-secondary" href="/admin/topics/new">새 토픽 만들기</Link>
+            }
+          />
+        ) : null}
         {filteredTopics.map((topic) => {
           const createdAt = new Date(topic.createdAt);
           const ageHours = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60));
@@ -292,6 +354,13 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           />
         ) : null}
       </div>
+
+      <div className="admin-mobile-dock" aria-label="모바일 토픽 운영 빠른 실행">
+        <Link href="/admin/topics?status=OPEN" className="admin-quick-action-btn">OPEN {statusCounts.OPEN}</Link>
+        <Link href="/admin/topics?status=LOCKED" className="admin-quick-action-btn">LOCKED {statusCounts.LOCKED}</Link>
+        <Link href="/admin/topics/new" className="admin-quick-action-btn">새 토픽</Link>
+      </div>
+      <div className="admin-mobile-dock-spacer" aria-hidden />
     </PageContainer>
   );
 }
