@@ -13,18 +13,17 @@ type Viewer = {
 } | null;
 
 type NavItem = {
-  href: "/" | "/topics" | "/me" | "/me/reports" | "/admin/topics";
+  href: string;
   label: string;
   icon: string;
-  adminOnly?: boolean;
-  authOnly?: boolean;
+  kind?: "POLL" | "BETTING";
 };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "홈", icon: "⌂" },
   { href: "/topics", label: "토픽", icon: "◉" },
-  { href: "/me", label: "내 활동", icon: "◌", authOnly: true },
-  { href: "/admin/topics", label: "관리", icon: "▣", adminOnly: true },
+  { href: "/topics?kind=POLL", label: "이슈", icon: "◌", kind: "POLL" },
+  { href: "/topics?kind=BETTING", label: "마켓", icon: "▣", kind: "BETTING" },
 ];
 
 export function TopNav({ viewer }: { viewer: Viewer }) {
@@ -44,11 +43,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const headerRef = useRef<HTMLElement | null>(null);
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
-  const visibleNavItems = NAV_ITEMS.filter((item) => {
-    if (item.adminOnly && viewer?.role !== "ADMIN") return false;
-    if (item.authOnly && !viewer) return false;
-    return true;
-  });
+  const visibleNavItems = NAV_ITEMS;
 
   useEffect(() => {
     setSearchQuery(initialSearch);
@@ -235,7 +230,12 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         <nav className="top-nav-links" aria-label="글로벌 탐색">
           <div className="top-nav-tabs">
             {visibleNavItems.map((item) => {
-              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const currentKind = searchParams.get("kind");
+              const active = item.href === "/"
+                ? pathname === "/"
+                : item.kind
+                  ? pathname.startsWith("/topics") && currentKind === item.kind
+                  : pathname.startsWith("/topics") && !currentKind;
               return (
                 <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
                   <span className="top-nav-link-icon" aria-hidden>{item.icon}</span>
@@ -315,7 +315,12 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색" ref={mobileBottomNavRef}>
         {visibleNavItems.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+          const currentKind = searchParams.get("kind");
+          const active = item.href === "/"
+            ? pathname === "/"
+            : item.kind
+              ? pathname.startsWith("/topics") && currentKind === item.kind
+              : pathname.startsWith("/topics") && !currentKind;
           return (
             <Link
               key={`mobile-${item.href}`}
