@@ -101,6 +101,32 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .catch(() => ({ _count: { id: 0 }, _sum: { amount: 0, payoutAmount: 0 } }))
     : { _count: { id: 0 }, _sum: { amount: 0, payoutAmount: 0 } };
 
+  const settledWithNullPayoutCount = canUseDb
+    ? await db.bet.count({ where: { settled: true, payoutAmount: null } }).catch(() => 0)
+    : 0;
+
+  const unresolvedSettledBacklogCount = canUseDb
+    ? await db.bet
+      .count({
+        where: {
+          settled: false,
+          topic: { status: "RESOLVED" },
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
+  const resolvedWithoutResolutionCount = canUseDb
+    ? await db.topic
+      .count({
+        where: {
+          status: "RESOLVED",
+          resolution: null,
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
   const counts = Object.fromEntries(
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
@@ -142,8 +168,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const actionableReports = reports.filter((report) => (ACTIONABLE_STATUSES as readonly string[]).includes(report.status));
   const hiddenCommentReportCount = reports.filter((report) => report.commentHidden).length;
   const urgentReportCount = reports.filter((report) => report.status === "OPEN").length;
+  const nowTs = Date.now();
+  const staleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
+  const superStaleActionableCount = actionableReports.filter((report) => nowTs - new Date(report.createdAt).getTime() >= 48 * 60 * 60 * 1000).length;
   const filteredOpenIds = filteredReports.filter((report) => report.status === "OPEN").map((report) => report.id);
   const filteredReviewingIds = filteredReports.filter((report) => report.status === "REVIEWING").map((report) => report.id);
+  const totalSettledAmount = Number(settlement._sum.amount ?? 0);
+  const totalPayoutAmount = Number(settlement._sum.payoutAmount ?? 0);
+  const payoutRatio = totalSettledAmount > 0 ? Math.round((totalPayoutAmount / totalSettledAmount) * 100) : 0;
 
   return (
     <PageContainer>
@@ -158,6 +190,35 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </Link>
         </div>
       </div>
+
+      <Card>
+        <SectionTitle>운영 컨트롤 타워</SectionTitle>
+        <p style={{ margin: "0.5rem 0 0", color: "#4b6355" }}>
+          모바일/운영 환경 기준으로 즉시 대응 큐와 정산 무결성 상태를 한 번에 점검합니다.
+        </p>
+        <div className="admin-kpi-grid" style={{ marginTop: "0.8rem" }}>
+          <div className="admin-kpi-tile">
+            <p className="admin-kpi-label">즉시 처리</p>
+            <strong className="admin-kpi-value">{actionableReports.length}건</strong>
+            <span className="admin-kpi-meta">OPEN + REVIEWING</span>
+          </div>
+          <div className="admin-kpi-tile">
+            <p className="admin-kpi-label">24시간 초과</p>
+            <strong className="admin-kpi-value">{staleActionableCount}건</strong>
+            <span className="admin-kpi-meta">지연 처리 경고</span>
+          </div>
+          <div className="admin-kpi-tile">
+            <p className="admin-kpi-label">48시간 초과</p>
+            <strong className="admin-kpi-value">{superStaleActionableCount}건</strong>
+            <span className="admin-kpi-meta">SLA 위험</span>
+          </div>
+          <div className="admin-kpi-tile">
+            <p className="admin-kpi-label">정산 배당률</p>
+            <strong className="admin-kpi-value">{payoutRatio}%</strong>
+            <span className="admin-kpi-meta">총 지급 / 총 베팅</span>
+          </div>
+        </div>
+      </Card>
 
       <Card>
         <SectionTitle>신고 현황</SectionTitle>
@@ -217,10 +278,23 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       <Card>
         <SectionTitle>정산 현황</SectionTitle>
         <p style={{ margin: "0.55rem 0", color: "#6b7280" }}>
-          정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {Number(settlement._sum.amount ?? 0).toLocaleString("ko-KR")} pt · 총 지급{" "}
-          {Number(settlement._sum.payoutAmount ?? 0).toLocaleString("ko-KR")} pt
+          정산 완료 베팅 {settlement._count.id}건 · 총 베팅 {totalSettledAmount.toLocaleString("ko-KR")} pt · 총 지급 {totalPayoutAmount.toLocaleString("ko-KR")} pt
         </p>
+        <div className="row" style={{ gap: "0.45rem", flexWrap: "wrap" }}>
+          <Pill tone={settledWithNullPayoutCount > 0 ? "danger" : "success"}>정산값 누락 {settledWithNullPayoutCount}</Pill>
+          <Pill tone={unresolvedSettledBacklogCount > 0 ? "danger" : "success"}>정산 대기 백로그 {unresolvedSettledBacklogCount}</Pill>
+          <Pill tone={resolvedWithoutResolutionCount > 0 ? "danger" : "success"}>해결-결과 불일치 {resolvedWithoutResolutionCount}</Pill>
+        </div>
       </Card>
+
+      {(settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || resolvedWithoutResolutionCount > 0) ? (
+        <StatePanel
+          title="정산 무결성 점검 필요"
+          description={`누락/백로그 이슈 ${settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건이 감지되었습니다. 해결 전 추가 정산을 보류하세요.`}
+          tone="warning"
+          actions={<Link href="/admin/topics" className="btn btn-primary">토픽 정산 상태 점검</Link>}
+        />
+      ) : null}
 
       <div className="list">
         <Card>

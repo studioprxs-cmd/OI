@@ -779,10 +779,41 @@ body::before {
 }
 
 .kpi-grid,
-.stats-grid {
+.stats-grid,
+.admin-kpi-grid {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.admin-kpi-tile {
+  border: 1px solid #deebe3;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  border-radius: 14px;
+  padding: 0.74rem 0.78rem;
+  display: grid;
+  gap: 0.24rem;
+  box-shadow: 0 3px 11px rgba(15, 23, 42, 0.05);
+}
+
+.admin-kpi-label {
+  margin: 0;
+  color: #4f6658;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.admin-kpi-value {
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: #163126;
+}
+
+.admin-kpi-meta {
+  color: #5a6f63;
+  font-size: 0.78rem;
 }
 
 .kpi-label {
@@ -1088,6 +1119,15 @@ body::before {
     gap: 0.72rem;
   }
 
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-kpi-tile {
+    border-radius: 12px;
+    padding: 0.66rem 0.7rem;
+  }
+
   .hero-block {
     border-radius: 18px;
     padding: 1rem;
@@ -1246,6 +1286,10 @@ body::before {
     min-height: 44px;
     padding-inline: 0.68rem;
     font-size: 0.89rem;
+  }
+
+  .admin-kpi-grid {
+    grid-template-columns: 1fr;
   }
 
   .hero-block {
