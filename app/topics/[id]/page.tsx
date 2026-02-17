@@ -7,6 +7,7 @@ import { CommentForm } from "./CommentForm";
 import { CommentLikeButton } from "./CommentLikeButton";
 import { CommentReportButton } from "./CommentReportButton";
 import { TopicReportButton } from "./TopicReportButton";
+import { TopicLivePulse } from "./TopicLivePulse";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
@@ -167,32 +168,43 @@ export default async function TopicDetailPage({ params }: Props) {
               <p className="section-kicker">실시간 현황</p>
               <h2>{topicKind === "BETTING" ? "투표 · 베팅 지표" : "여론 투표 지표"}</h2>
             </div>
-            <div className="stats-grid">
-            <FeedCard title="YES 투표" meta={`${yesVotes}표 (${percent(yesVotes, totalVotes)}%)`}>
-              <div className="meter"><span style={{ width: `${percent(yesVotes, totalVotes)}%` }} /></div>
-            </FeedCard>
-            <FeedCard title="NO 투표" meta={`${noVotes}표 (${percent(noVotes, totalVotes)}%)`}>
-              <div className="meter"><span style={{ width: `${percent(noVotes, totalVotes)}%` }} /></div>
-            </FeedCard>
-            {topicKind === "BETTING" ? (
-              <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
-                <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
+            <TopicLivePulse
+              topicId={topic.id}
+              topicKind={topicKind}
+              topicStatus={topic.status}
+              initialYesVotes={yesVotes}
+              initialNoVotes={noVotes}
+              initialYesPool={yesPool}
+              initialNoPool={noPool}
+            />
+            <div className="stats-grid" style={{ marginTop: "0.8rem" }}>
+              <FeedCard title="YES 투표" meta={`${yesVotes}표 (${percent(yesVotes, totalVotes)}%)`}>
+                <div className="meter"><span style={{ width: `${percent(yesVotes, totalVotes)}%` }} /></div>
               </FeedCard>
-            ) : null}
+              <FeedCard title="NO 투표" meta={`${noVotes}표 (${percent(noVotes, totalVotes)}%)`}>
+                <div className="meter"><span style={{ width: `${percent(noVotes, totalVotes)}%` }} /></div>
+              </FeedCard>
+              {topicKind === "BETTING" ? (
+                <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
+                  <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
+                </FeedCard>
+              ) : null}
             </div>
           </section>
 
           {topicKind === "BETTING" ? (
-            <FeedCard title="Polymarket 스타일 베팅 티켓" meta="현재 풀 기준 가격/예상 수령을 보면서 바로 참여">
-              <BetTicket
-                topicId={topic.id}
-                yesPool={yesPool}
-                noPool={noPool}
-                canBet={Boolean(canBet)}
-                isAuthenticated={Boolean(viewer)}
-                blockReason={participationBlockReason ?? undefined}
-              />
-            </FeedCard>
+            <div id="bet-ticket">
+              <FeedCard title="Polymarket 스타일 베팅 티켓" meta="현재 풀 기준 가격/예상 수령을 보면서 바로 참여">
+                <BetTicket
+                  topicId={topic.id}
+                  yesPool={yesPool}
+                  noPool={noPool}
+                  canBet={Boolean(canBet)}
+                  isAuthenticated={Boolean(viewer)}
+                  blockReason={participationBlockReason ?? undefined}
+                />
+              </FeedCard>
+            </div>
           ) : (
             <FeedCard title="여론 투표 전용 이슈" meta="이 토픽은 YES/NO 의견 투표만 가능하고 베팅은 비활성화됩니다.">
               <p className="feed-card-meta" style={{ margin: 0 }}>베팅 없이 순수 여론 흐름을 확인하는 모드입니다.</p>
