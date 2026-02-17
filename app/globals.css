@@ -1258,6 +1258,69 @@ body::before {
   font-size: 0.76rem;
 }
 
+.admin-watch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.admin-watch-card {
+  display: grid;
+  gap: 0.26rem;
+  border: 1px solid #d8e6de;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  padding: 0.72rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.admin-watch-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.admin-watch-card.is-danger {
+  border-color: #f2c6c4;
+  background: linear-gradient(180deg, #fff8f8 0%, #fff3f3 100%);
+}
+
+.admin-watch-card.is-warning {
+  border-color: #f1dfb8;
+  background: linear-gradient(180deg, #fffbf2 0%, #fff8e7 100%);
+}
+
+.admin-watch-card.is-ok {
+  border-color: #cde9d8;
+  background: linear-gradient(180deg, #f7fdf9 0%, #f0fbf4 100%);
+}
+
+.admin-watch-count {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #143628;
+}
+
+.admin-watch-title {
+  font-size: 0.92rem;
+  color: #193b2d;
+}
+
+.admin-watch-description {
+  font-size: 0.76rem;
+  color: #617368;
+  line-height: 1.35;
+}
+
+.admin-watch-action {
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: #215a42;
+  margin-top: 0.1rem;
+}
+
 .chip-row-scroll {
   display: flex;
   gap: 0.48rem;
@@ -2075,6 +2138,15 @@ body::before {
 
   .admin-quick-action-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-watch-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-watch-card {
+    border-radius: 12px;
+    padding: 0.66rem 0.68rem;
   }
 
   .admin-spotlight-grid {

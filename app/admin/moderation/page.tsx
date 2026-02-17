@@ -246,6 +246,36 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     .slice(0, 5);
   const spotlightReports = priorityReports.slice(0, 3);
 
+  const integrityWatchItems = [
+    {
+      key: "null-payout",
+      label: "지급값 누락",
+      count: settledWithNullPayoutCount,
+      description: "settled=true인데 payoutAmount가 비어 있는 건",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "RESOLVED 토픽 점검",
+      tone: settledWithNullPayoutCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "settlement-backlog",
+      label: "정산 백로그",
+      count: unresolvedSettledBacklogCount,
+      description: "RESOLVED 상태지만 미정산 베팅이 남은 건",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "백로그 우선 처리",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "resolution-mismatch",
+      label: "결과 레코드 불일치",
+      count: resolvedWithoutResolutionCount,
+      description: "RESOLVED 상태인데 resolution 레코드가 없는 건",
+      href: "/admin/topics?status=RESOLVED",
+      actionLabel: "결과 레코드 복구",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+  ] as const;
+
   const nextActionLabel = urgentReportCount > 0
     ? `OPEN 신고 ${urgentReportCount}건부터 처리`
     : counts.REVIEWING > 0
@@ -514,6 +544,21 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <span className={unresolvedSettledBacklogCount > 0 ? "is-danger" : "is-ok"}>백로그</span>
           <span className={resolvedWithoutResolutionCount > 0 ? "is-danger" : "is-ok"}>결과 레코드</span>
           <span className="is-neutral">모바일 우선 점검 추천</span>
+        </div>
+      </Card>
+
+      <Card className="admin-surface-card">
+        <SectionTitle>무결성 워치리스트</SectionTitle>
+        <p className="admin-muted-note">정산 정합성 이슈를 카드 단위로 빠르게 스캔하고 바로 이동하세요.</p>
+        <div className="admin-watch-grid" style={{ marginTop: "0.68rem" }}>
+          {integrityWatchItems.map((item) => (
+            <Link key={item.key} href={item.href} className={`admin-watch-card is-${item.tone}`}>
+              <span className="admin-watch-count">{item.count}</span>
+              <strong className="admin-watch-title">{item.label}</strong>
+              <small className="admin-watch-description">{item.description}</small>
+              <span className="admin-watch-action">{item.actionLabel} →</span>
+            </Link>
+          ))}
         </div>
       </Card>
 
