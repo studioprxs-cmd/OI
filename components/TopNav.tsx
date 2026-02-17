@@ -82,6 +82,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     if (!header) return;
 
     const root = document.documentElement;
+    const shell = document.querySelector<HTMLElement>(".app-shell");
+
+    const syncFloatingLayerFlags = () => {
+      if (!shell) return;
+
+      const hasAdminDock = Boolean(shell.querySelector(".admin-mobile-dock"));
+      const hasResolveSubmitBar = Boolean(shell.querySelector(".resolve-submit-bar"));
+
+      shell.dataset.hasAdminDock = hasAdminDock ? "true" : "false";
+      shell.dataset.hasResolveSubmit = hasResolveSubmitBar ? "true" : "false";
+    };
 
     const applyLayoutMetrics = () => {
       const topNavHeight = `${Math.ceil(header.getBoundingClientRect().height)}px`;
@@ -96,6 +107,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       const keyboardVisible = keyboardInset > 120;
 
       root.style.setProperty("--mobile-global-nav-height", `${isMobile && keyboardVisible ? 0 : mobileBottomNavHeight}px`);
+      syncFloatingLayerFlags();
     };
 
     applyLayoutMetrics();
@@ -109,6 +121,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       resizeObserver.observe(mobileBottomNavRef.current);
     }
 
+    const mutationObserver = new MutationObserver(() => {
+      syncFloatingLayerFlags();
+    });
+
+    if (shell) {
+      mutationObserver.observe(shell, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
     const viewport = window.visualViewport;
 
     window.addEventListener("resize", applyLayoutMetrics);
@@ -117,11 +140,16 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
     return () => {
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
       window.removeEventListener("resize", applyLayoutMetrics);
       viewport?.removeEventListener("resize", applyLayoutMetrics);
       viewport?.removeEventListener("scroll", applyLayoutMetrics);
       root.style.removeProperty("--top-nav-height");
       root.style.removeProperty("--mobile-global-nav-height");
+      if (shell) {
+        delete shell.dataset.hasAdminDock;
+        delete shell.dataset.hasResolveSubmit;
+      }
     };
   }, [viewer, pathname, visibleNavItems.length]);
 

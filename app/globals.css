@@ -3708,21 +3708,29 @@ body::before {
     backdrop-filter: blur(8px);
   }
 
-  .app-shell:has(.admin-mobile-dock) {
+  .app-shell[data-has-admin-dock="true"] {
     --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
   }
 
-  .app-shell:has(.resolve-submit-bar) {
+  .app-shell[data-has-resolve-submit="true"] {
     --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
   }
 
-  .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
+  .app-shell[data-has-admin-dock="true"][data-has-resolve-submit="true"] {
     --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
   }
 
-  @supports not selector(:has(*)) {
-    .app-shell {
+  @supports selector(:has(*)) {
+    .app-shell:has(.admin-mobile-dock) {
       --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
+    }
+
+    .app-shell:has(.resolve-submit-bar) {
+      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
+    }
+
+    .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
+      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
     }
   }
 
