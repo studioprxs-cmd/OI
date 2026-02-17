@@ -127,6 +127,60 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .catch(() => 0)
     : 0;
 
+  const unresolvedSettledBacklogTopics = canUseDb
+    ? await db.topic
+      .findMany({
+        where: {
+          status: "RESOLVED",
+          bets: {
+            some: {
+              settled: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          _count: {
+            select: {
+              bets: {
+                where: {
+                  settled: false,
+                },
+              },
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 6,
+      })
+      .catch(() => [])
+    : [];
+
+  const resolvedWithoutResolutionTopics = canUseDb
+    ? await db.topic
+      .findMany({
+        where: {
+          status: "RESOLVED",
+          resolution: null,
+        },
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 6,
+      })
+      .catch(() => [])
+    : [];
+
   const counts = Object.fromEntries(
     STATUSES.map((status) => [status, reports.filter((report) => report.status === status).length]),
   ) as Record<StatusType, number>;
@@ -286,6 +340,45 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill tone={resolvedWithoutResolutionCount > 0 ? "danger" : "success"}>해결-결과 불일치 {resolvedWithoutResolutionCount}</Pill>
         </div>
       </Card>
+
+      {(unresolvedSettledBacklogTopics.length > 0 || resolvedWithoutResolutionTopics.length > 0) ? (
+        <Card>
+          <SectionTitle>정산 무결성 이슈 상세</SectionTitle>
+          <div className="integrity-grid" style={{ marginTop: "0.65rem" }}>
+            {unresolvedSettledBacklogTopics.length > 0 ? (
+              <div className="integrity-card">
+                <strong>RESOLVED 상태인데 미정산 베팅이 남은 토픽</strong>
+                <ul className="simple-list" style={{ marginTop: "0.45rem" }}>
+                  {unresolvedSettledBacklogTopics.map((topic) => (
+                    <li key={topic.id}>
+                      <Link href={`/admin/topics/${topic.id}/resolve`} className="text-link">
+                        {topic.title}
+                      </Link>
+                      <small style={{ color: "#6b7280" }}> · 미정산 {topic._count.bets}건</small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {resolvedWithoutResolutionTopics.length > 0 ? (
+              <div className="integrity-card">
+                <strong>결과 레코드 없이 RESOLVED 처리된 토픽</strong>
+                <ul className="simple-list" style={{ marginTop: "0.45rem" }}>
+                  {resolvedWithoutResolutionTopics.map((topic) => (
+                    <li key={topic.id}>
+                      <Link href={`/admin/topics/${topic.id}/resolve`} className="text-link">
+                        {topic.title}
+                      </Link>
+                      <small style={{ color: "#6b7280" }}> · {new Date(topic.createdAt).toLocaleDateString("ko-KR")}</small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </Card>
+      ) : null}
 
       {(settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || resolvedWithoutResolutionCount > 0) ? (
         <StatePanel

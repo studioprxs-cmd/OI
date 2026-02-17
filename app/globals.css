@@ -891,6 +891,19 @@ body::before {
   padding: 0.65rem 0.72rem;
 }
 
+.integrity-grid {
+  display: grid;
+  gap: 0.62rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.integrity-card {
+  border: 1px solid #f3dcc8;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff8ef 100%);
+  border-radius: 12px;
+  padding: 0.68rem 0.72rem;
+}
+
 .topic-anchor-nav {
   margin-top: 0.75rem;
   display: flex;

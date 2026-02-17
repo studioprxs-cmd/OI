@@ -54,12 +54,15 @@ function payoutMultiplier(summary?: SettlementPreviewSummary) {
   return summary.totalPool / summary.winnerPool;
 }
 
+const NO_WINNER_CONFIRM_PHRASE = "0PT 지급 승인";
+
 export function ResolveForm({ topicId }: Props) {
   const [result, setResult] = useState<ResultValue>("YES");
   const [summary, setSummary] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [confirmNoWinner, setConfirmNoWinner] = useState(false);
+  const [noWinnerConfirmPhrase, setNoWinnerConfirmPhrase] = useState("");
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [previewError, setPreviewError] = useState("");
@@ -71,10 +74,12 @@ export function ResolveForm({ topicId }: Props) {
   const resolvedSettlement = previewData?.resolvedSettlement ?? null;
   const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
   const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && Number(previewData?.unsettledBetCount ?? 0) > 0;
+  const noWinnerPhraseMatched = noWinnerConfirmPhrase.trim() === NO_WINNER_CONFIRM_PHRASE;
 
   useEffect(() => {
     if (!requiresNoWinnerConfirm) {
       setConfirmNoWinner(false);
+      setNoWinnerConfirmPhrase("");
     }
   }, [requiresNoWinnerConfirm, result]);
 
@@ -132,6 +137,11 @@ export function ResolveForm({ topicId }: Props) {
 
     if (requiresNoWinnerConfirm && !confirmNoWinner) {
       setMessage("승리 베팅이 없는 정산(0pt 지급)을 진행하려면 확인 체크가 필요합니다.");
+      return;
+    }
+
+    if (requiresNoWinnerConfirm && !noWinnerPhraseMatched) {
+      setMessage(`0pt 지급 정산을 확정하려면 확인 문구 \"${NO_WINNER_CONFIRM_PHRASE}\" 를 정확히 입력하세요.`);
       return;
     }
 
@@ -247,14 +257,26 @@ export function ResolveForm({ topicId }: Props) {
               <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
             ) : null}
             {requiresNoWinnerConfirm ? (
-              <label className="resolve-confirm-check">
-                <input
-                  type="checkbox"
-                  checked={confirmNoWinner}
-                  onChange={(event) => setConfirmNoWinner(event.target.checked)}
-                />
-                <span>승리 베팅 없음(총 지급 0pt) 상태를 확인했고 이 결과로 정산 진행에 동의합니다.</span>
-              </label>
+              <div className="list" style={{ gap: "0.52rem" }}>
+                <label className="resolve-confirm-check">
+                  <input
+                    type="checkbox"
+                    checked={confirmNoWinner}
+                    onChange={(event) => setConfirmNoWinner(event.target.checked)}
+                  />
+                  <span>승리 베팅 없음(총 지급 0pt) 상태를 확인했고 이 결과로 정산 진행에 동의합니다.</span>
+                </label>
+                <Field label={`확인 문구 입력 (${NO_WINNER_CONFIRM_PHRASE})`} htmlFor="no-winner-confirm-phrase">
+                  <input
+                    id="no-winner-confirm-phrase"
+                    className="input"
+                    value={noWinnerConfirmPhrase}
+                    onChange={(event) => setNoWinnerConfirmPhrase(event.target.value)}
+                    placeholder={NO_WINNER_CONFIRM_PHRASE}
+                    autoComplete="off"
+                  />
+                </Field>
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -274,7 +296,10 @@ export function ResolveForm({ topicId }: Props) {
           placeholder="정산 근거/요약"
         />
       </Field>
-      <Button type="submit" disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && !confirmNoWinner)}>
+      <Button
+        type="submit"
+        disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched))}
+      >
         {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
       </Button>
       {message ? <Message text={message} tone={message.includes("실패") || message.includes("오류") ? "error" : "info"} /> : null}
