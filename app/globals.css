@@ -832,6 +832,29 @@ body::before {
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 
+.admin-surface-card[id],
+.admin-timeline-card[id],
+#topic-list,
+#report-list {
+  scroll-margin-top: calc(var(--admin-jump-sticky-top) + 0.9rem);
+}
+
+.admin-surface-card[id]:target,
+.admin-timeline-card[id]:target,
+#topic-list:target,
+#report-list:target {
+  animation: admin-anchor-pulse 560ms var(--ease-standard);
+}
+
+@keyframes admin-anchor-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(23, 114, 75, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 12px rgba(23, 114, 75, 0);
+  }
+}
+
 .admin-command-card {
   padding-top: 0.88rem;
   padding-bottom: 0.86rem;
@@ -2009,12 +2032,13 @@ body::before {
 }
 
 .admin-empty-pattern {
-  border: 1px dashed #cfe1d7;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfefc 0%, #f4faf7 100%);
-  padding: 0.85rem;
+  border: 1px dashed #c9ded2;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fcfffd 0%, #f4faf7 100%);
+  padding: 0.95rem;
   display: grid;
-  gap: 0.3rem;
+  gap: 0.38rem;
+  box-shadow: 0 12px 26px rgba(16, 45, 33, 0.06);
 }
 
 .admin-empty-kicker {
@@ -2026,17 +2050,19 @@ body::before {
   color: #4f6658;
 }
 
-.admin-empty-pattern strong {
+.admin-empty-title {
+  margin: 0;
   color: #163427;
-  font-size: 0.96rem;
-  letter-spacing: -0.01em;
+  font-size: 1rem;
+  letter-spacing: -0.012em;
+  line-height: 1.3;
 }
 
-.admin-empty-pattern p {
+.admin-empty-description {
   margin: 0;
   color: #5d6f65;
-  line-height: 1.45;
-  font-size: 0.88rem;
+  line-height: 1.5;
+  font-size: 0.89rem;
 }
 
 .admin-empty-icon {
@@ -3542,10 +3568,24 @@ body::before {
 }
 
 .admin-error-state {
-  border-color: #f1cbc8;
-  background: linear-gradient(180deg, #fffafa 0%, #fff5f4 100%);
+  border-color: #efc8c5;
+  background: linear-gradient(180deg, #fffafa 0%, #fff4f3 100%);
   display: grid;
-  gap: 0.5rem;
+  gap: 0.52rem;
+  box-shadow: 0 16px 32px rgba(128, 36, 31, 0.12);
+}
+
+.admin-error-icon {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffe9e7;
+  border: 1px solid #f2bdb8;
+  color: #a0332c;
+  font-weight: 700;
 }
 
 .admin-error-title {
@@ -3558,6 +3598,13 @@ body::before {
 .admin-error-description {
   margin: 0;
   color: #7a3e35;
+}
+
+.admin-error-help {
+  margin: 0;
+  color: #8a4a41;
+  font-size: 0.84rem;
+  line-height: 1.45;
 }
 
 .admin-error-actions {
