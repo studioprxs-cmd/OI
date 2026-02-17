@@ -55,6 +55,28 @@ export async function localFindUserById(id: string) {
   return data.users.find((u) => u.id === id) ?? null;
 }
 
+export async function localAdjustUserPoints(userId: string, delta: number) {
+  const data = await readData();
+  const target = data.users.find((u) => u.id === userId);
+  if (!target) {
+    throw new Error("LOCAL_USER_NOT_FOUND");
+  }
+
+  if (!Number.isFinite(delta) || !Number.isInteger(delta) || delta === 0) {
+    throw new Error("LOCAL_POINT_DELTA_INVALID");
+  }
+
+  const nextBalance = target.pointBalance + delta;
+  if (nextBalance < 0) {
+    throw new Error("LOCAL_INSUFFICIENT_POINTS");
+  }
+
+  target.pointBalance = nextBalance;
+  await writeData(data);
+
+  return { pointBalance: target.pointBalance };
+}
+
 export async function localCreateUser(input: { email: string; nickname: string; passwordHash: string; initialPoints?: number }) {
   const data = await readData();
   const initialPoints = Number.isFinite(input.initialPoints)
