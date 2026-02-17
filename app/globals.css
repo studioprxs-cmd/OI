@@ -82,6 +82,17 @@ body::before {
   border-radius: 10px;
 }
 
+.release-chip {
+  margin-left: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #3e5a4a;
+  background: #e9f6ed;
+  border: 1px solid #ccead6;
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem;
+}
+
 .top-nav-links {
   display: inline-flex;
   align-items: center;

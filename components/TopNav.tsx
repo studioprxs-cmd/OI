@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { RELEASE } from "@/lib/release";
+
 type Viewer = {
   nickname: string;
   role: string;
@@ -54,6 +56,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             className="brand-logo"
             priority
           />
+          <span className="release-chip">r{RELEASE}</span>
         </Link>
 
         <nav className="top-nav-links" aria-label="글로벌 탐색">
