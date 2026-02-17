@@ -401,10 +401,10 @@ body::before {
 }
 
 .topics-layout {
-  border: 1px solid #d9e3f0;
+  border: 1px solid #cfe6d8;
   border-radius: 22px;
   padding: 0.9rem;
-  background: linear-gradient(180deg, #f8fbff 0%, #f2f7fe 100%);
+  background: linear-gradient(180deg, #f7fdf9 0%, #eef8f2 100%);
 }
 
 .topic-head-panel {
