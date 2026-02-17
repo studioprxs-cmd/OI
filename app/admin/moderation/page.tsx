@@ -256,14 +256,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const settlementGapAmount = totalSettledAmount - totalPayoutAmount;
   const settlementGapAbs = Math.abs(settlementGapAmount);
   const settlementBalanceLabel = settlementGapAbs === 0 ? "균형" : settlementGapAmount > 0 ? "미지급 여지" : "과지급 의심";
-  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount;
-  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0;
+  const hasPayoutRatioOutlier = settlement._count.id >= 5 && (payoutRatio < 90 || payoutRatio > 110);
+  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + (hasPayoutRatioOutlier ? 1 : 0);
+  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || hasPayoutRatioOutlier;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
   const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
-  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30));
+  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30) + (hasPayoutRatioOutlier ? 20 : 0));
   const queueStressScore = Math.min(100, (urgentReportCount * 10) + (superStaleActionableCount * 24) + (staleActionableCount * 8));
   const settlementConfidence = integrityRiskScore === 0 ? "높음" : integrityRiskScore <= 30 ? "보통" : "낮음";
   const priorityReports = filteredReports
@@ -311,6 +312,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       href: "/admin/topics?status=ALL",
       actionLabel: "베팅 데이터 점검",
       tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "payout-ratio-outlier",
+      label: "배당률 밴드 이탈",
+      count: hasPayoutRatioOutlier ? 1 : 0,
+      description: "정산 5건 이상에서 payout ratio가 90~110% 범위를 벗어난 상태",
+      href: "/admin/moderation?status=ALL",
+      actionLabel: "정산 레저 재검토",
+      tone: hasPayoutRatioOutlier ? "warning" : "ok",
     },
   ] as const;
 
@@ -376,6 +386,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       count: nonPositiveBetAmountCount,
       helper: "bet.amount <= 0",
       tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "payout-band",
+      label: "배당률 정상 밴드",
+      count: hasPayoutRatioOutlier ? 1 : 0,
+      helper: "정산 5건 이상 시 payout ratio 90~110%",
+      tone: hasPayoutRatioOutlier ? "warning" : "ok",
     },
   ] as const;
 
@@ -501,7 +518,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">정산 무결성</p>
             <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건</strong>
-            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액</span>
+            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액 · 배당률</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">배당률</p>
@@ -543,7 +560,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className={`ops-health-item ${integrityRiskScore >= 45 ? "is-danger" : integrityRiskScore > 0 ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">Integrity Risk</span>
             <strong className="ops-health-value">{integrityRiskScore}</strong>
-            <small>누락/백로그/불일치/비정상 금액 기반 산출</small>
+            <small>누락/백로그/불일치/비정상 금액/배당률 기반 산출</small>
           </div>
           <div className={`ops-health-item ${settlementConfidence === "낮음" ? "is-danger" : settlementConfidence === "보통" ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">Settlement Confidence</span>
@@ -679,7 +696,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </li>
           <li>
             <strong>Step 2 · 무결성 리스크 잠금</strong>
-            <span>누락/백로그/불일치/비정상 금액 {integrityIssueTotal}건 확인 후 정산 일관성 복구</span>
+            <span>누락/백로그/불일치/비정상 금액/배당률 이탈 {integrityIssueTotal}건 확인 후 정산 일관성 복구</span>
           </li>
           <li>
             <strong>Step 3 · 큐 정상화 확인</strong>
@@ -816,7 +833,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className={`ops-health-item ${integrityIssueTotal > 0 ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">정산 무결성</span>
             <strong className="ops-health-value">{integrityIssueTotal}건</strong>
-            <small>누락/백로그/불일치/비정상 금액 합계</small>
+            <small>누락/백로그/불일치/비정상 금액/배당률 이탈 합계</small>
           </div>
         </div>
       </Card>
@@ -893,19 +910,26 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill tone={unresolvedSettledBacklogCount > 0 ? "danger" : "success"}>정산 대기 백로그 {unresolvedSettledBacklogCount}</Pill>
           <Pill tone={resolvedWithoutResolutionCount > 0 ? "danger" : "success"}>해결-결과 불일치 {resolvedWithoutResolutionCount}</Pill>
           <Pill tone={nonPositiveBetAmountCount > 0 ? "danger" : "success"}>비정상 베팅 금액 {nonPositiveBetAmountCount}</Pill>
+          <Pill tone={hasPayoutRatioOutlier ? "danger" : "success"}>배당률 밴드 {hasPayoutRatioOutlier ? "이탈" : "정상"}</Pill>
         </div>
+        {hasPayoutRatioOutlier ? (
+          <p className="admin-muted-note" style={{ marginTop: "0.55rem" }}>
+            payout ratio {payoutRatio}%가 권장 밴드(90~110%)를 벗어났습니다. 최근 정산 배치와 결과 레코드를 재검토하세요.
+          </p>
+        ) : null}
         <div className="admin-integrity-strip" style={{ marginTop: "0.7rem" }}>
           <span className={settledWithNullPayoutCount > 0 ? "is-danger" : "is-ok"}>지급값 누락</span>
           <span className={unresolvedSettledBacklogCount > 0 ? "is-danger" : "is-ok"}>백로그</span>
           <span className={resolvedWithoutResolutionCount > 0 ? "is-danger" : "is-ok"}>결과 레코드</span>
           <span className={nonPositiveBetAmountCount > 0 ? "is-danger" : "is-ok"}>비정상 금액</span>
+          <span className={hasPayoutRatioOutlier ? "is-danger" : "is-ok"}>배당률 밴드</span>
           <span className="is-neutral">모바일 우선 점검 추천</span>
         </div>
       </Card>
 
       <Card className="admin-surface-card admin-guardrail-card">
         <SectionTitle>Settlement guardrails</SectionTitle>
-        <p className="admin-muted-note">정산 배치 전 반드시 확인할 4가지 무결성 체크포인트입니다.</p>
+        <p className="admin-muted-note">정산 배치 전 반드시 확인할 5가지 무결성 체크포인트입니다.</p>
         <div className="admin-guardrail-grid" style={{ marginTop: "0.65rem" }}>
           {settlementGuardrails.map((item) => (
             <article key={item.key} className={`admin-guardrail-item is-${item.tone}`}>
