@@ -16,14 +16,13 @@ type NavItem = {
   href: string;
   label: string;
   icon: string;
-  kind?: "POLL" | "BETTING";
 };
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "홈", icon: "⌂" },
   { href: "/topics", label: "토픽", icon: "◉" },
-  { href: "/topics?kind=POLL", label: "이슈", icon: "◌", kind: "POLL" },
-  { href: "/topics?kind=BETTING", label: "마켓", icon: "▣", kind: "BETTING" },
+  { href: "/oing", label: "오잉", icon: "◌" },
+  { href: "/market", label: "마켓", icon: "▣" },
 ];
 
 export function TopNav({ viewer }: { viewer: Viewer }) {
@@ -44,22 +43,10 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
 
   const visibleNavItems = NAV_ITEMS;
-  const currentTopicKind = searchParams.get("kind");
 
   const isNavItemActive = (item: NavItem) => {
-    if (item.href === "/") {
-      return pathname === "/";
-    }
-
-    if (!pathname.startsWith("/topics")) {
-      return false;
-    }
-
-    if (item.kind) {
-      return currentTopicKind === item.kind;
-    }
-
-    return currentTopicKind === null;
+    if (item.href === "/") return pathname === "/";
+    return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 
   useEffect(() => {
