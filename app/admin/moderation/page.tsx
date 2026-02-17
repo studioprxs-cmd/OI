@@ -190,6 +190,22 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .catch(() => 0)
     : 0;
 
+  const duplicateRefundLedgerTxCount = canUseDb
+    ? await db.walletTransaction
+      .groupBy({
+        by: ["relatedBetId"],
+        where: {
+          type: "BET_REFUND",
+          relatedBetId: { not: null },
+        },
+        _count: {
+          relatedBetId: true,
+        },
+      })
+      .then((groups) => groups.filter((group) => (group._count.relatedBetId ?? 0) > 1).length)
+      .catch(() => 0)
+    : 0;
+
   const orphanTargetReportCount = reports.filter((report) =>
     (report.commentId && !report.commentContent) || (!report.commentId && !report.topicTitle),
   ).length;
@@ -318,14 +334,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const settlementGapAbs = Math.abs(settlementGapAmount);
   const settlementBalanceLabel = settlementGapAbs === 0 ? "균형" : settlementGapAmount > 0 ? "미지급 여지" : "과지급 의심";
   const hasPayoutRatioOutlier = settlement._count.id >= 5 && (payoutRatio < 90 || payoutRatio > 110);
-  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + missingSettlementLedgerTxCount + duplicateSettlementLedgerTxCount + orphanTargetReportCount + (hasPayoutRatioOutlier ? 1 : 0);
-  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || missingSettlementLedgerTxCount > 0 || duplicateSettlementLedgerTxCount > 0 || hasPayoutRatioOutlier;
+  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount + missingSettlementLedgerTxCount + duplicateSettlementLedgerTxCount + duplicateRefundLedgerTxCount + orphanTargetReportCount + (hasPayoutRatioOutlier ? 1 : 0);
+  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0 || missingSettlementLedgerTxCount > 0 || duplicateSettlementLedgerTxCount > 0 || duplicateRefundLedgerTxCount > 0 || hasPayoutRatioOutlier;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
   const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
-  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30) + (missingSettlementLedgerTxCount * 32) + (duplicateSettlementLedgerTxCount * 22) + (orphanTargetReportCount * 8) + (hasPayoutRatioOutlier ? 20 : 0));
+  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30) + (missingSettlementLedgerTxCount * 32) + (duplicateSettlementLedgerTxCount * 22) + (duplicateRefundLedgerTxCount * 24) + (orphanTargetReportCount * 8) + (hasPayoutRatioOutlier ? 20 : 0));
   const queueStressScore = Math.min(100, (urgentReportCount * 10) + (superStaleActionableCount * 24) + (staleActionableCount * 8));
   const settlementConfidence = integrityRiskScore === 0 ? "높음" : integrityRiskScore <= 30 ? "보통" : "낮음";
   const priorityReports = filteredReports
@@ -393,6 +409,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       tone: missingSettlementLedgerTxCount > 0 ? "danger" : "ok",
       cta: "원장 복구",
     },
+    {
+      id: "recovery-refund-dup",
+      label: "환불 원장 중복 정리",
+      count: duplicateRefundLedgerTxCount,
+      detail: "동일 베팅 BET_REFUND 중복 기록",
+      href: "/admin/topics?status=CANCELED",
+      tone: duplicateRefundLedgerTxCount > 0 ? "danger" : "ok",
+      cta: "환불 원장 정리",
+    },
   ] as const;
 
   const integrityWatchItems = [
@@ -449,6 +474,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       href: "/admin/topics?status=RESOLVED",
       actionLabel: "중복 원장 정리",
       tone: duplicateSettlementLedgerTxCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "duplicate-refund-ledger-transaction",
+      label: "환불 원장 중복",
+      count: duplicateRefundLedgerTxCount,
+      description: "동일 베팅에 BET_REFUND 트랜잭션이 2건 이상 기록된 건",
+      href: "/admin/topics?status=CANCELED",
+      actionLabel: "환불 중복 원장 정리",
+      tone: duplicateRefundLedgerTxCount > 0 ? "danger" : "ok",
     },
     {
       key: "orphan-report-target",
@@ -602,6 +636,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       count: duplicateSettlementLedgerTxCount,
       helper: "동일 relatedBetId BET_SETTLE 중복 여부",
       tone: duplicateSettlementLedgerTxCount > 0 ? "danger" : "ok",
+    },
+    {
+      key: "refund-ledger-duplicate",
+      label: "환불 원장 중복 없음",
+      count: duplicateRefundLedgerTxCount,
+      helper: "동일 relatedBetId BET_REFUND 중복 여부",
+      tone: duplicateRefundLedgerTxCount > 0 ? "danger" : "ok",
     },
     {
       key: "report-target-retention",
@@ -778,7 +819,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">정산 무결성</p>
             <strong className="admin-kpi-value">{integrityIssueTotal}건</strong>
-            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액 · 원장 누락/중복 · 배당률 · 신고 대상 유실</span>
+            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액 · 정산/환불 원장 누락·중복 · 배당률 · 신고 대상 유실</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">배당률</p>
@@ -863,6 +904,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             <span>원장 중복</span>
             <strong>{duplicateSettlementLedgerTxCount}건</strong>
             <small>BET_SETTLE 중복 기록</small>
+          </Link>
+          <Link href="/admin/topics?status=CANCELED" className={`admin-integrity-command-item is-${duplicateRefundLedgerTxCount > 0 ? "danger" : "ok"}`}>
+            <span>환불 중복</span>
+            <strong>{duplicateRefundLedgerTxCount}건</strong>
+            <small>BET_REFUND 중복 기록</small>
           </Link>
         </div>
       </Card>

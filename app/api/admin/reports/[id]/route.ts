@@ -152,13 +152,36 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           });
 
           for (const bet of unsettledBets) {
-            await tx.bet.update({
-              where: { id: bet.id },
+            const existingRefundTx = await tx.walletTransaction.findFirst({
+              where: {
+                type: "BET_REFUND",
+                relatedBetId: bet.id,
+              },
+              select: { id: true },
+            });
+
+            if (existingRefundTx) {
+              await tx.bet.update({
+                where: { id: bet.id },
+                data: {
+                  settled: true,
+                  payoutAmount: bet.amount,
+                },
+              });
+              continue;
+            }
+
+            const settleResult = await tx.bet.updateMany({
+              where: { id: bet.id, settled: false },
               data: {
                 settled: true,
                 payoutAmount: bet.amount,
               },
             });
+
+            if (settleResult.count === 0) {
+              continue;
+            }
 
             const updatedUser = await tx.user.update({
               where: { id: bet.userId },

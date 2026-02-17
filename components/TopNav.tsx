@@ -84,7 +84,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     const root = document.documentElement;
     const shell = document.querySelector<HTMLElement>(".app-shell");
 
-    const syncFloatingLayerFlags = () => {
+    const syncFloatingLayerFlags = (context: {
+      isMobile: boolean;
+      keyboardVisible: boolean;
+      mobileBottomNavHeight: number;
+    }) => {
       if (!shell) return;
 
       const adminDock = shell.querySelector<HTMLElement>(".admin-mobile-dock");
@@ -98,8 +102,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       shell.dataset.hasAdminDock = hasAdminDock ? "true" : "false";
       shell.dataset.hasResolveSubmit = hasResolveSubmitBar ? "true" : "false";
 
+      const floatingGapRaw = getComputedStyle(root).getPropertyValue("--mobile-floating-layer-gap").trim();
+      const floatingGap = Number.parseFloat(floatingGapRaw || "0") || 0;
+
+      const navLayerHeight = context.isMobile && !context.keyboardVisible ? context.mobileBottomNavHeight : 0;
+      const stackOffset = navLayerHeight
+        + (hasAdminDock ? adminDockHeight + floatingGap : 0)
+        + (hasResolveSubmitBar ? resolveSubmitHeight + floatingGap : 0);
+
       root.style.setProperty("--mobile-admin-dock-runtime-height", `${adminDockHeight}px`);
       root.style.setProperty("--mobile-resolve-submit-runtime-height", `${resolveSubmitHeight}px`);
+      root.style.setProperty("--mobile-floating-stack-offset-runtime", `${Math.ceil(stackOffset)}px`);
     };
 
     const applyLayoutMetrics = () => {
@@ -118,7 +131,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       if (shell) {
         shell.dataset.keyboardVisible = isMobile && keyboardVisible ? "true" : "false";
       }
-      syncFloatingLayerFlags();
+      syncFloatingLayerFlags({
+        isMobile,
+        keyboardVisible,
+        mobileBottomNavHeight,
+      });
     };
 
     applyLayoutMetrics();
@@ -133,7 +150,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     }
 
     const mutationObserver = new MutationObserver(() => {
-      syncFloatingLayerFlags();
+      applyLayoutMetrics();
     });
 
     if (shell) {
@@ -159,6 +176,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       root.style.removeProperty("--mobile-global-nav-height");
       root.style.removeProperty("--mobile-admin-dock-runtime-height");
       root.style.removeProperty("--mobile-resolve-submit-runtime-height");
+      root.style.removeProperty("--mobile-floating-stack-offset-runtime");
       if (shell) {
         delete shell.dataset.hasAdminDock;
         delete shell.dataset.hasResolveSubmit;

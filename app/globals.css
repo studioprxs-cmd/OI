@@ -35,7 +35,8 @@
   --mobile-global-nav-height: 0px;
   --mobile-floating-bottom-anchor: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height));
   --mobile-floating-stack-offset: var(--mobile-global-nav-height);
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-floating-stack-offset) + max(var(--mobile-admin-dock-runtime-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-runtime-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.95rem);
+  --mobile-floating-stack-offset-runtime: var(--mobile-floating-stack-offset);
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-floating-stack-offset-runtime) + max(var(--mobile-admin-dock-runtime-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-runtime-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.95rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
 }
 
@@ -4320,7 +4321,7 @@ body::before {
     position: fixed;
     left: 50%;
     transform: translate(-50%, var(--floating-shift-y));
-    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap) + var(--mobile-floating-stack-offset));
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap) + var(--mobile-floating-stack-offset-runtime));
     z-index: 62;
     display: inline-flex;
     align-items: center;
