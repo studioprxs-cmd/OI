@@ -59,6 +59,16 @@ export default async function HomePage() {
     .sort((a, b) => (b.voteCount + b.betCount + b.commentCount) - (a.voteCount + a.betCount + a.commentCount))
     .slice(0, 3);
 
+  const homeHeroBanners = combined
+    .slice()
+    .sort((a, b) => {
+      const aScore = (a.voteCount * 2) + (a.betCount * 2) + a.commentCount;
+      const bScore = (b.voteCount * 2) + (b.betCount * 2) + b.commentCount;
+      if (bScore !== aScore) return bScore - aScore;
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    })
+    .slice(0, 3);
+
   const hotTopic = combined
     .slice()
     .sort((a, b) => {
@@ -91,6 +101,28 @@ export default async function HomePage() {
                 <span>총 베팅</span>
                 <strong>{totalBets.toLocaleString("ko-KR")}</strong>
               </div>
+            </div>
+          </section>
+
+          <section className="home-banner-stage" aria-label="홈 참여 배너 스테이지">
+            <div className="section-header home-banner-stage-header">
+              <p className="section-kicker">HOME Banner Stage</p>
+              <h2>썸네일 중심으로 바로 들어가기</h2>
+            </div>
+            <div className="home-banner-grid">
+              {homeHeroBanners.map((topic, index) => (
+                <article key={`home-banner-${topic.id}`} className={`home-banner-card ${index === 0 ? "is-primary" : "is-secondary"}`}>
+                  <Link href={`/topics/${topic.id}`} className="home-banner-media" aria-label={`${topic.title} 배너 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 홈 배너`} loading="lazy" />
+                    <span className="home-banner-badge">{index === 0 ? "LIVE FOCUS" : `PICK ${index}`}</span>
+                  </Link>
+                  <div className="home-banner-body">
+                    <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
+                    <small>{topic.status === "OPEN" ? "지금 참여 가능" : "결과 확인"} · 투표 {topic.voteCount} · 베팅 {topic.betCount}</small>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary home-banner-cta">참여하기</Link>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
 

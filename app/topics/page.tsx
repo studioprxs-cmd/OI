@@ -85,6 +85,16 @@ export default async function TopicsPage({ searchParams }: Props) {
     .sort((a, b) => (b.voteCount + b.betCount + b.commentCount) - (a.voteCount + a.betCount + a.commentCount))
     .slice(0, 3);
 
+  const participationBanners = filteredTopics
+    .slice()
+    .sort((a, b) => {
+      const aScore = (a.status === "OPEN" ? 1000 : 0) + (a.voteCount * 2) + (a.betCount * 2) + a.commentCount;
+      const bScore = (b.status === "OPEN" ? 1000 : 0) + (b.voteCount * 2) + (b.betCount * 2) + b.commentCount;
+      if (bScore !== aScore) return bScore - aScore;
+      return +new Date(b.createdAt) - +new Date(a.createdAt);
+    })
+    .slice(0, 4);
+
   const topicExperienceSignals = [
     {
       id: "hierarchy",
@@ -174,6 +184,28 @@ export default async function TopicsPage({ searchParams }: Props) {
               >
                 전체
               </Link>
+            </div>
+          </section>
+
+          <section className="topics-banner-lane" aria-label="참여 배너 레인">
+            <div className="section-header topics-banner-lane-header">
+              <p className="section-kicker">TOPICS Banner Lane</p>
+              <h2>이미지 중심 참여 동선</h2>
+            </div>
+            <div className="topics-banner-grid">
+              {participationBanners.map((topic, index) => (
+                <article key={`banner-${topic.id}`} className={`topics-banner-card ${index === 0 ? "is-primary" : ""}`}>
+                  <Link href={`/topics/${topic.id}`} className="topics-banner-media" aria-label={`${topic.title} 배너 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 참여 배너`} loading="lazy" />
+                    <span className="topics-banner-flag">{topic.status === "OPEN" ? "JOIN NOW" : "RESULT"}</span>
+                  </Link>
+                  <div className="topics-banner-body">
+                    <strong><Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link></strong>
+                    <small>{topic.kind === "BETTING" ? "베팅형" : "여론형"} · 투표 {topic.voteCount} · 댓글 {topic.commentCount}</small>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary topics-banner-cta">바로 참여</Link>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
 
