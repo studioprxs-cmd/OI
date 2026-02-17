@@ -41,7 +41,12 @@ export function AdminSectionTabs({ items }: { items: AdminTabItem[] }) {
   return (
     <nav className="admin-section-tabs" aria-label="관리자 섹션 이동">
       {items.map((item) => (
-        <Link key={`${item.href}-${item.label}`} href={item.href} className={`admin-section-tab${item.active ? " is-active" : ""}`}>
+        <Link
+          key={`${item.href}-${item.label}`}
+          href={item.href}
+          className={`admin-section-tab${item.active ? " is-active" : ""}`}
+          aria-current={item.active ? "page" : undefined}
+        >
           <span>{item.label}</span>
           {typeof item.badge === "number" ? <span className="admin-section-tab-badge">{item.badge}</span> : null}
         </Link>

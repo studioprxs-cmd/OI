@@ -394,6 +394,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     .slice()
     .sort((a, b) => b.count - a.count)[0];
 
+  const integrityBlockers = integrityWatchItems
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
   const integrityEscalationQueue = [
     ...unresolvedSettledBacklogTopics.map((topic) => ({
       id: `backlog-${topic.id}`,
@@ -824,6 +829,16 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             <Link href="/admin/topics?status=RESOLVED" className="btn btn-danger">정산 이슈 우선 처리</Link>
             <Link href="/admin/moderation?status=OPEN" className="btn btn-secondary">OPEN 큐 정리</Link>
           </div>
+          {integrityBlockers.length > 0 ? (
+            <div className="admin-critical-banner-blockers" aria-label="무결성 우선 점검 항목">
+              {integrityBlockers.map((item) => (
+                <Link key={`blocker-${item.key}`} href={item.href} className={`admin-critical-blocker-chip is-${item.tone}`}>
+                  <span>{item.label}</span>
+                  <strong>{item.count}건</strong>
+                </Link>
+              ))}
+            </div>
+          ) : null}
         </Card>
       ) : null}
 
