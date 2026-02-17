@@ -221,7 +221,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       <div className="top-nav-inner">
         <Link href="/" className="brand-lockup" aria-label="오늘의 이슈 홈">
           <Image
-            src="/oi-logo-transparent.png"
+            src="/oi-logo-new.jpg"
             alt="오늘의 이슈 로고"
             width={168}
             height={56}
