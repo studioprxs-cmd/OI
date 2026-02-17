@@ -23,12 +23,14 @@ export function assertPoolShare(
   const safeTopicPoolTotal = Number.isFinite(currentTopicPoolTotal) ? Math.max(0, Math.floor(currentTopicPoolTotal)) : 0;
   const safeUserTopicTotal = Number.isFinite(currentUserTopicTotal) ? Math.max(0, Math.floor(currentUserTopicTotal)) : 0;
 
-  const projectedPoolTotal = safeTopicPoolTotal + amount;
+  // 초기 베팅 구간에서도 점유율 제한이 동작하도록 가상 시드 풀을 적용한다.
+  const effectivePoolTotal = Math.max(safeTopicPoolTotal, BET_LIMITS.VIRTUAL_SEED_POOL);
+  const projectedPoolTotal = effectivePoolTotal + amount;
   const projectedUserShare = projectedPoolTotal > 0
     ? (safeUserTopicTotal + amount) / projectedPoolTotal
     : 0;
 
-  if (safeTopicPoolTotal > 0 && projectedUserShare > BET_LIMITS.MAX_POOL_SHARE) {
+  if (projectedUserShare > BET_LIMITS.MAX_POOL_SHARE) {
     throw new Error("POOL_SHARE_EXCEEDED");
   }
 }

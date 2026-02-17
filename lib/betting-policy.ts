@@ -5,6 +5,7 @@ export const BET_LIMITS = {
   DAILY_LIMIT: 100_000,
   COOLDOWN_AFTER_LOSSES: 5,
   COOLDOWN_DURATION_MS: 3_600_000,
+  VIRTUAL_SEED_POOL: 2_000,
 } as const;
 
 export function getBetLimitError(amount: number): string | null {

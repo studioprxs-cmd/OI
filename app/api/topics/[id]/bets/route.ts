@@ -131,8 +131,6 @@ export async function POST(req: NextRequest, { params }: Params) {
       const currentUserTodayTotal = userTodayTotal._sum.amount ?? 0;
 
       assertDailyLimit(currentUserTodayTotal, amount);
-      // 초기 풀(시드/첫 베팅) 단계에서는 20% 점유율 제한을 강제하면
-      // 어떤 사용자도 첫 베팅을 할 수 없으므로, 기존 풀이 있을 때만 제한을 적용한다.
       assertPoolShare(currentTopicPoolTotal, currentUserTopicTotal, amount);
 
       const [yesPoolAgg, noPoolAgg] = await Promise.all([
