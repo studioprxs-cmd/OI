@@ -283,6 +283,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       : integrityIssueTotal > 0
         ? `정산 무결성 이슈 ${integrityIssueTotal}건 점검`
         : "긴급 작업 없음 · 모니터링 유지";
+  const queueSlaLabel = superStaleActionableCount > 0
+    ? "위험"
+    : staleActionableCount > 0
+      ? "주의"
+      : "정상";
 
   return (
     <PageContainer>
@@ -473,6 +478,28 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </form>
       </Card>
 
+      <Card className="admin-surface-card admin-flow-card">
+        <SectionTitle>처리 파이프라인</SectionTitle>
+        <p className="admin-card-intro">신고를 OPEN → REVIEWING → CLOSED/REJECTED 흐름으로 정리해 큐 체류 시간을 줄입니다.</p>
+        <div className="admin-flow-grid" style={{ marginTop: "0.72rem" }}>
+          <Link href="/admin/moderation?status=OPEN" className="admin-flow-step is-open">
+            <span className="admin-flow-step-label">Step 1 · Intake</span>
+            <strong className="admin-flow-step-value">OPEN {counts.OPEN}</strong>
+            <small>신규 신고 즉시 트리아지</small>
+          </Link>
+          <Link href="/admin/moderation?status=REVIEWING" className="admin-flow-step is-reviewing">
+            <span className="admin-flow-step-label">Step 2 · Investigate</span>
+            <strong className="admin-flow-step-value">REVIEWING {counts.REVIEWING}</strong>
+            <small>근거 확인 후 조치 확정</small>
+          </Link>
+          <Link href="/admin/moderation?status=ALL" className="admin-flow-step">
+            <span className="admin-flow-step-label">Step 3 · Resolve</span>
+            <strong className="admin-flow-step-value">완료 {counts.CLOSED + counts.REJECTED}</strong>
+            <small>CLOSED / REJECTED 기록 점검</small>
+          </Link>
+        </div>
+      </Card>
+
       <Card id="queue-priority" className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>우선 처리 큐</SectionTitle>
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
@@ -486,6 +513,28 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill>댓글 신고 {reports.filter((report) => Boolean(report.commentId)).length}</Pill>
         </div>
         <p className="admin-muted-note">기본적으로 OPEN/REVIEWING 상태를 먼저 처리하는 것을 권장합니다.</p>
+      </Card>
+
+      <Card className="admin-surface-card">
+        <SectionTitle>Queue SLA Snapshot</SectionTitle>
+        <p className="admin-muted-note">모바일 운영 기준 3개 지표로 큐 온도를 바로 판단할 수 있습니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.68rem" }}>
+          <div className={`ops-health-item ${superStaleActionableCount > 0 ? "is-danger" : staleActionableCount > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">SLA 상태</span>
+            <strong className="ops-health-value">{queueSlaLabel}</strong>
+            <small>24h+ {staleActionableCount} · 48h+ {superStaleActionableCount}</small>
+          </div>
+          <div className={`ops-health-item ${urgentReportCount > 0 ? "is-danger" : "is-ok"}`}>
+            <span className="ops-health-label">OPEN 긴급</span>
+            <strong className="ops-health-value">{urgentReportCount}건</strong>
+            <small>즉시 트리아지 우선순위</small>
+          </div>
+          <div className={`ops-health-item ${integrityIssueTotal > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">정산 무결성</span>
+            <strong className="ops-health-value">{integrityIssueTotal}건</strong>
+            <small>누락/백로그/불일치 합계</small>
+          </div>
+        </div>
       </Card>
 
       <Card id="urgent-inbox" className="admin-surface-card admin-surface-card-priority">
@@ -506,11 +555,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             })}
           </ul>
         ) : (
-          <StatePanel
-            title="긴급 처리 대상이 없습니다"
-            description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
-            tone="success"
-          />
+          <div className="admin-empty-pattern" role="status">
+            <p className="admin-empty-kicker">Queue stable</p>
+            <strong>긴급 처리 대상이 없습니다</strong>
+            <p>OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다.</p>
+          </div>
         )}
       </Card>
 
@@ -531,11 +580,11 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             })}
           </div>
         ) : (
-          <StatePanel
-            title="스포트라이트 대상이 없습니다"
-            description="긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다."
-            tone="success"
-          />
+          <div className="admin-empty-pattern" role="status">
+            <p className="admin-empty-kicker">Spotlight clear</p>
+            <strong>스포트라이트 대상이 없습니다</strong>
+            <p>긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다.</p>
+          </div>
         )}
       </Card>
 
@@ -693,11 +742,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           );
         })}
         {filteredReports.length === 0 ? (
-          <StatePanel
-            title="조건에 맞는 신고가 없습니다"
-            description="필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요."
-            actions={<Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>}
-          />
+          <div className="admin-empty-pattern" role="status">
+            <p className="admin-empty-kicker">No matches</p>
+            <strong>조건에 맞는 신고가 없습니다</strong>
+            <p>필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요.</p>
+            <div>
+              <Link href="/admin/moderation?status=ALL&type=ALL" className="btn btn-secondary">필터 초기화</Link>
+            </div>
+          </div>
         ) : null}
       </div>
 
