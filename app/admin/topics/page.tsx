@@ -675,6 +675,8 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         ) : (
           <AdminEmptyState
             icon="✓"
+            tone="success"
+            statusLabel="Clear"
             kicker="Spotlight clear"
             title="스포트라이트 대상이 없습니다"
             description="긴급 처리할 OPEN/LOCKED 토픽이 없습니다. 신규 토픽 품질 점검을 진행하세요."
@@ -826,6 +828,8 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         {filteredTopics.length === 0 ? (
           <AdminEmptyState
             icon="⌕"
+            tone="warning"
+            statusLabel="Filtered"
             kicker="No topic match"
             title="조건에 맞는 토픽이 없습니다"
             description="검색어를 줄이거나 상태를 ALL로 전환해 다시 확인하세요."

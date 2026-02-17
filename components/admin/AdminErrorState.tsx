@@ -4,12 +4,18 @@ import Link from "next/link";
 
 import { Card, PageContainer } from "@/components/ui";
 
+type QuickLink = {
+  href: string;
+  label: string;
+};
+
 type Props = {
   title: string;
   description: string;
   homeHref: string;
   reset: () => void;
   quickChecks?: string[];
+  quickLinks?: QuickLink[];
 };
 
 const defaultQuickChecks = [
@@ -18,7 +24,17 @@ const defaultQuickChecks = [
   "정산 화면(/admin/topics)에서 데이터 정상 응답 확인",
 ];
 
-export function AdminErrorState({ title, description, homeHref, reset, quickChecks = defaultQuickChecks }: Props) {
+export function AdminErrorState({
+  title,
+  description,
+  homeHref,
+  reset,
+  quickChecks = defaultQuickChecks,
+  quickLinks = [
+    { href: "/admin/moderation", label: "Moderation" },
+    { href: "/admin/topics", label: "Settlement" },
+  ],
+}: Props) {
   return (
     <PageContainer>
       <Card className="admin-error-state" role="alert" aria-live="assertive">
@@ -32,6 +48,13 @@ export function AdminErrorState({ title, description, homeHref, reset, quickChec
             <li key={check}>{check}</li>
           ))}
         </ul>
+        <div className="admin-error-quick-links" aria-label="운영 점프 링크">
+          {quickLinks.map((link) => (
+            <Link key={link.href} href={link.href} className="admin-error-quick-link">
+              {link.label}
+            </Link>
+          ))}
+        </div>
         <div className="admin-error-actions">
           <button type="button" className="btn btn-primary" onClick={reset}>다시 시도</button>
           <Link href={homeHref} className="btn btn-secondary">안전 경로로 이동</Link>

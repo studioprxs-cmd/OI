@@ -19,6 +19,10 @@ export default function Error({ reset }: Props) {
         "정산 지표 카드가 비정상이면 /admin/topics에서 DB 응답 점검",
         "문제가 지속되면 잠시 후 재시도 후 운영 로그 확인",
       ]}
+      quickLinks={[
+        { href: "/admin/moderation?status=OPEN", label: "OPEN Queue" },
+        { href: "/admin/topics", label: "Settlement Watch" },
+      ]}
     />
   );
 }

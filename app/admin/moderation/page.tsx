@@ -1062,6 +1062,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         ) : (
           <AdminEmptyState
             icon="✓"
+            tone="success"
+            statusLabel="Stable"
             kicker="Queue stable"
             title="긴급 처리 대상이 없습니다"
             description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
@@ -1092,6 +1094,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         ) : (
           <AdminEmptyState
             icon="✦"
+            tone="success"
+            statusLabel="Clear"
             kicker="Spotlight clear"
             title="스포트라이트 대상이 없습니다"
             description="긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다."
@@ -1324,6 +1328,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         {filteredReports.length === 0 ? (
           <AdminEmptyState
             icon="⌕"
+            tone="warning"
+            statusLabel="Filtered"
             kicker="No matches"
             title="조건에 맞는 신고가 없습니다"
             description="필터를 완화하거나 상태를 ALL로 바꿔 다시 확인해보세요."
