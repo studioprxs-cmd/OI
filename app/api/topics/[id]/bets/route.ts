@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 
 type Params = { params: Promise<{ id: string }> };
@@ -12,10 +13,15 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const topic = await db.topic.findUnique({
     where: { id },
-    select: { id: true, status: true, closeAt: true },
+    select: { id: true, title: true, status: true, closeAt: true },
   });
   if (!topic) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+  }
+
+  const topicKind = parseTopicKindFromTitle(topic.title);
+  if (topicKind !== "BETTING") {
+    return NextResponse.json({ ok: false, data: null, error: "이 토픽은 베팅 없이 여론 투표만 가능합니다." }, { status: 409 });
   }
 
   const participationBlockReason = getParticipationBlockReason(topic);
@@ -56,11 +62,16 @@ export async function POST(req: NextRequest, { params }: Params) {
     const result = await db.$transaction(async (tx) => {
       const latestTopic = await tx.topic.findUnique({
         where: { id },
-        select: { status: true, closeAt: true },
+        select: { title: true, status: true, closeAt: true },
       });
 
       if (!latestTopic) {
         throw new Error("TOPIC_NOT_FOUND");
+      }
+
+      const latestTopicKind = parseTopicKindFromTitle(latestTopic.title);
+      if (latestTopicKind !== "BETTING") {
+        throw new Error("TOPIC_NOT_BETTING");
       }
 
       const latestParticipationBlockReason = getParticipationBlockReason(latestTopic);
@@ -102,6 +113,10 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (message === "TOPIC_NOT_FOUND") {
       return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+    }
+
+    if (message === "TOPIC_NOT_BETTING") {
+      return NextResponse.json({ ok: false, data: null, error: "이 토픽은 베팅 없이 여론 투표만 가능합니다." }, { status: 409 });
     }
 
     if (message.startsWith("TOPIC_BLOCKED:")) {

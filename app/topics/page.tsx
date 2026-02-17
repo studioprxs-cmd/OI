@@ -52,6 +52,7 @@ export default async function TopicsPage({ searchParams }: Props) {
 
   const filteredTopics = topics.filter((topic) => {
     if (statusFilter !== "ALL" && topic.status !== statusFilter) return false;
+    if (kindFilter !== "ALL" && topic.kind !== kindFilter) return false;
     if (!normalizedKeyword) return true;
 
     return `${topic.title} ${topic.description}`.toLowerCase().includes(normalizedKeyword);
@@ -59,6 +60,8 @@ export default async function TopicsPage({ searchParams }: Props) {
 
   const activeTopics = topics.filter((topic) => topic.status === "OPEN").length;
   const resolvedTopics = topics.filter((topic) => topic.status === "RESOLVED").length;
+  const bettingTopics = topics.filter((topic) => topic.kind === "BETTING").length;
+  const pollTopics = topics.filter((topic) => topic.kind === "POLL").length;
 
   return (
     <PageContainer>
@@ -72,7 +75,8 @@ export default async function TopicsPage({ searchParams }: Props) {
             <div className="row" style={{ marginTop: "0.6rem" }}>
               <Pill tone="success">활성 {activeTopics}</Pill>
               <Pill tone="danger">종료 {resolvedTopics}</Pill>
-              <Pill>전체 {topics.length}</Pill>
+              <Pill>베팅형 {bettingTopics}</Pill>
+              <Pill>여론형 {pollTopics}</Pill>
               {canManage ? <Link href="/admin/topics" className="text-link">관리자 화면</Link> : null}
             </div>
             <div className="topic-filter-row" style={{ marginTop: "0.62rem" }}>
@@ -88,7 +92,22 @@ export default async function TopicsPage({ searchParams }: Props) {
               >
                 종료만 보기
               </Link>
-              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>필터 초기화</Link>
+              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`topic-filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>상태 초기화</Link>
+            </div>
+            <div className="topic-filter-row" style={{ marginTop: "0.42rem" }}>
+              <Link
+                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&kind=BETTING` : "?kind=BETTING"}`}
+                className={`topic-filter-chip ${kindFilter === "BETTING" ? "is-active" : ""}`}
+              >
+                베팅 이슈
+              </Link>
+              <Link
+                href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&kind=POLL` : "?kind=POLL"}`}
+                className={`topic-filter-chip ${kindFilter === "POLL" ? "is-active" : ""}`}
+              >
+                여론 투표 이슈
+              </Link>
+              <Link href={keyword ? "/topics" : "/topics?kind=ALL"} className={`topic-filter-chip ${kindFilter === "ALL" ? "is-active" : ""}`}>유형 초기화</Link>
             </div>
           </section>
 
@@ -105,7 +124,7 @@ export default async function TopicsPage({ searchParams }: Props) {
             </article>
             <article className="topic-summary-card">
               <p className="topic-summary-label">현재 필터</p>
-              <strong className="topic-summary-value">{statusFilter}</strong>
+              <strong className="topic-summary-value">{statusFilter} · {kindFilter}</strong>
               <span className="topic-summary-meta">{keyword ? `검색어 “${keyword}” 적용` : "검색어 없음"}</span>
             </article>
           </section>
@@ -140,8 +159,8 @@ export default async function TopicsPage({ searchParams }: Props) {
                     key={topic.id}
                     title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                     description={topic.description}
-                    badge={<Pill tone={statusTone(topic.status)}>{topic.status}</Pill>}
-                    meta={<span className="topic-meta-chips"><span>투표 {topic.voteCount}</span><span>베팅 {topic.betCount}</span><span>댓글 {topic.commentCount}</span></span>}
+                    badge={<Pill tone={statusTone(topic.status)}>{topic.status} · {topic.kind === "BETTING" ? "베팅" : "여론"}</Pill>}
+                    meta={<span className="topic-meta-chips"><span>투표 {topic.voteCount}</span><span>{topic.kind === "BETTING" ? `베팅 ${topic.betCount}` : "베팅 없음"}</span><span>댓글 {topic.commentCount}</span></span>}
                     footer={<Link href={`/topics/${topic.id}`} className="text-link">토픽 열기 →</Link>}
                   />
                 ))}

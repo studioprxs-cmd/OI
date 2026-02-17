@@ -13,6 +13,7 @@ import { OiBadge, PageContainer, Pill } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { findMockTopic } from "@/lib/mock-data";
+import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 
 type Props = { params: Promise<{ id: string }> };
@@ -77,10 +78,13 @@ export default async function TopicDetailPage({ params }: Props) {
     ? dbTopic.bets.reduce((sum, bet) => sum + Number(bet.payoutAmount ?? 0), 0)
     : 0;
 
-  const participationBlockReason = dbTopic
-    ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
-    : "데모 토픽에서는 베팅이 제한됩니다.";
-  const canBet = canUseDb && !participationBlockReason;
+  const topicKind = parseTopicKindFromTitle(dbTopic?.title ?? mockTopic?.title ?? "");
+  const participationBlockReason = topicKind !== "BETTING"
+    ? "이 토픽은 베팅 없이 여론 투표만 가능합니다."
+    : dbTopic
+      ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
+      : "데모 토픽에서는 베팅이 제한됩니다.";
+  const canBet = topicKind === "BETTING" && canUseDb && !participationBlockReason;
 
   const resolution = dbTopic?.resolution
     ? {
@@ -129,7 +133,7 @@ export default async function TopicDetailPage({ params }: Props) {
             <div className="row" style={{ marginTop: "0.6rem", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
               <div className="row">
                 <Pill tone={statusTone(topic.status)}>{topic.status}</Pill>
-                <span className="muted-inline">투표 {topic.counts.votes} · 베팅 {topic.counts.bets} · 댓글 {topic.counts.comments}</span>
+                <span className="muted-inline">유형 {topicKind === "BETTING" ? "베팅형" : "여론형"} · 투표 {topic.counts.votes} · 베팅 {topicKind === "BETTING" ? topic.counts.bets : 0} · 댓글 {topic.counts.comments}</span>
               </div>
               {canReport ? <TopicReportButton topicId={topic.id} /> : null}
             </div>
@@ -144,7 +148,7 @@ export default async function TopicDetailPage({ params }: Props) {
           <section id="topic-metrics" className="feed-section">
             <div className="section-header">
               <p className="section-kicker">실시간 현황</p>
-              <h2>투표 · 베팅 지표</h2>
+              <h2>{topicKind === "BETTING" ? "투표 · 베팅 지표" : "여론 투표 지표"}</h2>
             </div>
             <div className="stats-grid">
             <FeedCard title="YES 투표" meta={`${yesVotes}표 (${percent(yesVotes, totalVotes)}%)`}>
@@ -153,22 +157,30 @@ export default async function TopicDetailPage({ params }: Props) {
             <FeedCard title="NO 투표" meta={`${noVotes}표 (${percent(noVotes, totalVotes)}%)`}>
               <div className="meter"><span style={{ width: `${percent(noVotes, totalVotes)}%` }} /></div>
             </FeedCard>
-            <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
-              <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
-            </FeedCard>
+            {topicKind === "BETTING" ? (
+              <FeedCard title="총 베팅 풀" meta={`${totalPool.toLocaleString("ko-KR")} pt`}>
+                <p className="feed-card-meta" style={{ marginTop: 0 }}>YES {yesPool.toLocaleString("ko-KR")} · NO {noPool.toLocaleString("ko-KR")}</p>
+              </FeedCard>
+            ) : null}
             </div>
           </section>
 
-          <FeedCard title="Polymarket 스타일 베팅 티켓" meta="현재 풀 기준 가격/예상 수령을 보면서 바로 참여">
-            <BetTicket
-              topicId={topic.id}
-              yesPool={yesPool}
-              noPool={noPool}
-              canBet={Boolean(canBet)}
-              isAuthenticated={Boolean(viewer)}
-              blockReason={participationBlockReason ?? undefined}
-            />
-          </FeedCard>
+          {topicKind === "BETTING" ? (
+            <FeedCard title="Polymarket 스타일 베팅 티켓" meta="현재 풀 기준 가격/예상 수령을 보면서 바로 참여">
+              <BetTicket
+                topicId={topic.id}
+                yesPool={yesPool}
+                noPool={noPool}
+                canBet={Boolean(canBet)}
+                isAuthenticated={Boolean(viewer)}
+                blockReason={participationBlockReason ?? undefined}
+              />
+            </FeedCard>
+          ) : (
+            <FeedCard title="여론 투표 전용 이슈" meta="이 토픽은 YES/NO 의견 투표만 가능하고 베팅은 비활성화됩니다.">
+              <p className="feed-card-meta" style={{ margin: 0 }}>베팅 없이 순수 여론 흐름을 확인하는 모드입니다.</p>
+            </FeedCard>
+          )}
 
           {resolution ? (
             <div id="topic-settlement">
@@ -191,7 +203,7 @@ export default async function TopicDetailPage({ params }: Props) {
             </div>
           ) : null}
 
-          {viewer && canUseDb && viewerBets.length > 0 ? (
+          {topicKind === "BETTING" && viewer && canUseDb && viewerBets.length > 0 ? (
             <FeedCard title="내 정산 현황">
               <div className="list" style={{ gap: "0.45rem" }}>
                 <div className="row" style={{ gap: "0.5rem" }}>
@@ -259,7 +271,7 @@ export default async function TopicDetailPage({ params }: Props) {
             <ul className="simple-list muted">
               <li>댓글은 최신순으로 노출됩니다.</li>
               <li>토픽 상태가 OPEN일 때 참여를 권장합니다.</li>
-              <li>최종 정산은 관리자 Resolve에서 진행됩니다.</li>
+              <li>{topicKind === "BETTING" ? "최종 정산은 관리자 Resolve에서 진행됩니다." : "이 토픽은 베팅 없이 투표만 진행됩니다."}</li>
             </ul>
           </WidgetCard>
         </aside>
