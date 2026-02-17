@@ -38,7 +38,8 @@ export function SideRail({ viewerRole }: { viewerRole?: string }) {
             aria-label={item.label}
             title={item.label}
           >
-            <span aria-hidden>{item.icon}</span>
+            <span className="rail-icon" aria-hidden>{item.icon}</span>
+            <span className="rail-label">{item.label}</span>
           </Link>
         );
       })}

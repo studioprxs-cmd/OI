@@ -204,11 +204,22 @@ body::before {
   display: grid;
   place-items: center;
   border: 1px solid transparent;
+  color: #2f453a;
+}
+
+.rail-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.rail-label {
+  display: none;
 }
 
 .rail-item.is-active {
   background: #e9fbf0;
   border-color: #a7e9c0;
+  color: #065f33;
 }
 
 .app-content { min-width: 0; }
@@ -735,18 +746,52 @@ body::before {
     flex-wrap: wrap;
   }
 
+  .top-nav-links {
+    display: none;
+  }
+
   .app-body {
     width: min(100%, 100% - 1.2rem);
     grid-template-columns: 1fr;
     gap: 0.8rem;
     padding-top: 0.8rem;
+    padding-bottom: 5.8rem;
   }
 
   .side-rail {
-    position: static;
+    position: fixed;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: max(0.55rem, env(safe-area-inset-bottom));
+    z-index: 45;
     flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+    border-radius: 16px;
+    padding: 0.45rem;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+  }
+
+  .rail-item {
+    width: 100%;
+    height: auto;
+    min-height: 48px;
+    border-radius: 12px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    padding: 0.55rem;
+    gap: 0.18rem;
+    padding: 0.35rem 0.2rem;
+  }
+
+  .rail-label {
+    display: block;
+    font-size: 0.69rem;
+    font-weight: 700;
+    line-height: 1;
   }
 }
 
@@ -849,7 +894,19 @@ body::before {
 
   .app-body {
     gap: 0.65rem;
-    padding-bottom: 1.3rem;
+    padding-bottom: 5.6rem;
+  }
+
+  .side-rail {
+    left: 0.45rem;
+    right: 0.45rem;
+    bottom: max(0.45rem, env(safe-area-inset-bottom));
+    border-radius: 14px;
+    padding: 0.38rem;
+  }
+
+  .rail-label {
+    font-size: 0.65rem;
   }
 
   .brand-logo {
