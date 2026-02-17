@@ -230,7 +230,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           </form>
 
           <div className="top-search-actions">
-            <Link href="/market" className="top-wallet-chip" aria-label="포인트 지갑 및 마켓">
+            <Link href="/wallet" className="top-wallet-chip" aria-label="포인트 지갑">
               <span aria-hidden>🪙</span>
               <span>지갑</span>
             </Link>
