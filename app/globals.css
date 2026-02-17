@@ -24,6 +24,7 @@
   --mobile-safe-bottom: max(0.55rem, env(safe-area-inset-bottom));
   --mobile-admin-dock-height: 4.6rem;
   --mobile-comment-cta-height: 3.1rem;
+  --mobile-resolve-submit-height: 3.4rem;
   --mobile-floating-layer-gap: 0.42rem;
   --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 1.05rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
@@ -2261,8 +2262,9 @@ body::before {
 
 .resolve-submit-bar {
   position: sticky;
-  bottom: calc(var(--mobile-safe-bottom) + 0.2rem);
-  z-index: 25;
+  bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+  z-index: 57;
+  min-height: var(--mobile-resolve-submit-height);
   padding: 0.48rem;
   border-radius: 14px;
   border: 1px solid #d6e6dd;
@@ -2983,11 +2985,11 @@ body::before {
   }
 
   .app-shell:has(.resolve-submit-bar) {
-    --mobile-floating-stack-offset: calc(var(--mobile-comment-cta-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
   }
 
   .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
-    --mobile-floating-stack-offset: calc(max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
   }
 
   .admin-mobile-dock .admin-quick-action-btn {
@@ -3032,7 +3034,8 @@ body::before {
   }
 
   .resolve-submit-bar {
-    bottom: calc(var(--mobile-safe-bottom) + 0.15rem);
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+    min-height: var(--mobile-resolve-submit-height);
     padding: 0.42rem;
     border-radius: 12px;
   }
@@ -3043,6 +3046,7 @@ body::before {
     --mobile-safe-bottom: max(0.45rem, env(safe-area-inset-bottom));
     --mobile-admin-dock-height: 4.2rem;
     --mobile-comment-cta-height: 2.95rem;
+    --mobile-resolve-submit-height: 3.2rem;
     --mobile-floating-layer-gap: 0.32rem;
     --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.86rem);
     --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.75rem);

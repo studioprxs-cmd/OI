@@ -79,10 +79,26 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error(`TOPIC_BLOCKED:${latestParticipationBlockReason}`);
       }
 
-      const updatedUser = await tx.user.update({
-        where: { id: authUser.id },
+      const balanceGuard = await tx.user.updateMany({
+        where: {
+          id: authUser.id,
+          pointBalance: { gte: amount },
+        },
         data: { pointBalance: { decrement: amount } },
       });
+
+      if (balanceGuard.count !== 1) {
+        throw new Error("INSUFFICIENT_POINTS_RACE");
+      }
+
+      const updatedUser = await tx.user.findUnique({
+        where: { id: authUser.id },
+        select: { pointBalance: true },
+      });
+
+      if (!updatedUser) {
+        throw new Error("USER_NOT_FOUND");
+      }
 
       const bet = await tx.bet.create({
         data: {
@@ -121,6 +137,14 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (message.startsWith("TOPIC_BLOCKED:")) {
       return NextResponse.json({ ok: false, data: null, error: message.replace("TOPIC_BLOCKED:", "") }, { status: 409 });
+    }
+
+    if (message === "INSUFFICIENT_POINTS_RACE") {
+      return NextResponse.json({ ok: false, data: null, error: "Insufficient points" }, { status: 400 });
+    }
+
+    if (message === "USER_NOT_FOUND") {
+      return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });
     }
 
     return NextResponse.json({ ok: false, data: null, error: "Failed to place bet" }, { status: 500 });
