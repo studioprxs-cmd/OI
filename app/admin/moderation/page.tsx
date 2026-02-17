@@ -1094,6 +1094,31 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </Card>
       ) : null}
 
+      <Card className="admin-mode-switcher-card">
+        <div className="admin-filter-summary-head">
+          <SectionTitle>Queue mode switch</SectionTitle>
+          <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>Actionable {actionableReports.length}</Pill>
+        </div>
+        <p className="admin-card-intro">운영 상황별로 큐 뷰를 한 번에 전환해 엄지 동선으로 우선순위를 고정합니다.</p>
+        <div className="admin-mode-switcher-grid" style={{ marginTop: "0.65rem" }}>
+          <Link href="/admin/moderation?status=OPEN&type=ALL" className="admin-mode-switcher-item is-danger">
+            <span>Intake focus</span>
+            <strong>OPEN {counts.OPEN}</strong>
+            <small>신규 신고 즉시 트리아지</small>
+          </Link>
+          <Link href="/admin/moderation?status=REVIEWING&type=ALL" className="admin-mode-switcher-item is-warning">
+            <span>Investigate focus</span>
+            <strong>REVIEWING {counts.REVIEWING}</strong>
+            <small>근거 확인 · 처리 확정</small>
+          </Link>
+          <Link href="/admin/topics?status=RESOLVED" className="admin-mode-switcher-item is-ok">
+            <span>Integrity focus</span>
+            <strong>이슈 {integrityIssueTotal}건</strong>
+            <small>정산 무결성 점검</small>
+          </Link>
+        </div>
+      </Card>
+
       <Card className="admin-filter-summary-card">
         <div className="admin-filter-summary-head">
           <SectionTitle>현재 필터 컨텍스트</SectionTitle>

@@ -707,6 +707,31 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         </div>
       </Card>
 
+      <Card className="admin-mode-switcher-card">
+        <div className="admin-filter-summary-head">
+          <SectionTitle>Queue mode switch</SectionTitle>
+          <Pill tone={pendingResolveCount > 0 ? "danger" : "success"}>Actionable {pendingResolveCount}</Pill>
+        </div>
+        <p className="admin-card-intro">토픽 운영 단계를 상황별 모드로 나눠서 한 손으로 빠르게 우선순위를 전환하세요.</p>
+        <div className="admin-mode-switcher-grid" style={{ marginTop: "0.65rem" }}>
+          <Link href="/admin/topics?status=OPEN" className="admin-mode-switcher-item is-danger">
+            <span>Intake focus</span>
+            <strong>OPEN {statusCounts.OPEN}</strong>
+            <small>신규 토픽 즉시 분류</small>
+          </Link>
+          <Link href="/admin/topics?status=LOCKED" className="admin-mode-switcher-item is-warning">
+            <span>Settlement focus</span>
+            <strong>LOCKED {statusCounts.LOCKED}</strong>
+            <small>정산/결과 확정 처리</small>
+          </Link>
+          <Link href="/admin/topics?status=RESOLVED" className="admin-mode-switcher-item is-ok">
+            <span>Integrity focus</span>
+            <strong>이슈 {integrityIssueTotal}건</strong>
+            <small>RESOLVED 무결성 검증</small>
+          </Link>
+        </div>
+      </Card>
+
       <Card id="topic-filter">
         <SectionTitle>토픽 필터</SectionTitle>
         <div className="chip-row-scroll" style={{ marginTop: "0.72rem" }} aria-label="토픽 상태 필터">
