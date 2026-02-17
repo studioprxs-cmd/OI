@@ -27,6 +27,7 @@
   --mobile-floating-layer-gap: 0.42rem;
   --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + (var(--mobile-floating-layer-gap) * 2) + 1.05rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
+  --mobile-floating-stack-offset: 0px;
 }
 
 html, body {
@@ -2977,6 +2978,18 @@ body::before {
     backdrop-filter: blur(8px);
   }
 
+  .app-shell:has(.admin-mobile-dock) {
+    --mobile-floating-stack-offset: calc(var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
+  }
+
+  .app-shell:has(.resolve-submit-bar) {
+    --mobile-floating-stack-offset: calc(var(--mobile-comment-cta-height) + var(--mobile-floating-layer-gap));
+  }
+
+  .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
+    --mobile-floating-stack-offset: calc(max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-floating-layer-gap));
+  }
+
   .admin-mobile-dock .admin-quick-action-btn {
     min-height: 44px;
     border-radius: 10px;
@@ -2989,7 +3002,7 @@ body::before {
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
-    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
+    bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap) + var(--mobile-floating-stack-offset));
     z-index: 59;
     display: inline-flex;
     align-items: center;

@@ -234,24 +234,30 @@ export default async function TopicDetailPage({ params }: Props) {
           />
 
           <div id="topic-comment-form">
-            <FeedCard title="댓글 작성">
+            <FeedCard title="댓글 작성" meta="근거와 맥락을 함께 남기면 토론 품질이 높아집니다.">
               <CommentForm topicId={topic.id} />
             </FeedCard>
           </div>
 
           <div id="topic-comments">
-            <FeedCard title="최근 댓글">
+            <FeedCard title="최근 댓글" meta={`최신순 ${topic.comments.length}건`}>
               <div className="comment-list">
-              {topic.comments.length === 0 ? <p style={{ margin: 0, color: "#6b7280" }}>아직 댓글이 없습니다.</p> : null}
-              {topic.comments.map((comment) => (
-                <article key={comment.id} className="comment-item">
-                  <p style={{ margin: "0 0 0.4rem" }}>{comment.content}</p>
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
-                    {canReport ? <CommentReportButton commentId={comment.id} /> : null}
+                {topic.comments.length === 0 ? (
+                  <div className="admin-empty-pattern" role="status" style={{ marginTop: "0.1rem" }}>
+                    <p className="admin-empty-kicker">Conversation open</p>
+                    <strong>첫 의견을 남겨보세요</strong>
+                    <p>아직 댓글이 없습니다. 핵심 근거 한 줄만 남겨도 토론 시작에 큰 도움이 됩니다.</p>
                   </div>
-                </article>
-              ))}
+                ) : null}
+                {topic.comments.map((comment) => (
+                  <article key={comment.id} className="comment-item">
+                    <p style={{ margin: "0 0 0.4rem" }}>{comment.content}</p>
+                    <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <small style={{ color: "#6b7280" }}>{new Date(comment.createdAt).toLocaleString("ko-KR")}</small>
+                      {canReport ? <CommentReportButton commentId={comment.id} /> : null}
+                    </div>
+                  </article>
+                ))}
               </div>
             </FeedCard>
           </div>
