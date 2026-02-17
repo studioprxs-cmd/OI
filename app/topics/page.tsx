@@ -69,20 +69,20 @@ export default async function TopicsPage({ searchParams }: Props) {
               <Pill tone="danger">종료 {resolvedTopics}</Pill>
               {canManage ? <Link href="/admin/topics" className="text-link">관리자 화면</Link> : null}
             </div>
-            <div className="row" style={{ marginTop: "0.5rem" }}>
+            <div className="filter-chip-row" style={{ marginTop: "0.55rem" }}>
               <Link
                 href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=OPEN` : "?status=OPEN"}`}
-                className="top-nav-link"
+                className={`filter-chip ${statusFilter === "OPEN" ? "is-active" : ""}`}
               >
                 오픈만 보기
               </Link>
               <Link
                 href={`/topics${keyword ? `?q=${encodeURIComponent(keyword)}&status=RESOLVED` : "?status=RESOLVED"}`}
-                className="top-nav-link"
+                className={`filter-chip ${statusFilter === "RESOLVED" ? "is-active" : ""}`}
               >
                 종료만 보기
               </Link>
-              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className="top-nav-link">필터 초기화</Link>
+              <Link href={keyword ? "/topics" : "/topics?status=ALL"} className={`filter-chip ${statusFilter === "ALL" ? "is-active" : ""}`}>필터 초기화</Link>
             </div>
           </section>
 
@@ -117,7 +117,8 @@ export default async function TopicsPage({ searchParams }: Props) {
                     title={<Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>}
                     description={topic.description}
                     badge={<Pill tone={statusTone(topic.status)}>{topic.status}</Pill>}
-                    meta={`투표 ${topic.voteCount} · 베팅 ${topic.betCount} · 댓글 ${topic.commentCount}`}
+                    meta={<span className="topic-meta-chips"><span>투표 {topic.voteCount}</span><span>베팅 {topic.betCount}</span><span>댓글 {topic.commentCount}</span></span>}
+                    footer={<Link href={`/topics/${topic.id}`} className="text-link">토픽 열기 →</Link>}
                   />
                 ))}
               </div>
