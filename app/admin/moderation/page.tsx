@@ -924,6 +924,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         items={[
           { href: "/admin/topics", label: "토픽 운영", active: false },
           { href: "/admin/moderation", label: "신고/정산", badge: actionableReports.length, active: true },
+          { href: "/admin/market", label: "마켓 운영", active: false },
           { href: "/admin/moderation?status=OPEN", label: "긴급 OPEN", badge: urgentReportCount, active: false },
         ]}
       />

@@ -1,3 +1,6 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import path from "path";
+
 export type MarketZone = "GOODS" | "DIGITAL" | "DEAL" | "GIFT";
 
 export type MarketProduct = {
@@ -14,7 +17,7 @@ export type MarketProduct = {
   ctaLabel?: string;
 };
 
-const CATALOG: MarketProduct[] = [
+const DEFAULT_CATALOG: MarketProduct[] = [
   {
     id: "goods-oi-cheer-kit",
     name: "OI 응원 키트",
@@ -63,9 +66,78 @@ const CATALOG: MarketProduct[] = [
   },
 ];
 
+const PRODUCT_STORE_PATH = path.join(process.cwd(), ".data", "market-products.json");
+
+function cloneProduct(product: MarketProduct): MarketProduct {
+  return {
+    ...product,
+    availableFrom: product.availableFrom,
+    availableUntil: product.availableUntil,
+    ctaLabel: product.ctaLabel,
+  };
+}
+
+function ensureStoreDir() {
+  const dir = path.dirname(PRODUCT_STORE_PATH);
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true });
+  }
+}
+
+function loadCatalogFromStore() {
+  try {
+    if (!existsSync(PRODUCT_STORE_PATH)) {
+      return DEFAULT_CATALOG.map(cloneProduct);
+    }
+
+    const raw = readFileSync(PRODUCT_STORE_PATH, "utf8");
+    const parsed = JSON.parse(raw) as MarketProduct[];
+    if (!Array.isArray(parsed)) {
+      return DEFAULT_CATALOG.map(cloneProduct);
+    }
+
+    return parsed
+      .filter((item): item is MarketProduct => Boolean(item?.id && item?.name && item?.zone))
+      .map(cloneProduct);
+  } catch {
+    return DEFAULT_CATALOG.map(cloneProduct);
+  }
+}
+
+function persistCatalog(products: MarketProduct[]) {
+  try {
+    ensureStoreDir();
+    writeFileSync(PRODUCT_STORE_PATH, JSON.stringify(products, null, 2), "utf8");
+  } catch {
+    // no-op in restricted environments
+  }
+}
+
+let runtimeCatalog: MarketProduct[] | null = null;
+
+function getRuntimeCatalog() {
+  if (!runtimeCatalog) {
+    runtimeCatalog = loadCatalogFromStore();
+  }
+  return runtimeCatalog;
+}
+
 type ProductFilter = {
   zone?: MarketZone;
   activeOnly?: boolean;
+};
+
+export type NewMarketProductInput = {
+  name: string;
+  description: string;
+  imageUrl: string;
+  zone: MarketZone;
+  pricePoints: number;
+  stock: number | null;
+  isActive: boolean;
+  availableFrom?: string;
+  availableUntil?: string;
+  ctaLabel?: string;
 };
 
 export function isProductWithinWindow(product: MarketProduct, now: Date = new Date()) {
@@ -80,7 +152,7 @@ export function isProductWithinWindow(product: MarketProduct, now: Date = new Da
 export function getMarketProducts(filter: ProductFilter = {}) {
   const now = new Date();
 
-  return CATALOG.filter((product) => {
+  return getRuntimeCatalog().filter((product) => {
     if (filter.zone && product.zone !== filter.zone) return false;
 
     if (filter.activeOnly) {
@@ -93,7 +165,38 @@ export function getMarketProducts(filter: ProductFilter = {}) {
 }
 
 export function getMarketProductById(productId: string) {
-  return CATALOG.find((product) => product.id === productId) ?? null;
+  return getRuntimeCatalog().find((product) => product.id === productId) ?? null;
+}
+
+export function createMarketProduct(input: NewMarketProductInput) {
+  const normalizedName = input.name.trim();
+  const baseId = normalizedName
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "product";
+
+  const products = getRuntimeCatalog();
+  const uniqueSuffix = Date.now().toString(36).slice(-6);
+  const id = `${input.zone.toLowerCase()}-${baseId}-${uniqueSuffix}`;
+
+  const created: MarketProduct = {
+    id,
+    name: normalizedName,
+    description: input.description.trim(),
+    imageUrl: input.imageUrl.trim() || "/oi-logo-new.jpg",
+    zone: input.zone,
+    pricePoints: Math.floor(input.pricePoints),
+    stock: input.stock,
+    isActive: input.isActive,
+    availableFrom: input.availableFrom,
+    availableUntil: input.availableUntil,
+    ctaLabel: input.ctaLabel?.trim() || undefined,
+  };
+
+  runtimeCatalog = [created, ...products];
+  persistCatalog(runtimeCatalog);
+  return created;
 }
 
 export function calculateMarketOrderPoints(pricePoints: number, quantity: number) {

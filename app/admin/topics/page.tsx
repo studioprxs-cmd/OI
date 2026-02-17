@@ -608,6 +608,7 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
         items={[
           { href: "/admin/topics", label: "토픽 운영", badge: pendingResolveCount, active: true },
           { href: "/admin/moderation", label: "신고/정산", active: false },
+          { href: "/admin/market", label: "마켓 운영", active: false },
           { href: "/admin/topics/new", label: "새 토픽", active: false },
         ]}
       />
