@@ -1,5 +1,9 @@
 import { Prisma } from "@prisma/client";
 
+function isUniqueConstraintError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
 type ApplyWalletDeltaInput = {
   tx: Prisma.TransactionClient;
   userId: string;
@@ -58,6 +62,11 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
         relatedVoteId,
         note,
       },
+    }).catch((error: unknown) => {
+      if (isUniqueConstraintError(error)) {
+        throw new Error("WALLET_TX_DUPLICATE_REFERENCE");
+      }
+      throw error;
     });
 
     return { balanceAfter: updatedUser.pointBalance, transaction };
@@ -95,6 +104,11 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
       relatedVoteId,
       note,
     },
+  }).catch((error: unknown) => {
+    if (isUniqueConstraintError(error)) {
+      throw new Error("WALLET_TX_DUPLICATE_REFERENCE");
+    }
+    throw error;
   });
 
   return { balanceAfter: updatedUser.pointBalance, transaction };

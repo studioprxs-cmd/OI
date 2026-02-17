@@ -5,7 +5,7 @@ import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel }
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
-import { getInflationSnapshot } from "@/lib/ops-dashboard";
+import { getInflationSnapshot, getOpsIssueBurnSnapshot } from "@/lib/ops-dashboard";
 
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 
@@ -118,6 +118,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     : 0;
 
   const inflationSnapshot = await getInflationSnapshot(7);
+  const opsIssueBurnSnapshot = await getOpsIssueBurnSnapshot(14);
 
   const unresolvedSettledBacklogCount = canUseDb
     ? await db.bet
@@ -343,6 +344,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const burnRatioPercent = Math.round(inflationSnapshot.totals.burnToIssueRatio * 100);
   const inflationTone = burnRatioPercent >= 70 ? "ok" : burnRatioPercent >= 50 ? "warning" : "danger";
   const inflationStateLabel = burnRatioPercent >= 70 ? "Healthy" : burnRatioPercent >= 50 ? "Warning" : "Critical";
+  const opsBurnRatioPercent = Math.round(opsIssueBurnSnapshot.totals.burnToIssueRatio * 100);
+  const opsBurnRatioTone = opsBurnRatioPercent >= 70 ? "ok" : opsBurnRatioPercent >= 50 ? "warning" : "danger";
+  const opsDailyPeak = opsIssueBurnSnapshot.days.reduce(
+    (peak, day) => (day.issuedPoints > peak.issuedPoints ? day : peak),
+    opsIssueBurnSnapshot.days[0] ?? { dateKey: "-", issuedPoints: 0, burnedPoints: 0, netPoints: 0 },
+  );
+  const opsDailyBurnPeak = opsIssueBurnSnapshot.days.reduce(
+    (peak, day) => (day.burnedPoints > peak.burnedPoints ? day : peak),
+    opsIssueBurnSnapshot.days[0] ?? { dateKey: "-", issuedPoints: 0, burnedPoints: 0, netPoints: 0 },
+  );
+  const opsMaxDailyValue = Math.max(
+    1,
+    ...opsIssueBurnSnapshot.days.map((day) => Math.max(day.issuedPoints, day.burnedPoints, Math.abs(day.netPoints))),
+  );
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
@@ -1129,6 +1144,52 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             <strong className="ops-health-value">{inflationSnapshot.totals.burnedPoints.toLocaleString()}pt</strong>
             <small>최근 7일 정산 수수료 소각</small>
           </div>
+        </div>
+
+        <div className="ops-health-strip" style={{ marginTop: "0.72rem" }}>
+          <div className={`ops-health-item is-${opsBurnRatioTone}`}>
+            <span className="ops-health-label">Ops burn / issue (14d)</span>
+            <strong className="ops-health-value">{opsBurnRatioPercent}%</strong>
+            <small>전체 Wallet + Settlement fee 기준</small>
+          </div>
+          <div className="ops-health-item is-warning">
+            <span className="ops-health-label">Peak issue day</span>
+            <strong className="ops-health-value">{opsDailyPeak.issuedPoints.toLocaleString()}pt</strong>
+            <small>{opsDailyPeak.dateKey}</small>
+          </div>
+          <div className="ops-health-item is-ok">
+            <span className="ops-health-label">Peak burn day</span>
+            <strong className="ops-health-value">{opsDailyBurnPeak.burnedPoints.toLocaleString()}pt</strong>
+            <small>{opsDailyBurnPeak.dateKey}</small>
+          </div>
+        </div>
+
+        <div style={{ marginTop: "0.72rem", display: "grid", gap: "0.44rem" }}>
+          <p className="admin-jump-nav-label">Daily issue/burn trend (14d)</p>
+          {opsIssueBurnSnapshot.days.slice(-7).map((day) => {
+            const issueWidth = Math.round((day.issuedPoints / opsMaxDailyValue) * 100);
+            const burnWidth = Math.round((day.burnedPoints / opsMaxDailyValue) * 100);
+
+            return (
+              <article key={`ops-day-${day.dateKey}`} style={{ display: "grid", gap: "0.28rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                  <span>{day.dateKey}</span>
+                  <strong style={{ color: "var(--text)" }}>{day.netPoints >= 0 ? `+${day.netPoints}` : day.netPoints}pt</strong>
+                </div>
+                <div style={{ display: "grid", gap: "0.24rem" }}>
+                  <div style={{ height: "0.36rem", borderRadius: 999, background: "color-mix(in srgb, var(--oi-green) 22%, #0f172a)" }}>
+                    <div style={{ width: `${issueWidth}%`, maxWidth: "100%", height: "100%", borderRadius: 999, background: "var(--oi-green)" }} />
+                  </div>
+                  <div style={{ height: "0.3rem", borderRadius: 999, background: "color-mix(in srgb, #ef4444 18%, #0f172a)" }}>
+                    <div style={{ width: `${burnWidth}%`, maxWidth: "100%", height: "100%", borderRadius: 999, background: "#ef4444" }} />
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+          <p style={{ margin: 0, fontSize: "0.74rem", color: "var(--text-muted)" }}>
+            최신 집계 API: <code>/api/admin/ops/issue-burn?days=14</code>
+          </p>
         </div>
       </Card>
 

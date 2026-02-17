@@ -414,6 +414,17 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
+    if (message === "WALLET_TX_DUPLICATE_REFERENCE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "정산 지급 원장에서 중복 레퍼런스가 감지되었습니다. 중복 지급을 막기 위해 정산을 중단했습니다.",
+        },
+        { status: 409 },
+      );
+    }
+
     if (message === "BET_ALREADY_SETTLED_RACE") {
       return NextResponse.json(
         {

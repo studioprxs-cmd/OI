@@ -118,6 +118,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
+    if (message === "WALLET_TX_DUPLICATE_REFERENCE") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 투표 보상이 반영된 이력입니다. 중복 보상은 지급되지 않습니다." },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ ok: false, data: null, error: "Failed to submit vote" }, { status: 500 });
   }
 }
