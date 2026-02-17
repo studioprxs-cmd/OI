@@ -101,6 +101,7 @@ export default async function HomePage() {
                 <FeedCard
                   thumbnailSrc={getTopicThumbnail(hotTopic.id, hotTopic.title)}
                   thumbnailAlt={`${hotTopic.title} 배너`}
+                  featuredThumbnail
                   title={<Link href={`/topics/${hotTopic.id}`} className="title-link">{hotTopic.title}</Link>}
                   description={hotTopic.description}
                   badge={<Pill tone={statusTone(hotTopic.status)}>{hotTopic.status === "OPEN" ? "지금 참여 가능" : hotTopic.status}</Pill>}

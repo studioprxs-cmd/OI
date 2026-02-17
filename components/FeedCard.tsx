@@ -10,13 +10,14 @@ type FeedCardProps = {
   children?: ReactNode;
   thumbnailSrc?: string;
   thumbnailAlt?: string;
+  featuredThumbnail?: boolean;
 };
 
-export function FeedCard({ title, description, meta, badge, footer, children, thumbnailSrc, thumbnailAlt }: FeedCardProps) {
+export function FeedCard({ title, description, meta, badge, footer, children, thumbnailSrc, thumbnailAlt, featuredThumbnail }: FeedCardProps) {
   return (
     <article className="feed-card">
       {thumbnailSrc ? (
-        <div className="feed-card-thumbnail">
+        <div className={`feed-card-thumbnail ${featuredThumbnail ? "is-featured" : ""}`}>
           <Image src={thumbnailSrc} alt={thumbnailAlt ?? "토픽 썸네일"} width={1200} height={630} />
         </div>
       ) : null}

@@ -635,6 +635,11 @@ body::before {
   display: block;
 }
 
+.feed-card-thumbnail:not(.is-featured) img {
+  aspect-ratio: 16 / 3;
+  max-height: 82px;
+}
+
 .widget-card {
   border-color: #dde8e0;
 }
@@ -4409,6 +4414,10 @@ body::before {
   .card {
     border-radius: 14px;
     padding: 0.88rem;
+  }
+
+  .feed-card-thumbnail:not(.is-featured) img {
+    max-height: 62px;
   }
 
   .feed-card-title {
