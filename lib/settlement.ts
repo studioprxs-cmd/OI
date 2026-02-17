@@ -30,12 +30,19 @@ export type SettlementSummary = {
   winnerPool: number;
   settledCount: number;
   winnerCount: number;
+  feeRate: number;
+  feeAmount: number;
+  netPool: number;
   payoutTotal: number;
   invalidAmountCount: number;
   duplicateBetIdCount: number;
 };
 
-export function calculateSettlement(bets: BetInput[], result: Choice): {
+export function calculateSettlement(
+  bets: BetInput[],
+  result: Choice,
+  options?: { feeRate?: number },
+): {
   bets: SettlementBetResult[];
   summary: SettlementSummary;
 } {
@@ -67,6 +74,9 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
   const totalPool = sanitizedBets.reduce((sum, bet) => sum + bet.amount, 0);
   const winners = sanitizedBets.filter((bet) => bet.choice === result);
   const winnerPool = winners.reduce((sum, bet) => sum + bet.amount, 0);
+  const feeRate = Math.max(0, Math.min(1, options?.feeRate ?? 0));
+  const feeAmount = Math.floor(totalPool * feeRate);
+  const netPool = Math.max(0, totalPool - feeAmount);
 
   if (winnerPool <= 0 || totalPool <= 0) {
     const empty = sanitizedBets.map((bet) => ({ id: bet.id, userId: bet.userId, won: false, payout: 0 }));
@@ -77,6 +87,9 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
         winnerPool,
         settledCount: sanitizedBets.length,
         winnerCount: 0,
+        feeRate,
+        feeAmount,
+        netPool,
         payoutTotal: 0,
         invalidAmountCount,
         duplicateBetIdCount,
@@ -89,14 +102,14 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
 
   let allocated = 0;
   for (const winner of winners) {
-    const raw = (totalPool * winner.amount) / winnerPool;
+    const raw = (netPool * winner.amount) / winnerPool;
     const floored = Math.floor(raw);
     basePayoutBySettlementKey.set(winner.settlementKey, floored);
     fractionalRemainders.push({ settlementKey: winner.settlementKey, remainder: raw - floored });
     allocated += floored;
   }
 
-  let leftover = Math.max(0, totalPool - allocated);
+  let leftover = Math.max(0, netPool - allocated);
 
   fractionalRemainders.sort((a, b) => {
     if (b.remainder !== a.remainder) return b.remainder - a.remainder;
@@ -132,6 +145,9 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
       winnerPool,
       settledCount: settled.length,
       winnerCount,
+      feeRate,
+      feeAmount,
+      netPool,
       payoutTotal,
       invalidAmountCount,
       duplicateBetIdCount,

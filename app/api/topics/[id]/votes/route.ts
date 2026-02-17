@@ -55,7 +55,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error(`TOPIC_BLOCKED:${latestParticipationBlockReason}`);
       }
 
-      let vote = await tx.vote.findUnique({
+      const existingVote = await tx.vote.findUnique({
         where: {
           topicId_userId: {
             topicId: id,
@@ -64,66 +64,43 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       });
 
-      let rewarded = false;
-
-      if (!vote) {
-        try {
-          vote = await tx.vote.create({
-            data: {
-              topicId: id,
-              userId: authUser.id,
-              choice,
-            },
-          });
-
-          const updatedUser = await tx.user.update({
-            where: { id: authUser.id },
-            data: { pointBalance: { increment: VOTE_REWARD } },
-            select: { pointBalance: true },
-          });
-
-          await tx.walletTransaction.create({
-            data: {
-              userId: authUser.id,
-              type: "VOTE_REWARD",
-              amount: VOTE_REWARD,
-              balanceAfter: updatedUser.pointBalance,
-              note: `Vote reward topic:${id}`,
-            },
-          });
-
-          rewarded = true;
-        } catch (error) {
-          if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-          ) {
-            vote = await tx.vote.findUnique({
-              where: {
-                topicId_userId: {
-                  topicId: id,
-                  userId: authUser.id,
-                },
-              },
-            });
-          } else {
-            throw error;
-          }
-        }
+      if (existingVote) {
+        throw new Error("VOTE_ALREADY_EXISTS");
       }
 
-      if (!vote) {
-        throw new Error("VOTE_WRITE_FAILED");
-      }
-
-      if (vote.choice !== choice) {
-        vote = await tx.vote.update({
-          where: { id: vote.id },
-          data: { choice },
+      let vote;
+      try {
+        vote = await tx.vote.create({
+          data: {
+            topicId: id,
+            userId: authUser.id,
+            choice,
+          },
         });
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+          throw new Error("VOTE_ALREADY_EXISTS");
+        }
+        throw error;
       }
 
-      return { vote, rewarded, reward: rewarded ? VOTE_REWARD : 0 };
+      const updatedUser = await tx.user.update({
+        where: { id: authUser.id },
+        data: { pointBalance: { increment: VOTE_REWARD } },
+        select: { pointBalance: true },
+      });
+
+      await tx.walletTransaction.create({
+        data: {
+          userId: authUser.id,
+          type: "VOTE_REWARD",
+          amount: VOTE_REWARD,
+          balanceAfter: updatedUser.pointBalance,
+          note: `Vote reward topic:${id}`,
+        },
+      });
+
+      return { vote, rewarded: true, reward: VOTE_REWARD };
     });
 
     return NextResponse.json({ ok: true, data: voteResult, error: null }, { status: 201 });
@@ -136,6 +113,13 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (message.startsWith("TOPIC_BLOCKED:")) {
       return NextResponse.json({ ok: false, data: null, error: message.replace("TOPIC_BLOCKED:", "") }, { status: 409 });
+    }
+
+    if (message === "VOTE_ALREADY_EXISTS") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "이미 투표한 토픽입니다. 투표는 1회만 가능합니다." },
+        { status: 409 },
+      );
     }
 
     return NextResponse.json({ ok: false, data: null, error: "Failed to submit vote" }, { status: 500 });

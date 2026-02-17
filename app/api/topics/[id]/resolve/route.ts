@@ -9,6 +9,7 @@ type Params = { params: Promise<{ id: string }> };
 
 const MIN_RESOLUTION_SUMMARY_LENGTH = 12;
 const MAX_PAYOUT_DELTA_TOLERANCE = 0;
+const SETTLEMENT_FEE_RATE = 0.05;
 
 async function requireAdminUser(req: NextRequest) {
   const user = await getAuthUser(req);
@@ -57,8 +58,8 @@ export async function GET(req: NextRequest, { params }: Params) {
     orderBy: { createdAt: "asc" },
   });
 
-  const yesPreview = calculateSettlement(unsettledBets, "YES");
-  const noPreview = calculateSettlement(unsettledBets, "NO");
+  const yesPreview = calculateSettlement(unsettledBets, "YES", { feeRate: SETTLEMENT_FEE_RATE });
+  const noPreview = calculateSettlement(unsettledBets, "NO", { feeRate: SETTLEMENT_FEE_RATE });
 
   const resolvedSettlement = topic.resolution
     ? await db.bet
@@ -204,7 +205,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       orderBy: { createdAt: "asc" },
     });
 
-    const settlement = calculateSettlement(bets, result);
+    const settlement = calculateSettlement(bets, result, { feeRate: SETTLEMENT_FEE_RATE });
 
     if (bets.length > 0 && settlement.summary.winnerPool === 0 && !confirmNoWinner) {
       throw new Error("NO_WINNER_CONFIRM_REQUIRED");
@@ -218,7 +219,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       throw new Error("DUPLICATE_BET_ID_DETECTED");
     }
 
-    const payoutDelta = settlement.summary.totalPool - settlement.summary.payoutTotal;
+    const payoutDelta = settlement.summary.netPool - settlement.summary.payoutTotal;
     if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE) {
       throw new Error("PAYOUT_INTEGRITY_VIOLATION");
     }
@@ -347,7 +348,7 @@ export async function POST(req: NextRequest, { params }: Params) {
         {
           ok: false,
           data: null,
-          error: "총 풀과 총 지급 합계가 일치하지 않아 정산을 차단했습니다. 무결성 점검 후 다시 시도하세요.",
+          error: "수수료 차감 후 순지급 풀(net pool)과 총 지급 합계가 일치하지 않아 정산을 차단했습니다. 무결성 점검 후 다시 시도하세요.",
         },
         { status: 409 },
       );
