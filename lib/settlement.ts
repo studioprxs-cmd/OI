@@ -9,6 +9,7 @@ type BetInput = {
 
 type SanitizedBet = BetInput & {
   amount: number;
+  settlementKey: string;
 };
 
 function normalizeBetAmount(amount: number): number {
@@ -31,20 +32,37 @@ export type SettlementSummary = {
   winnerCount: number;
   payoutTotal: number;
   invalidAmountCount: number;
+  duplicateBetIdCount: number;
 };
 
 export function calculateSettlement(bets: BetInput[], result: Choice): {
   bets: SettlementBetResult[];
   summary: SettlementSummary;
 } {
-  const sanitizedBets: SanitizedBet[] = bets.map((bet) => ({
+  const sanitizedBets: SanitizedBet[] = bets.map((bet, index) => ({
     ...bet,
     amount: normalizeBetAmount(bet.amount),
+    settlementKey: `${bet.id}::${index}`,
   }));
 
   const invalidAmountCount = bets.reduce((count, bet, index) => {
     return count + (sanitizedBets[index].amount !== bet.amount ? 1 : 0);
   }, 0);
+
+  const duplicateBetIdCount = (() => {
+    const seenIds = new Set<string>();
+    let duplicates = 0;
+
+    for (const bet of bets) {
+      if (seenIds.has(bet.id)) {
+        duplicates += 1;
+      } else {
+        seenIds.add(bet.id);
+      }
+    }
+
+    return duplicates;
+  })();
 
   const totalPool = sanitizedBets.reduce((sum, bet) => sum + bet.amount, 0);
   const winners = sanitizedBets.filter((bet) => bet.choice === result);
@@ -61,19 +79,20 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
         winnerCount: 0,
         payoutTotal: 0,
         invalidAmountCount,
+        duplicateBetIdCount,
       },
     };
   }
 
-  const basePayoutById = new Map<string, number>();
-  const fractionalRemainders: Array<{ id: string; remainder: number }> = [];
+  const basePayoutBySettlementKey = new Map<string, number>();
+  const fractionalRemainders: Array<{ settlementKey: string; remainder: number }> = [];
 
   let allocated = 0;
   for (const winner of winners) {
     const raw = (totalPool * winner.amount) / winnerPool;
     const floored = Math.floor(raw);
-    basePayoutById.set(winner.id, floored);
-    fractionalRemainders.push({ id: winner.id, remainder: raw - floored });
+    basePayoutBySettlementKey.set(winner.settlementKey, floored);
+    fractionalRemainders.push({ settlementKey: winner.settlementKey, remainder: raw - floored });
     allocated += floored;
   }
 
@@ -81,20 +100,20 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
 
   fractionalRemainders.sort((a, b) => {
     if (b.remainder !== a.remainder) return b.remainder - a.remainder;
-    return a.id.localeCompare(b.id);
+    return a.settlementKey.localeCompare(b.settlementKey);
   });
 
   let pointer = 0;
   while (leftover > 0 && fractionalRemainders.length > 0) {
-    const winnerId = fractionalRemainders[pointer]?.id;
-    if (!winnerId) break;
-    basePayoutById.set(winnerId, (basePayoutById.get(winnerId) ?? 0) + 1);
+    const winnerSettlementKey = fractionalRemainders[pointer]?.settlementKey;
+    if (!winnerSettlementKey) break;
+    basePayoutBySettlementKey.set(winnerSettlementKey, (basePayoutBySettlementKey.get(winnerSettlementKey) ?? 0) + 1);
     leftover -= 1;
     pointer = (pointer + 1) % fractionalRemainders.length;
   }
 
   const settled = sanitizedBets.map((bet) => {
-    const payout = basePayoutById.get(bet.id) ?? 0;
+    const payout = basePayoutBySettlementKey.get(bet.settlementKey) ?? 0;
     return {
       id: bet.id,
       userId: bet.userId,
@@ -115,6 +134,7 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
       winnerCount,
       payoutTotal,
       invalidAmountCount,
+      duplicateBetIdCount,
     },
   };
 }

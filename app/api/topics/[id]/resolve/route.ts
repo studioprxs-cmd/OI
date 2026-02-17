@@ -214,6 +214,10 @@ export async function POST(req: NextRequest, { params }: Params) {
       throw new Error("INVALID_BET_AMOUNT_DETECTED");
     }
 
+    if (settlement.summary.duplicateBetIdCount > 0) {
+      throw new Error("DUPLICATE_BET_ID_DETECTED");
+    }
+
     const payoutDelta = settlement.summary.totalPool - settlement.summary.payoutTotal;
     if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE) {
       throw new Error("PAYOUT_INTEGRITY_VIOLATION");
@@ -322,6 +326,17 @@ export async function POST(req: NextRequest, { params }: Params) {
           ok: false,
           data: null,
           error: "비정상 베팅 금액(0 이하 또는 유효하지 않은 값)이 감지되어 정산을 중단했습니다. 베팅 데이터 정합성을 먼저 복구하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "DUPLICATE_BET_ID_DETECTED") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "중복 bet ID가 감지되어 정산을 차단했습니다. 데이터 정합성을 점검한 뒤 다시 시도하세요.",
         },
         { status: 409 },
       );

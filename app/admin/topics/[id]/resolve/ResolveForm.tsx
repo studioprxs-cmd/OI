@@ -13,6 +13,7 @@ type SettlementPreviewSummary = {
   settledCount: number;
   winnerCount: number;
   payoutTotal: number;
+  duplicateBetIdCount?: number;
 };
 
 type PreviewResponse = {
@@ -100,6 +101,7 @@ export function ResolveForm({ topicId }: Props) {
   const selectedMultiplier = payoutMultiplier(selectedPreview);
   const hasMultiplierOutlier = unsettledCount > 0 && Number(selectedPreview?.winnerPool ?? 0) > 0 && selectedMultiplier >= MULTIPLIER_OUTLIER_THRESHOLD;
   const multiplierOutlierPhraseMatched = multiplierOutlierConfirmPhrase.trim() === MULTIPLIER_OUTLIER_CONFIRM_PHRASE;
+  const hasDuplicateBetIds = Number(selectedPreview?.duplicateBetIdCount ?? 0) > 0;
 
   const integrityChecklist = [
     {
@@ -111,6 +113,13 @@ export function ResolveForm({ topicId }: Props) {
       label: "중복 정산 방지",
       hint: alreadyResolved ? "이미 해결/정산 완료됨" : "아직 해결 기록 없음",
       ok: !alreadyResolved,
+    },
+    {
+      label: "중복 bet ID 없음",
+      hint: hasDuplicateBetIds
+        ? `중복 bet ID ${Number(selectedPreview?.duplicateBetIdCount ?? 0).toLocaleString("ko-KR")}건 감지`
+        : "중복 bet ID 없음",
+      ok: !hasDuplicateBetIds,
     },
     {
       label: "승리 풀(당첨자 존재) 검증",
@@ -215,6 +224,11 @@ export function ResolveForm({ topicId }: Props) {
 
     if (summaryTrimmed.length < MIN_SUMMARY_LENGTH) {
       setMessage(`요약은 최소 ${MIN_SUMMARY_LENGTH}자 이상 작성해주세요.`);
+      return;
+    }
+
+    if (hasDuplicateBetIds) {
+      setMessage("중복 bet ID가 감지되어 정산할 수 없습니다. 먼저 데이터 정합성을 복구해주세요.");
       return;
     }
 
@@ -371,6 +385,9 @@ export function ResolveForm({ topicId }: Props) {
                 tone="error"
               />
             ) : null}
+            {hasDuplicateBetIds ? (
+              <Message text="중복 bet ID가 감지되었습니다. 데이터 정합성 복구 전까지 정산을 차단합니다." tone="error" />
+            ) : null}
             {selectedPreview?.winnerPool === 0 ? (
               <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
             ) : null}
@@ -484,7 +501,7 @@ export function ResolveForm({ topicId }: Props) {
       <div className="resolve-submit-bar">
         <Button
           type="submit"
-          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched)) || (hasMultiplierOutlier && (!confirmMultiplierOutlier || !multiplierOutlierPhraseMatched))}
+          disabled={isLoading || alreadyResolved || isBlockedStatus || hasDuplicateBetIds || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched)) || (hasMultiplierOutlier && (!confirmMultiplierOutlier || !multiplierOutlierPhraseMatched))}
         >
           {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
         </Button>
