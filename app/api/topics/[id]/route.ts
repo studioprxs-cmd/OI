@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getTopicPoolStatsCache, setTopicPoolStatsCache } from "@/lib/betting/pool-cache";
 import { db } from "@/lib/db";
 
 type Params = { params: Promise<{ id: string }> };
@@ -25,5 +26,12 @@ export async function GET(_: Request, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, data: topic, error: null });
+  const cachedPoolStats = await getTopicPoolStatsCache(id);
+
+  const liveYesPool = topic.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
+  const liveNoPool = topic.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
+
+  const poolStats = cachedPoolStats ?? (await setTopicPoolStatsCache(id, liveYesPool, liveNoPool));
+
+  return NextResponse.json({ ok: true, data: { ...topic, poolStats }, error: null });
 }

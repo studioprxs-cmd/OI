@@ -1,3 +1,4 @@
+import { getTopicPoolStatsCache, setTopicPoolStatsCache } from "@/lib/betting/pool-cache";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
@@ -54,19 +55,22 @@ export async function getOingMarkets(nowMs = Date.now()): Promise<OingMarketsPay
       }).catch(() => [])
     : [];
 
-  const liveTopics = dbTopics
-    .filter((topic) => {
-      if (parseTopicKindFromTitle(topic.title) !== "BETTING") return false;
-      if (topic.status !== "OPEN") return false;
+  const liveCandidates = dbTopics.filter((topic) => {
+    if (parseTopicKindFromTitle(topic.title) !== "BETTING") return false;
+    if (topic.status !== "OPEN") return false;
 
-      const closeMs = new Date(topic.closeAt).getTime();
-      if (Number.isNaN(closeMs)) return false;
-      return closeMs >= minCloseMs && closeMs <= maxCloseMs;
-    })
-    .map((topic) => {
-      const yesPool = topic.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
-      const noPool = topic.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
-      const totalPool = yesPool + noPool;
+    const closeMs = new Date(topic.closeAt).getTime();
+    if (Number.isNaN(closeMs)) return false;
+    return closeMs >= minCloseMs && closeMs <= maxCloseMs;
+  });
+
+  const liveTopics = await Promise.all(
+    liveCandidates.map(async (topic) => {
+      const cached = await getTopicPoolStatsCache(topic.id);
+      const liveYesPool = topic.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
+      const liveNoPool = topic.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
+      const poolStats = cached ?? (await setTopicPoolStatsCache(topic.id, liveYesPool, liveNoPool));
+
       return {
         id: topic.id,
         title: topic.title,
@@ -76,13 +80,14 @@ export async function getOingMarkets(nowMs = Date.now()): Promise<OingMarketsPay
         voteCount: topic._count.votes,
         betCount: topic._count.bets,
         commentCount: topic._count.comments,
-        yesPool,
-        noPool,
-        totalPool,
-        yesPrice: totalPool > 0 ? yesPool / totalPool : 0.5,
-        noPrice: totalPool > 0 ? noPool / totalPool : 0.5,
+        yesPool: poolStats.yesPool,
+        noPool: poolStats.noPool,
+        totalPool: poolStats.totalPool,
+        yesPrice: poolStats.yesPrice,
+        noPrice: poolStats.noPrice,
       };
-    });
+    }),
+  );
 
   const fallbackMock = mockTopicSummaries()
     .filter((topic) => {

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { BET_LIMITS } from "@/lib/betting-policy";
 import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
+import { setTopicPoolStatsCache } from "@/lib/betting/pool-cache";
 import { assertBetAmount, assertDailyLimit, assertLossCooldown, assertPoolShare } from "@/lib/betting/validation";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
@@ -198,6 +199,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       };
     });
+
+    await setTopicPoolStatsCache(id, result.newPoolStats.yesPool, result.newPoolStats.noPool);
 
     return NextResponse.json({ ok: true, data: result, error: null }, { status: 201 });
   } catch (error: unknown) {
