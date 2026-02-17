@@ -24,7 +24,9 @@
   --mobile-bottom-nav-height: 4.4rem;
   --mobile-bottom-nav-offset: max(0.55rem, env(safe-area-inset-bottom));
   --mobile-bottom-stack-gap: 0.7rem;
+  --mobile-admin-dock-height: 3.7rem;
   --mobile-fab-clearance: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + var(--mobile-bottom-stack-gap));
+  --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + 0.5rem);
 }
 
 html, body {
@@ -1550,7 +1552,7 @@ body::before {
 
   .admin-mobile-dock-spacer {
     display: block;
-    height: calc(var(--mobile-fab-clearance) + 3.5rem);
+    height: var(--mobile-floating-safe-clearance);
   }
 
   .admin-mobile-dock {
@@ -1605,7 +1607,9 @@ body::before {
     --mobile-bottom-nav-height: 4.15rem;
     --mobile-bottom-nav-offset: max(0.45rem, env(safe-area-inset-bottom));
     --mobile-bottom-stack-gap: 0.55rem;
+    --mobile-admin-dock-height: 3.45rem;
     --mobile-fab-clearance: calc(var(--mobile-bottom-nav-height) + var(--mobile-bottom-nav-offset) + var(--mobile-bottom-stack-gap));
+    --mobile-floating-safe-clearance: calc(var(--mobile-fab-clearance) + var(--mobile-admin-dock-height) + 0.45rem);
   }
 
   .top-nav-inner,

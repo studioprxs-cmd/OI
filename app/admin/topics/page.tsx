@@ -45,6 +45,58 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
     ...mockTopicSummaries().filter((mock) => !dbTopics.some((topic) => topic.id === mock.id)),
   ];
 
+  const unresolvedSettledBacklogCount = canUseDb
+    ? await db.bet
+      .count({
+        where: {
+          settled: false,
+          topic: { status: "RESOLVED" },
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
+  const resolvedWithoutResolutionCount = canUseDb
+    ? await db.topic
+      .count({
+        where: {
+          status: "RESOLVED",
+          resolution: null,
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
+  const unresolvedSettledBacklogTopics = canUseDb
+    ? await db.topic
+      .findMany({
+        where: {
+          status: "RESOLVED",
+          bets: {
+            some: {
+              settled: false,
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          _count: {
+            select: {
+              bets: {
+                where: {
+                  settled: false,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      })
+      .catch(() => [])
+    : [];
+
   const statusCounts = Object.fromEntries(
     STATUS_ORDER.map((status) => [status, topics.filter((topic) => topic.status === status).length]),
   ) as Record<(typeof STATUS_ORDER)[number], number>;
@@ -65,16 +117,72 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
 
   const pendingResolveCount = topics.filter((topic) => topic.status === "OPEN" || topic.status === "LOCKED").length;
   const staleOpenCount = topics.filter((topic) => topic.status === "OPEN" && Date.now() - new Date(topic.createdAt).getTime() >= 24 * 60 * 60 * 1000).length;
+  const integrityIssueTotal = unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
 
   return (
     <PageContainer>
-      <div className="row admin-header-row">
-        <h1 style={{ margin: 0 }}>Admin · Topics</h1>
-        <div className="row admin-header-links">
-          <Link className="text-link" href="/admin/topics/new">+ Create Topic</Link>
-          <Link className="text-link" href="/admin/topics?status=ALL">필터 초기화</Link>
+      <section className="admin-hero-shell">
+        <div className="row admin-header-row">
+          <h1 style={{ margin: 0 }}>Admin · Topics</h1>
+          <div className="row admin-header-links">
+            <Link className="text-link" href="/admin/topics/new">+ Create Topic</Link>
+            <Link className="text-link" href="/admin/topics?status=ALL">필터 초기화</Link>
+          </div>
         </div>
-      </div>
+
+        <div className="admin-pulse-grid" style={{ marginTop: "0.75rem" }}>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">처리 필요</p>
+            <strong className="admin-kpi-value">{pendingResolveCount}건</strong>
+            <span className="admin-kpi-meta">OPEN + LOCKED</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">오픈 지연</p>
+            <strong className="admin-kpi-value">{staleOpenCount}건</strong>
+            <span className="admin-kpi-meta">24시간 이상 OPEN</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">정산 백로그</p>
+            <strong className="admin-kpi-value">{unresolvedSettledBacklogCount}건</strong>
+            <span className="admin-kpi-meta">RESOLVED 상태 미정산</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">결과 불일치</p>
+            <strong className="admin-kpi-value">{resolvedWithoutResolutionCount}건</strong>
+            <span className="admin-kpi-meta">RESOLVED · 결과 없음</span>
+          </div>
+        </div>
+      </section>
+
+      <StatePanel
+        title={integrityIssueTotal > 0 ? "토픽 정산 무결성 점검 필요" : "토픽 정산 무결성 안정"}
+        description={integrityIssueTotal > 0
+          ? `정산 누락/결과 불일치 이슈 ${integrityIssueTotal}건이 감지되었습니다. 토픽 해소 전 데이터 정합성을 먼저 정리하세요.`
+          : "토픽 정산 무결성 이슈가 없습니다. 현재 운영 기준이 안정적으로 유지되고 있습니다."}
+        tone={integrityIssueTotal > 0 ? "warning" : "success"}
+        actions={(
+          <>
+            <Link className="btn btn-primary" href="/admin/moderation">모더레이션/정산 대시보드</Link>
+            <Link className="btn btn-secondary" href="/admin/topics?status=RESOLVED">RESOLVED 토픽 점검</Link>
+          </>
+        )}
+      />
+
+      {unresolvedSettledBacklogTopics.length > 0 ? (
+        <Card>
+          <SectionTitle>정산 누락 우선 확인 토픽</SectionTitle>
+          <ul className="simple-list" style={{ marginTop: "0.6rem" }}>
+            {unresolvedSettledBacklogTopics.map((topic) => (
+              <li key={topic.id}>
+                <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>
+                  {topic.title}
+                </Link>
+                <small style={{ color: "#6b7280" }}> · 미정산 {topic._count.bets}건</small>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <Card>
         <SectionTitle>운영 내비게이션</SectionTitle>
@@ -86,49 +194,21 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
       </Card>
 
       <Card>
-        <SectionTitle>상태 요약</SectionTitle>
-        <div className="admin-kpi-grid" style={{ marginTop: "0.75rem" }}>
-          <div className="admin-kpi-tile">
-            <p className="admin-kpi-label">처리 필요</p>
-            <strong className="admin-kpi-value">{pendingResolveCount}건</strong>
-            <span className="admin-kpi-meta">OPEN + LOCKED</span>
-          </div>
-          <div className="admin-kpi-tile">
-            <p className="admin-kpi-label">오픈 지연</p>
-            <strong className="admin-kpi-value">{staleOpenCount}건</strong>
-            <span className="admin-kpi-meta">24시간 이상 OPEN</span>
-          </div>
-          <div className="admin-kpi-tile">
-            <p className="admin-kpi-label">정산 완료</p>
-            <strong className="admin-kpi-value">{statusCounts.RESOLVED}건</strong>
-            <span className="admin-kpi-meta">RESOLVED</span>
-          </div>
-          <div className="admin-kpi-tile">
-            <p className="admin-kpi-label">초안</p>
-            <strong className="admin-kpi-value">{statusCounts.DRAFT}건</strong>
-            <span className="admin-kpi-meta">출시 전 점검</span>
-          </div>
-        </div>
-        <div className="row" style={{ marginTop: "0.7rem", flexWrap: "wrap", gap: "0.45rem" }}>
-          <Pill tone="success">OPEN {statusCounts.OPEN}</Pill>
-          <Pill>LOCKED {statusCounts.LOCKED}</Pill>
-          <Pill tone="danger">RESOLVED {statusCounts.RESOLVED}</Pill>
-          <Pill>CANCELED {statusCounts.CANCELED}</Pill>
-          <Pill>DRAFT {statusCounts.DRAFT}</Pill>
-        </div>
-      </Card>
-
-      <Card>
         <SectionTitle>토픽 필터</SectionTitle>
-        <div className="row" style={{ marginTop: "0.7rem", flexWrap: "wrap", gap: "0.55rem" }}>
-          <Link className="text-link" href={`/admin/topics?status=ALL&q=${encodeURIComponent(keyword)}`}>
+        <div className="chip-row-scroll" style={{ marginTop: "0.72rem" }} aria-label="토픽 상태 필터">
+          <Link
+            className={`filter-chip${selectedStatus === "ALL" ? " is-active" : ""}`}
+            href={`/admin/topics?status=ALL&q=${encodeURIComponent(keyword)}`}
+          >
             ALL {topics.length}
           </Link>
           {STATUS_ORDER.map((status) => (
-            <Link key={status} className="text-link" href={`/admin/topics?status=${status}&q=${encodeURIComponent(keyword)}`}>
-              <Pill tone={selectedStatus === status ? "danger" : "neutral"}>
-                {status} {statusCounts[status]}
-              </Pill>
+            <Link
+              key={status}
+              className={`filter-chip${selectedStatus === status ? " is-active" : ""}`}
+              href={`/admin/topics?status=${status}&q=${encodeURIComponent(keyword)}`}
+            >
+              {status} {statusCounts[status]}
             </Link>
           ))}
         </div>

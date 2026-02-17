@@ -341,15 +341,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
       <Card>
         <SectionTitle>신고 현황</SectionTitle>
-        <div className="row" style={{ marginTop: "0.75rem", flexWrap: "wrap", gap: "0.55rem" }}>
-          <Link className="text-link" href="/admin/moderation?status=ALL&type=ALL">
+        <div className="chip-row-scroll" style={{ marginTop: "0.75rem" }} aria-label="신고 상태 필터">
+          <Link
+            className={`filter-chip${selectedStatus === "ALL" ? " is-active" : ""}`}
+            href="/admin/moderation?status=ALL&type=ALL"
+          >
             ALL {reports.length}
           </Link>
           {STATUSES.map((status) => (
-            <Link key={status} className="text-link" href={`/admin/moderation?status=${status}&type=${selectedType}`}>
-              <Pill tone={selectedStatus === status ? "danger" : "neutral"}>
-                {status} {counts[status]}
-              </Pill>
+            <Link
+              key={status}
+              className={`filter-chip${selectedStatus === status ? " is-active" : ""}`}
+              href={`/admin/moderation?status=${status}&type=${selectedType}`}
+            >
+              {status} {counts[status]}
             </Link>
           ))}
         </div>
@@ -483,47 +488,47 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         {filteredReports.map((report) => (
           <Card key={report.id}>
             <article className="moderation-report-card">
-            <div className="row moderation-report-head" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
-              <div>
-                <strong>{report.reason}</strong>
-                <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
-                <small style={{ color: "#6b7280" }}>
-                  {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
-                  {report.reporterNickname ? ` · 신고자 ${report.reporterNickname}` : ""}
-                  {report.reporterEmail ? ` (${report.reporterEmail})` : ""}
-                </small>
-                {report.topicId ? (
-                  <p style={{ margin: "0.3rem 0 0" }}>
-                    <Link href={`/topics/${report.topicId}`} className="text-link">
-                      토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
-                    </Link>
-                    {report.topicStatus ? <span style={{ marginLeft: "0.4rem", color: "#6b7280" }}>({report.topicStatus})</span> : null}
-                  </p>
-                ) : null}
+              <div className="row moderation-report-head" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
+                <div>
+                  <strong>{report.reason}</strong>
+                  <p style={{ margin: "0.35rem 0", color: "#6b7280" }}>{report.detail ?? "상세 설명 없음"}</p>
+                  <small style={{ color: "#6b7280" }}>
+                    {new Date(report.createdAt).toLocaleString("ko-KR")} · 상태 {report.status}
+                    {report.reporterNickname ? ` · 신고자 ${report.reporterNickname}` : ""}
+                    {report.reporterEmail ? ` (${report.reporterEmail})` : ""}
+                  </small>
+                  {report.topicId ? (
+                    <p style={{ margin: "0.3rem 0 0" }}>
+                      <Link href={`/topics/${report.topicId}`} className="text-link">
+                        토픽 보기{report.topicTitle ? ` · ${report.topicTitle}` : ""}
+                      </Link>
+                      {report.topicStatus ? <span style={{ marginLeft: "0.4rem", color: "#6b7280" }}>({report.topicStatus})</span> : null}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="row" style={{ gap: "0.4rem" }}>
+                  {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
+                  {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
+                </div>
               </div>
-              <div className="row" style={{ gap: "0.4rem" }}>
-                {report.status === "OPEN" ? <Pill tone="danger">우선 처리</Pill> : null}
-                {report.commentId ? <Pill>comment</Pill> : <Pill>topic</Pill>}
+
+              {report.commentContent ? (
+                <p style={{ margin: "0.6rem 0 0", color: "#111827" }}>
+                  코멘트: {report.commentContent}
+                  {report.commentHidden ? " (숨김 처리됨)" : ""}
+                </p>
+              ) : null}
+
+              <div style={{ marginTop: "0.6rem" }}>
+                <ReportActions
+                  reportId={report.id}
+                  initialStatus={report.status}
+                  hasComment={Boolean(report.commentId)}
+                  hasTopic={Boolean(report.topicId)}
+                  commentHidden={Boolean(report.commentHidden)}
+                  topicStatus={report.topicStatus}
+                />
               </div>
-            </div>
-
-            {report.commentContent ? (
-              <p style={{ margin: "0.6rem 0 0", color: "#111827" }}>
-                코멘트: {report.commentContent}
-                {report.commentHidden ? " (숨김 처리됨)" : ""}
-              </p>
-            ) : null}
-
-            <div style={{ marginTop: "0.6rem" }}>
-              <ReportActions
-                reportId={report.id}
-                initialStatus={report.status}
-                hasComment={Boolean(report.commentId)}
-                hasTopic={Boolean(report.topicId)}
-                commentHidden={Boolean(report.commentHidden)}
-                topicStatus={report.topicStatus}
-              />
-            </div>
             </article>
           </Card>
         ))}
@@ -535,6 +540,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           />
         ) : null}
       </div>
+
+      <div className="admin-mobile-dock" aria-label="모바일 운영 빠른 실행">
+        <Link href="/admin/moderation?status=OPEN" className="admin-quick-action-btn">OPEN {urgentReportCount}</Link>
+        <Link href="/admin/moderation?status=REVIEWING" className="admin-quick-action-btn">REVIEW {counts.REVIEWING}</Link>
+        <Link href="/admin/topics" className="admin-quick-action-btn">정산 점검</Link>
+      </div>
+      <div className="admin-mobile-dock-spacer" aria-hidden />
     </PageContainer>
   );
 }
