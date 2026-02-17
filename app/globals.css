@@ -4821,12 +4821,23 @@ body::before {
 
   .search-field {
     width: 100%;
-    min-height: 46px;
-    order: 3;
+    min-height: 44px;
   }
 
   .top-search-only-inner {
     grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .top-search-only-inner > .top-brand-mini,
+  .top-search-only-inner > .top-fixed-search,
+  .top-search-only-inner > .top-search-actions {
+    order: 0;
+  }
+
+  .top-fixed-search {
+    min-width: 0;
   }
 
   .top-search-actions {
@@ -4854,9 +4865,9 @@ body::before {
     order: 1;
   }
 
-  .profile-menu-wrap {
-    order: 2;
-    margin-left: auto;
+  .top-search-actions .profile-menu-wrap {
+    order: 0;
+    margin-left: 0;
   }
 
   .profile-menu {
