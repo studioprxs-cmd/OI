@@ -2680,6 +2680,10 @@ body::before {
 }
 
 @media (max-width: 640px) {
+  :root {
+    --mobile-global-nav-height: 4.45rem;
+  }
+
   .top-nav-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -2699,7 +2703,6 @@ body::before {
   }
 
   .mobile-bottom-nav {
-    --mobile-global-nav-height: 4.45rem;
     position: fixed;
     left: 0.7rem;
     right: 0.7rem;
