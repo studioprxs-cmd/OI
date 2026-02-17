@@ -261,7 +261,6 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
           {viewer ? (
             <div className="auth-chip-row">
-              <span className="nick-chip">{viewer.nickname}</span>
               <Link className="profile-chip" href="/me" aria-label="내 활동 페이지로 이동">{initials}</Link>
             </div>
           ) : null}
@@ -273,8 +272,9 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               onClick={() => setProfileMenuOpen((prev) => !prev)}
               aria-haspopup="menu"
               aria-expanded={profileMenuOpen}
+              aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
             >
-              회원정보
+              {viewer ? viewer.nickname : "로그인"}
             </button>
             {profileMenuOpen ? (
               <div className="profile-menu" role="menu">
