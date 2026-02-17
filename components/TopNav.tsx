@@ -1,11 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-
-import { RELEASE } from "@/lib/release";
 
 type Viewer = {
   nickname: string;
@@ -25,24 +22,21 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/market", label: "마켓", icon: "▣" },
 ];
 
-export function TopNav({ viewer }: { viewer: Viewer }) {
+export function TopNav({ viewer: _viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const initialSearch = useMemo(() => {
     if (pathname.startsWith("/topics")) {
       return searchParams.get("q") ?? "";
     }
     return "";
   }, [pathname, searchParams]);
+
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
-
-  const visibleNavItems = NAV_ITEMS;
 
   const isNavItemActive = (item: NavItem) => {
     if (item.href === "/") return pathname === "/";
@@ -52,29 +46,6 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   useEffect(() => {
     setSearchQuery(initialSearch);
   }, [initialSearch]);
-
-  useEffect(() => {
-    if (!profileMenuOpen) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!profileMenuRef.current) return;
-      if (profileMenuRef.current.contains(event.target as Node)) return;
-      setProfileMenuOpen(false);
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setProfileMenuOpen(false);
-      }
-    }
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [profileMenuOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -182,20 +153,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         delete shell.dataset.keyboardVisible;
       }
     };
-  }, [viewer, pathname, visibleNavItems.length]);
-
-  async function handleLogout() {
-    setIsLoggingOut(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.refresh();
-      router.push("/");
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
-
-  const initials = viewer?.nickname.slice(0, 2).toUpperCase() ?? "GU";
+  }, [pathname]);
 
   function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -217,36 +175,9 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
   return (
     <>
-      <header className="top-nav" ref={headerRef}>
-      <div className="top-nav-inner">
-        <Link href="/" className="brand-lockup" aria-label="오늘의 이슈 홈">
-          <Image
-            src="/oi-logo-new.jpg"
-            alt="오늘의 이슈 로고"
-            width={168}
-            height={56}
-            className="brand-logo"
-            priority
-          />
-          <span className="release-chip">r{RELEASE}</span>
-        </Link>
-
-        <nav className="top-nav-links" aria-label="글로벌 탐색">
-          <div className="top-nav-tabs">
-            {visibleNavItems.map((item) => {
-              const active = isNavItemActive(item);
-              return (
-                <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}>
-                  <span className="top-nav-link-icon" aria-hidden>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
-
-        <div className="top-nav-actions">
-          <form className="search-field" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
+      <header className="top-nav top-search-only" ref={headerRef}>
+        <div className="top-nav-inner top-search-only-inner">
+          <form className="search-field top-fixed-search" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
             <span aria-hidden>🔎</span>
             <input
               type="search"
@@ -257,63 +188,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               onChange={(event) => setSearchQuery(event.target.value)}
             />
           </form>
-
-          {viewer ? (
-            <div className="auth-chip-row">
-              <Link className="profile-chip" href="/me" aria-label="내 활동 페이지로 이동">{initials}</Link>
-            </div>
-          ) : null}
-
-          <div className="profile-menu-wrap" ref={profileMenuRef}>
-            <button
-              type="button"
-              className={`top-nav-link profile-trigger ${profileMenuOpen ? "is-active" : ""}`}
-              onClick={() => setProfileMenuOpen((prev) => !prev)}
-              aria-haspopup="menu"
-              aria-expanded={profileMenuOpen}
-              aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
-            >
-              {viewer ? viewer.nickname : "로그인"}
-            </button>
-            {profileMenuOpen ? (
-              <div className="profile-menu" role="menu">
-                {viewer ? (
-                  <>
-                    <Link href="/me" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      내 활동
-                    </Link>
-                    <button
-                      className="profile-menu-item"
-                      type="button"
-                      role="menuitem"
-                      onClick={async () => {
-                        setProfileMenuOpen(false);
-                        await handleLogout();
-                      }}
-                      disabled={isLoggingOut}
-                    >
-                      {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/auth/signin" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      로그인
-                    </Link>
-                    <Link href="/auth/signup" className="profile-menu-item" role="menuitem" onClick={() => setProfileMenuOpen(false)}>
-                      회원가입
-                    </Link>
-                  </>
-                )}
-              </div>
-            ) : null}
-          </div>
         </div>
-      </div>
       </header>
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색" ref={mobileBottomNavRef}>
-        {visibleNavItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const active = isNavItemActive(item);
           return (
             <Link
