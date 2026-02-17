@@ -302,7 +302,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     <>
       <header className="top-nav top-search-only" ref={headerRef}>
         <div className="top-nav-inner top-search-only-inner">
-          <Link href="/" className="top-brand-mini" aria-label="홈으로 이동">🟢 OI</Link>
+          <Link href="/" className="top-brand-mini" aria-label="홈으로 이동">OI ✦</Link>
 
           <button
             type="button"
@@ -313,12 +313,12 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               setProfileMenuOpen(false);
             }}
           >
-            🔍
+            ⌕
           </button>
 
           <div className="top-search-actions">
             <Link href="/wallet" className="top-wallet-chip" aria-label="포인트 지갑">
-              <span aria-hidden>🪙</span>
+              <span aria-hidden>◌</span>
               <span>지갑</span>
             </Link>
 
@@ -333,7 +333,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
                 aria-expanded={profileMenuOpen}
                 aria-label={viewer ? `${viewer.nickname} 메뉴` : "로그인 메뉴"}
               >
-                {viewer ? `👤 ${viewer.nickname}` : "👤 로그인"}
+                {viewer ? `◔ ${viewer.nickname}` : "◔ 로그인"}
               </button>
               {profileMenuOpen ? (
                 <div className="profile-menu" role="menu">
@@ -380,7 +380,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               <input
                 ref={searchInputRef}
                 type="search"
-                placeholder="🔍 이슈 검색"
+                placeholder="⌕ 이슈 검색"
                 aria-label="이슈 검색"
                 autoComplete="off"
                 value={searchQuery}
@@ -403,7 +403,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
                         runSearch(keyword);
                       }}
                     >
-                      🕘 {keyword}
+                      ◦ {keyword}
                     </button>
                   ))}
                 </div>
@@ -424,7 +424,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
                         runSearch(topic.title);
                       }}
                     >
-                      🔥 {topic.title}
+                      ✦ {topic.title}
                     </button>
                   ))}
                 </div>
