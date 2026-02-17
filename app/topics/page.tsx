@@ -80,6 +80,11 @@ export default async function TopicsPage({ searchParams }: Props) {
   const pollTopics = topics.filter((topic) => topic.kind === "POLL").length;
   const filteredOpenCount = filteredTopics.filter((topic) => topic.status === "OPEN").length;
 
+  const featuredTopics = filteredTopics
+    .slice()
+    .sort((a, b) => (b.voteCount + b.betCount + b.commentCount) - (a.voteCount + a.betCount + a.commentCount))
+    .slice(0, 3);
+
   const topicExperienceSignals = [
     {
       id: "hierarchy",
@@ -169,6 +174,35 @@ export default async function TopicsPage({ searchParams }: Props) {
               >
                 전체
               </Link>
+            </div>
+          </section>
+
+          <section className="topics-visual-stage" aria-label="토픽 비주얼 스테이지">
+            <div className="section-header topics-visual-stage-header">
+              <p className="section-kicker">TOPICS Visual Stage</p>
+              <h2>배너 중심으로 바로 참여</h2>
+            </div>
+            <div className="topics-visual-stage-grid">
+              {featuredTopics.map((topic, index) => (
+                <article key={`featured-${topic.id}`} className="topics-visual-card">
+                  <Link href={`/topics/${topic.id}`} className="topics-visual-image" aria-label={`${topic.title} 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 대표 배너`} loading="lazy" />
+                    <span className="topics-visual-badge">#{index + 1} 참여 집중</span>
+                  </Link>
+                  <div className="topics-visual-body">
+                    <strong>
+                      <Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>
+                    </strong>
+                    <small>{topic.status === "OPEN" ? "지금 참여 가능" : "결과/정산 확인"} · {topic.kind === "BETTING" ? "베팅형" : "여론형"}</small>
+                    <div className="topics-visual-meta">
+                      <span>투표 {topic.voteCount}</span>
+                      <span>베팅 {topic.betCount}</span>
+                      <span>댓글 {topic.commentCount}</span>
+                    </div>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary topics-visual-cta">참여/확인</Link>
+                  </div>
+                </article>
+              ))}
             </div>
           </section>
 

@@ -53,6 +53,12 @@ export default async function HomePage() {
   const totalBets = combined.reduce((sum, topic) => sum + topic.betCount, 0);
   const openCount = combined.filter((topic) => topic.status === "OPEN").length;
 
+  const visualSpotlights = combined
+    .filter((topic) => topic.status === "OPEN")
+    .slice()
+    .sort((a, b) => (b.voteCount + b.betCount + b.commentCount) - (a.voteCount + a.betCount + a.commentCount))
+    .slice(0, 3);
+
   const hotTopic = combined
     .slice()
     .sort((a, b) => {
@@ -125,6 +131,35 @@ export default async function HomePage() {
                 />
               </div>
             ) : null}
+          </section>
+
+          <section className="feed-section home-visual-priority">
+            <div className="section-header">
+              <p className="section-kicker">모바일 우선 비주얼 트랙</p>
+              <h2>참여 유도 스포트라이트</h2>
+            </div>
+            <div className="home-spotlight-grid" role="list" aria-label="참여 유도 스포트라이트">
+              {visualSpotlights.map((topic, index) => (
+                <article key={`spotlight-${topic.id}`} className="home-spotlight-card" role="listitem">
+                  <Link href={`/topics/${topic.id}`} className="home-spotlight-media" aria-label={`${topic.title} 열기`}>
+                    <img src={getTopicThumbnail(topic.id, topic.title)} alt={`${topic.title} 배너`} loading="lazy" />
+                    <span className="home-spotlight-rank">TOP {index + 1}</span>
+                  </Link>
+                  <div className="home-spotlight-body">
+                    <strong>
+                      <Link href={`/topics/${topic.id}`} className="title-link">{topic.title}</Link>
+                    </strong>
+                    <p>{topic.description}</p>
+                    <div className="home-spotlight-metrics" aria-label="참여 지표">
+                      <span>투표 {topic.voteCount}</span>
+                      <span>베팅 {topic.betCount}</span>
+                      <span>댓글 {topic.commentCount}</span>
+                    </div>
+                    <Link href={`/topics/${topic.id}`} className="btn btn-primary home-spotlight-cta">지금 참여</Link>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
 
           <section className="feed-section">
