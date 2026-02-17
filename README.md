@@ -28,6 +28,7 @@
 - `GET /api/topics`
 - `POST /api/topics` (admin guard, `type: BETTING|POLL` 검증)
 - `GET /api/topics/[id]`
+- `PATCH /api/admin/topics/[id]/status` (admin topic quick action: LOCK/REOPEN/CANCEL + cancel refund)
 - `POST /api/topics/[id]/votes`
 - `POST /api/topics/[id]/bets`
 - `GET /api/topics/[id]/comments`
@@ -69,3 +70,4 @@
 - [x] Vote/Bet API + 포인트 차감 최소 검증
 - [ ] Comment/Report 모더레이션 플로우
 - [ ] Resolution + 정산 배치 구현
+- [x] Admin Topics 빠른 상태 변경(LOCK/REOPEN/CANCEL + CANCEL 환불) UX/API

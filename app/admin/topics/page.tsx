@@ -6,6 +6,8 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mockTopicSummaries } from "@/lib/mock-data";
 
+import { TopicQuickActions } from "./TopicQuickActions";
+
 type Props = {
   searchParams?: Promise<{ status?: string; q?: string }>;
 };
@@ -164,6 +166,10 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
               <Link className="text-link" href={`/admin/topics/${topic.id}/resolve`}>
                 {topic.status === "RESOLVED" ? "정산 결과 보기" : "Resolve"}
               </Link>
+            </div>
+
+            <div style={{ marginTop: "0.7rem" }}>
+              <TopicQuickActions topicId={topic.id} topicStatus={topic.status} />
             </div>
           </Card>
         ))}
