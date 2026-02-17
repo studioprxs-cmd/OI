@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { RELEASE } from "@/lib/release";
 
@@ -29,7 +29,19 @@ const NAV_ITEMS: NavItem[] = [
 export function TopNav({ viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const initialSearch = useMemo(() => {
+    if (pathname.startsWith("/topics")) {
+      return searchParams.get("q") ?? "";
+    }
+    return "";
+  }, [pathname, searchParams]);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+
+  useEffect(() => {
+    setSearchQuery(initialSearch);
+  }, [initialSearch]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -43,6 +55,24 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }
 
   const initials = viewer?.nickname.slice(0, 2).toUpperCase() ?? "GU";
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const nextQuery = searchQuery.trim();
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (nextQuery) {
+      params.set("q", nextQuery);
+    } else {
+      params.delete("q");
+    }
+
+    params.delete("status");
+
+    const queryString = params.toString();
+    router.push(`/topics${queryString ? `?${queryString}` : ""}`);
+  }
 
   return (
     <header className="top-nav">
@@ -75,10 +105,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         </nav>
 
         <div className="top-nav-actions">
-          <label className="search-field" aria-label="검색">
+          <form className="search-field" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
             <span aria-hidden>🔎</span>
-            <input type="search" placeholder="이슈 검색" aria-label="이슈 검색" autoComplete="off" />
-          </label>
+            <input
+              type="search"
+              placeholder="토픽 제목·설명 검색"
+              aria-label="이슈 검색"
+              autoComplete="off"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </form>
 
           {viewer ? (
             <div className="auth-chip-row">
