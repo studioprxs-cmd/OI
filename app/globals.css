@@ -3608,6 +3608,11 @@ body::before {
     --admin-jump-sticky-top: calc(var(--admin-tabs-sticky-top) + 52px);
   }
 
+  .top-nav {
+    position: sticky;
+    top: 0;
+  }
+
   .top-nav-tabs {
     overflow-x: auto;
     scrollbar-width: none;
@@ -4169,7 +4174,15 @@ body::before {
   .admin-mobile-dock,
   .topic-floating-comment,
   .resolve-submit-bar {
+    --floating-shift-y: 0px;
     transition: opacity 180ms var(--ease-standard), transform 180ms var(--ease-standard);
+    will-change: transform, opacity;
+  }
+
+  .mobile-bottom-nav,
+  .admin-mobile-dock,
+  .resolve-submit-bar {
+    transform: translateY(var(--floating-shift-y));
   }
 
   .app-shell[data-keyboard-visible="true"] .mobile-bottom-nav,
@@ -4178,13 +4191,13 @@ body::before {
   .app-shell[data-keyboard-visible="true"] .resolve-submit-bar {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(10px);
+    --floating-shift-y: 10px;
   }
 
   .topic-floating-comment {
     position: fixed;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, var(--floating-shift-y));
     bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap) + var(--mobile-floating-stack-offset));
     z-index: 62;
     display: inline-flex;
@@ -4709,7 +4722,7 @@ body::before {
 
   .topic-floating-comment {
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, var(--floating-shift-y));
     min-height: 44px;
     padding: 0.58rem 0.8rem;
     font-size: 0.86rem;
