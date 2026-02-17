@@ -233,6 +233,10 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
   const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
+  const oldestActionableHours = actionableReports.length > 0
+    ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
+    : 0;
+  const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
   const priorityReports = filteredReports
     .filter((report) => {
       if (report.status !== "OPEN" && report.status !== "REVIEWING") return false;
@@ -240,6 +244,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       return report.status === "OPEN" || elapsedHours >= 24;
     })
     .slice(0, 5);
+  const spotlightReports = priorityReports.slice(0, 3);
 
   return (
     <PageContainer>
@@ -269,12 +274,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">SLA 위험</p>
             <strong className="admin-kpi-value">{superStaleActionableCount}건</strong>
-            <span className="admin-kpi-meta">48시간 이상 미처리</span>
+            <span className="admin-kpi-meta">최장 대기 {oldestActionableHours}h · 48시간 이상 미처리</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">정산 무결성</p>
             <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건</strong>
-            <span className="admin-kpi-meta">누락 · 백로그 · 불일치 합계</span>
+            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 합계</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">배당률</p>
@@ -436,6 +441,31 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <StatePanel
             title="긴급 처리 대상이 없습니다"
             description="OPEN 신규나 24시간 이상 지연된 REVIEWING 건이 없습니다. 현재 큐는 안정 상태입니다."
+            tone="success"
+          />
+        )}
+      </Card>
+
+      <Card>
+        <SectionTitle>모바일 스포트라이트</SectionTitle>
+        <p className="admin-muted-note">엄지 한 번으로 가장 급한 신고 상세 영역으로 이동합니다.</p>
+        {spotlightReports.length > 0 ? (
+          <div className="admin-spotlight-grid" style={{ marginTop: "0.65rem" }}>
+            {spotlightReports.map((report) => {
+              const elapsedHours = Math.floor((Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60));
+              return (
+                <Link key={report.id} href={`#report-${report.id}`} className="admin-spotlight-link">
+                  <span className="admin-spotlight-status">{report.status}</span>
+                  <strong className="admin-spotlight-title">{report.reason}</strong>
+                  <small className="admin-spotlight-meta">경과 {Math.max(elapsedHours, 0)}시간 · {report.commentId ? "댓글" : "토픽"} 신고</small>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <StatePanel
+            title="스포트라이트 대상이 없습니다"
+            description="긴급/지연 신고가 비어 있습니다. 현재 큐 상태는 안정적입니다."
             tone="success"
           />
         )}

@@ -22,9 +22,9 @@
   --shadow-card-hover: 0 14px 34px rgba(15, 23, 42, 0.1);
   --ease-standard: cubic-bezier(0.2, 0.72, 0.22, 1);
   --mobile-safe-bottom: max(0.55rem, env(safe-area-inset-bottom));
-  --mobile-admin-dock-height: 3.7rem;
-  --mobile-floating-layer-gap: 0.35rem;
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.75rem);
+  --mobile-admin-dock-height: 4.2rem;
+  --mobile-floating-layer-gap: 0.38rem;
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.82rem);
 }
 
 html, body {
@@ -1169,6 +1169,57 @@ body::before {
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
 }
 
+.admin-spotlight-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.56rem;
+}
+
+.admin-spotlight-link {
+  text-decoration: none;
+  display: grid;
+  gap: 0.28rem;
+  border-radius: 14px;
+  border: 1px solid #d6e7de;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  padding: 0.72rem 0.76rem;
+  transition: transform 180ms var(--ease-standard), border-color 180ms var(--ease-standard), box-shadow 180ms var(--ease-standard);
+}
+
+.admin-spotlight-link:hover {
+  transform: translateY(-1px);
+  border-color: #b8dac6;
+  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.11);
+}
+
+.admin-spotlight-status {
+  width: fit-content;
+  min-height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.52rem;
+  border-radius: 999px;
+  background: #ecf9f2;
+  border: 1px solid #bce8cf;
+  color: #0f6a3d;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.admin-spotlight-title {
+  color: #123627;
+  font-size: 0.92rem;
+  line-height: 1.38;
+  letter-spacing: -0.01em;
+}
+
+.admin-spotlight-meta {
+  color: #66766d;
+  font-size: 0.76rem;
+}
+
 .chip-row-scroll {
   display: flex;
   gap: 0.48rem;
@@ -1817,6 +1868,16 @@ body::before {
     grid-template-columns: 1fr;
   }
 
+  .admin-spotlight-grid {
+    grid-template-columns: 1fr;
+    gap: 0.48rem;
+  }
+
+  .admin-spotlight-link {
+    border-radius: 12px;
+    padding: 0.66rem 0.68rem;
+  }
+
   .admin-quick-action-btn {
     width: 100%;
     min-height: 48px;
@@ -1955,9 +2016,9 @@ body::before {
 @media (max-width: 390px) {
   :root {
     --mobile-safe-bottom: max(0.45rem, env(safe-area-inset-bottom));
-    --mobile-admin-dock-height: 3.45rem;
-    --mobile-floating-layer-gap: 0.3rem;
-    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.62rem);
+    --mobile-admin-dock-height: 3.95rem;
+    --mobile-floating-layer-gap: 0.32rem;
+    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap) + 0.68rem);
   }
 
   .top-nav-inner,
