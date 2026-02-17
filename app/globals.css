@@ -189,6 +189,37 @@ body::before {
   padding-inline: 0.75rem;
 }
 
+.top-search-suggest-block {
+  margin-top: 0.62rem;
+}
+
+.top-search-suggest-block p {
+  margin: 0 0 0.35rem;
+  color: #4d6256;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.top-search-suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.top-search-chip {
+  border-radius: 999px;
+  border: 1px solid #d7e9df;
+  background: #f7fcf9;
+  color: #234535;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.34rem 0.58rem;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 .top-search-actions {
   display: inline-flex;
   align-items: center;

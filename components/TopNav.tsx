@@ -15,12 +15,25 @@ type NavItem = {
   icon: string;
 };
 
+type TopicPreview = {
+  id: string;
+  title: string;
+  status?: string;
+  _count?: {
+    bets?: number;
+    votes?: number;
+    comments?: number;
+  };
+};
+
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "홈", icon: "⌂" },
   { href: "/topics", label: "토픽", icon: "◉" },
   { href: "/oing", label: "오잉", icon: "◌" },
   { href: "/market", label: "마켓", icon: "▣" },
 ];
+
+const RECENT_SEARCH_KEY = "oi:recent-searches";
 
 export function TopNav({ viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
@@ -29,6 +42,8 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
+  const [popularTopics, setPopularTopics] = useState<TopicPreview[]>([]);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -196,6 +211,53 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     };
   }, [pathname]);
 
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(RECENT_SEARCH_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        setRecentKeywords(parsed.filter((item): item is string => typeof item === "string").slice(0, 5));
+      }
+    } catch {
+      setRecentKeywords([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!searchOpen || popularTopics.length > 0) return;
+
+    let aborted = false;
+
+    async function loadPopularTopics() {
+      try {
+        const res = await fetch("/api/topics", { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok || !json?.ok || !Array.isArray(json?.data) || aborted) return;
+
+        const ranked = (json.data as TopicPreview[])
+          .filter((topic) => topic.status === "OPEN")
+          .sort((a, b) => {
+            const scoreA = (a._count?.bets ?? 0) * 2 + (a._count?.votes ?? 0) + (a._count?.comments ?? 0);
+            const scoreB = (b._count?.bets ?? 0) * 2 + (b._count?.votes ?? 0) + (b._count?.comments ?? 0);
+            return scoreB - scoreA;
+          })
+          .slice(0, 5);
+
+        if (!aborted) {
+          setPopularTopics(ranked);
+        }
+      } catch {
+        if (!aborted) setPopularTopics([]);
+      }
+    }
+
+    loadPopularTopics();
+    return () => {
+      aborted = true;
+    };
+  }, [searchOpen, popularTopics.length]);
+
   async function handleLogout() {
     setIsLoggingOut(true);
     try {
@@ -207,14 +269,19 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     }
   }
 
-  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const nextQuery = searchQuery.trim();
+  function runSearch(nextQueryRaw: string) {
+    const nextQuery = nextQueryRaw.trim();
     const params = new URLSearchParams(searchParams.toString());
 
     if (nextQuery) {
       params.set("q", nextQuery);
+      const nextRecent = [nextQuery, ...recentKeywords.filter((item) => item !== nextQuery)].slice(0, 5);
+      setRecentKeywords(nextRecent);
+      try {
+        window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(nextRecent));
+      } catch {
+        // noop
+      }
     } else {
       params.delete("q");
     }
@@ -224,6 +291,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     const queryString = params.toString();
     router.push(`/topics${queryString ? `?${queryString}` : ""}`);
     setSearchOpen(false);
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    runSearch(searchQuery);
   }
 
   return (
@@ -316,6 +388,48 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               />
               <button type="submit" className="btn btn-primary">검색</button>
             </form>
+
+            {recentKeywords.length > 0 ? (
+              <div className="top-search-suggest-block">
+                <p>최근 검색</p>
+                <div className="top-search-suggest-row">
+                  {recentKeywords.map((keyword) => (
+                    <button
+                      key={`recent-${keyword}`}
+                      type="button"
+                      className="top-search-chip"
+                      onClick={() => {
+                        setSearchQuery(keyword);
+                        runSearch(keyword);
+                      }}
+                    >
+                      🕘 {keyword}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {popularTopics.length > 0 ? (
+              <div className="top-search-suggest-block">
+                <p>인기 토픽</p>
+                <div className="top-search-suggest-row">
+                  {popularTopics.map((topic) => (
+                    <button
+                      key={topic.id}
+                      type="button"
+                      className="top-search-chip"
+                      onClick={() => {
+                        setSearchQuery(topic.title);
+                        runSearch(topic.title);
+                      }}
+                    >
+                      🔥 {topic.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
