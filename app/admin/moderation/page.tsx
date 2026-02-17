@@ -292,6 +292,44 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     })
     .slice(0, 5);
   const spotlightReports = priorityReports.slice(0, 3);
+  const settlementRecoveryQueue = [
+    {
+      id: "recovery-payout-null",
+      label: "지급값 누락 복구",
+      count: settledWithNullPayoutCount,
+      detail: "settled=true + payoutAmount null",
+      href: "/admin/topics?status=RESOLVED",
+      tone: settledWithNullPayoutCount > 0 ? "danger" : "ok",
+      cta: "정산값 채우기",
+    },
+    {
+      id: "recovery-backlog",
+      label: "RESOLVED 백로그 정산",
+      count: unresolvedSettledBacklogCount,
+      detail: "RESOLVED 상태 미정산 베팅",
+      href: "/admin/topics?status=RESOLVED",
+      tone: unresolvedSettledBacklogCount > 0 ? "danger" : "ok",
+      cta: "백로그 정리",
+    },
+    {
+      id: "recovery-resolution",
+      label: "결과 레코드 연결",
+      count: resolvedWithoutResolutionCount,
+      detail: "status=RESOLVED + resolution=null",
+      href: "/admin/topics?status=RESOLVED",
+      tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+      cta: "결과 연결",
+    },
+    {
+      id: "recovery-amount",
+      label: "비정상 금액 검증",
+      count: nonPositiveBetAmountCount,
+      detail: "bet.amount <= 0",
+      href: "/admin/topics?status=ALL",
+      tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+      cta: "데이터 점검",
+    },
+  ] as const;
 
   const integrityWatchItems = [
     {
@@ -652,6 +690,30 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                 <strong className="admin-watch-title">{item.label}</strong>
                 <small className="admin-watch-description">{item.description}</small>
                 <span className="admin-watch-action">{item.count > 0 ? "즉시 조치" : "정상 유지"} →</span>
+              </Link>
+            ))}
+        </div>
+      </Card>
+
+      <Card className="admin-recovery-card" id="settlement-recovery">
+        <div className="admin-recovery-head">
+          <div>
+            <p className="admin-jump-nav-label">Settlement recovery queue</p>
+            <h2 className="admin-command-title">정산 복구 우선순위</h2>
+          </div>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>{integrityIssueTotal > 0 ? `복구 ${integrityIssueTotal}건` : "복구 대상 없음"}</Pill>
+        </div>
+        <p className="admin-card-intro">무결성 복구 작업을 영향도 순서로 고정했습니다. 모바일에서도 카드 순서대로 처리하면 정산 리스크를 빠르게 줄일 수 있습니다.</p>
+        <div className="admin-recovery-grid" style={{ marginTop: "0.68rem" }}>
+          {settlementRecoveryQueue
+            .slice()
+            .sort((a, b) => b.count - a.count)
+            .map((item) => (
+              <Link key={item.id} href={item.href} className={`admin-recovery-item is-${item.tone}`}>
+                <span className="admin-recovery-label">{item.label}</span>
+                <strong className="admin-recovery-value">{item.count}건</strong>
+                <small>{item.detail}</small>
+                <span className="admin-recovery-cta">{item.cta} →</span>
               </Link>
             ))}
         </div>
