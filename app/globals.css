@@ -3689,14 +3689,15 @@ body::before {
 
 .hot-join-stack {
   width: 100%;
-  border: 1px solid #cde9d8;
-  background: linear-gradient(180deg, #f4fff8 0%, #ecfbf2 100%);
+  border: 1px solid #8fd9af;
+  background: linear-gradient(135deg, #effff5 0%, #def8e9 100%);
   border-radius: 13px;
-  padding: 0.62rem 0.68rem;
+  padding: 0.68rem 0.72rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
+  box-shadow: 0 10px 24px rgba(10, 110, 60, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
 .hot-join-stack-copy {
@@ -3707,14 +3708,15 @@ body::before {
 
 .hot-join-stack-title {
   margin: 0;
-  font-size: 0.9rem;
-  font-weight: 800;
-  color: #0b6437;
-  letter-spacing: -0.01em;
+  font-size: 0.98rem;
+  font-weight: 900;
+  color: #075a31;
+  letter-spacing: -0.012em;
 }
 
 .hot-join-stack-copy small {
-  color: #4d675a;
+  color: #345a45;
+  font-weight: 600;
 }
 
 .hot-join-stack-chips {
@@ -3737,8 +3739,10 @@ body::before {
 }
 
 .hot-join-stack-btn {
-  min-height: 44px;
+  min-height: 46px;
   white-space: nowrap;
+  font-size: 0.95rem;
+  box-shadow: 0 10px 18px rgba(6, 120, 62, 0.28);
 }
 
 @media (max-width: 640px) {

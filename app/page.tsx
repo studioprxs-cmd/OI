@@ -104,8 +104,8 @@ export default async function HomePage() {
                 footer={
                   <div className="hot-join-stack">
                     <div className="hot-join-stack-copy">
-                      <p className="hot-join-stack-title">지금 바로 참여 스택</p>
-                      <small>초반 참여로 흐름을 먼저 선점하세요</small>
+                      <p className="hot-join-stack-title">⚡ 지금 바로 참여 스택</p>
+                      <small>초반 참여로 흐름을 먼저 선점하세요 · 마감 전 참여 혜택 구간</small>
                       <div className="hot-join-stack-chips" aria-label="참여 신호">
                         <span>투표 {hotTopic.voteCount}</span>
                         <span>베팅 {hotTopic.betCount}</span>
