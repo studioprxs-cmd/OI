@@ -27,9 +27,9 @@
   --mobile-resolve-submit-height: 3.4rem;
   --mobile-floating-layer-gap: 0.42rem;
   --mobile-global-nav-height: 0px;
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 1.05rem);
-  --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
   --mobile-floating-stack-offset: var(--mobile-global-nav-height);
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-floating-stack-offset) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.95rem);
+  --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
 }
 
 html, body {

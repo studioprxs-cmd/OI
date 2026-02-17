@@ -548,6 +548,24 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
       </Card>
 
+      <Card id="integrity-watch" className="admin-surface-card admin-surface-card-priority">
+        <SectionTitle>Integrity incident board</SectionTitle>
+        <p className="admin-card-intro">정산 무결성 위험을 심각도별로 분류해 즉시 조치가 필요한 항목부터 처리할 수 있게 정렬했습니다.</p>
+        <div className="admin-watch-grid" style={{ marginTop: "0.68rem" }}>
+          {integrityWatchItems
+            .slice()
+            .sort((a, b) => b.count - a.count)
+            .map((item) => (
+              <Link key={`${item.key}-incident`} href={item.href} className={`admin-watch-card is-${item.tone}`}>
+                <span className="admin-watch-count">{item.count}</span>
+                <strong className="admin-watch-title">{item.label}</strong>
+                <small className="admin-watch-description">{item.description}</small>
+                <span className="admin-watch-action">{item.count > 0 ? "즉시 조치" : "정상 유지"} →</span>
+              </Link>
+            ))}
+        </div>
+      </Card>
+
       <Card className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>운영 온도계</SectionTitle>
         <p className="admin-card-intro">큐 체류 시간과 정산 무결성을 점수로 요약해 즉시 대응 우선순위를 고정합니다.</p>
@@ -942,20 +960,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <p className="admin-muted-note" style={{ marginTop: "0.6rem" }}>가드레일 상태: {settlementGuardrailLabel}</p>
       </Card>
 
-      <Card id="integrity-watch" className="admin-surface-card">
-        <SectionTitle>무결성 워치리스트</SectionTitle>
-        <p className="admin-muted-note">정산 정합성 이슈를 카드 단위로 빠르게 스캔하고 바로 이동하세요.</p>
-        <div className="admin-watch-grid" style={{ marginTop: "0.68rem" }}>
-          {integrityWatchItems.map((item) => (
-            <Link key={item.key} href={item.href} className={`admin-watch-card is-${item.tone}`}>
-              <span className="admin-watch-count">{item.count}</span>
-              <strong className="admin-watch-title">{item.label}</strong>
-              <small className="admin-watch-description">{item.description}</small>
-              <span className="admin-watch-action">{item.actionLabel} →</span>
-            </Link>
-          ))}
-        </div>
-      </Card>
+      {/* integrity-watch moved near top for faster mobile triage */}
 
       {(unresolvedSettledBacklogTopics.length > 0 || resolvedWithoutResolutionTopics.length > 0) ? (
         <Card>
