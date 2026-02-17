@@ -28,7 +28,10 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const searchParams = useSearchParams();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const searchPanelRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const initialSearch = useMemo(() => {
     if (pathname.startsWith("/topics")) {
@@ -51,18 +54,21 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, [initialSearch]);
 
   useEffect(() => {
-    if (!profileMenuOpen) return;
+    if (!profileMenuOpen && !searchOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       const inProfile = profileMenuRef.current?.contains(target);
-      if (inProfile) return;
+      const inSearch = searchPanelRef.current?.contains(target);
+      if (inProfile || inSearch) return;
       setProfileMenuOpen(false);
+      setSearchOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileMenuOpen(false);
+        setSearchOpen(false);
       }
     }
 
@@ -72,7 +78,15 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [profileMenuOpen]);
+  }, [profileMenuOpen, searchOpen]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const timer = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 30);
+    return () => window.clearTimeout(timer);
+  }, [searchOpen]);
 
   useEffect(() => {
     const header = headerRef.current;
@@ -209,6 +223,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
 
     const queryString = params.toString();
     router.push(`/topics${queryString ? `?${queryString}` : ""}`);
+    setSearchOpen(false);
   }
 
   return (
@@ -217,17 +232,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         <div className="top-nav-inner top-search-only-inner">
           <Link href="/" className="top-brand-mini" aria-label="홈으로 이동">🟢 OI</Link>
 
-          <form className="search-field top-fixed-search" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
-            <span aria-hidden>🔎</span>
-            <input
-              type="search"
-              placeholder="🔍 이슈 검색"
-              aria-label="이슈 검색"
-              autoComplete="off"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </form>
+          <button
+            type="button"
+            className="top-search-trigger"
+            aria-label="검색 열기"
+            onClick={() => {
+              setSearchOpen(true);
+              setProfileMenuOpen(false);
+            }}
+          >
+            🔍
+          </button>
 
           <div className="top-search-actions">
             <Link href="/wallet" className="top-wallet-chip" aria-label="포인트 지갑">
@@ -284,6 +299,26 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           </div>
         </div>
       </header>
+
+      {searchOpen ? (
+        <div className="top-search-floating-backdrop" aria-hidden>
+          <div className="top-search-floating" ref={searchPanelRef} role="dialog" aria-label="검색 플로팅 메뉴">
+            <form className="search-field top-search-floating-form" aria-label="검색" onSubmit={handleSearchSubmit} role="search">
+              <span aria-hidden>🔎</span>
+              <input
+                ref={searchInputRef}
+                type="search"
+                placeholder="🔍 이슈 검색"
+                aria-label="이슈 검색"
+                autoComplete="off"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+              <button type="submit" className="btn btn-primary">검색</button>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색" ref={mobileBottomNavRef}>
         {NAV_ITEMS.map((item) => {
