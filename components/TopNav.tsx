@@ -125,12 +125,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               </button>
               <Link className="profile-chip" href="/me" aria-label="내 활동 페이지로 이동">{initials}</Link>
             </div>
-          ) : (
-            <div className="auth-chip-row">
-              <Link href="/auth/signin" className="top-nav-link">로그인</Link>
-              <Link href="/auth/signup" className="top-nav-link is-active">회원가입</Link>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </header>
