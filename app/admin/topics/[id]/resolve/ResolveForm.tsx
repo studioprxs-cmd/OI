@@ -44,6 +44,7 @@ export function ResolveForm({ topicId }: Props) {
   const [summary, setSummary] = useState("");
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmNoWinner, setConfirmNoWinner] = useState(false);
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [previewError, setPreviewError] = useState("");
@@ -53,6 +54,13 @@ export function ResolveForm({ topicId }: Props) {
   const alreadyResolved = Boolean(previewData?.topic?.resolution);
   const topicStatus = previewData?.topic?.status ?? "";
   const isBlockedStatus = topicStatus === "CANCELED" || topicStatus === "DRAFT";
+  const requiresNoWinnerConfirm = Number(selectedPreview?.winnerPool ?? 0) === 0 && Number(previewData?.unsettledBetCount ?? 0) > 0;
+
+  useEffect(() => {
+    if (!requiresNoWinnerConfirm) {
+      setConfirmNoWinner(false);
+    }
+  }, [requiresNoWinnerConfirm, result]);
 
   useEffect(() => {
     let isAlive = true;
@@ -106,6 +114,11 @@ export function ResolveForm({ topicId }: Props) {
       return;
     }
 
+    if (requiresNoWinnerConfirm && !confirmNoWinner) {
+      setMessage("승리 베팅이 없는 정산(0pt 지급)을 진행하려면 확인 체크가 필요합니다.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -114,7 +127,7 @@ export function ResolveForm({ topicId }: Props) {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ result, summary }),
+        body: JSON.stringify({ result, summary, confirmNoWinner }),
       });
 
       const data = (await res.json()) as {
@@ -192,6 +205,16 @@ export function ResolveForm({ topicId }: Props) {
             {selectedPreview?.winnerPool === 0 ? (
               <Message text="선택한 결과에 승리 베팅이 없어 지급금이 0pt로 처리됩니다. 결과를 다시 확인하세요." tone="error" />
             ) : null}
+            {requiresNoWinnerConfirm ? (
+              <label className="resolve-confirm-check">
+                <input
+                  type="checkbox"
+                  checked={confirmNoWinner}
+                  onChange={(event) => setConfirmNoWinner(event.target.checked)}
+                />
+                <span>승리 베팅 없음(총 지급 0pt) 상태를 확인했고 이 결과로 정산 진행에 동의합니다.</span>
+              </label>
+            ) : null}
           </div>
         ) : null}
       </Card>
@@ -210,7 +233,7 @@ export function ResolveForm({ topicId }: Props) {
           placeholder="정산 근거/요약"
         />
       </Field>
-      <Button type="submit" disabled={isLoading || alreadyResolved || isBlockedStatus}>
+      <Button type="submit" disabled={isLoading || alreadyResolved || isBlockedStatus || (requiresNoWinnerConfirm && !confirmNoWinner)}>
         {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
       </Button>
       {message ? <Message text={message} tone={message.includes("실패") || message.includes("오류") ? "error" : "info"} /> : null}

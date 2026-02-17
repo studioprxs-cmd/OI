@@ -92,6 +92,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const body = await req.json();
   const result = String(body.result ?? "").toUpperCase() as Choice;
   const summary = String(body.summary ?? "").trim();
+  const confirmNoWinner = Boolean(body.confirmNoWinner);
 
   if (result !== "YES" && result !== "NO") {
     return NextResponse.json({ ok: false, data: null, error: "result must be YES or NO" }, { status: 400 });
@@ -144,6 +145,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     });
 
     const settlement = calculateSettlement(bets, result);
+
+    if (bets.length > 0 && settlement.summary.winnerPool === 0 && !confirmNoWinner) {
+      throw new Error("NO_WINNER_CONFIRM_REQUIRED");
+    }
 
     const resolution = await tx.resolution.create({
       data: {
@@ -227,6 +232,17 @@ export async function POST(req: NextRequest, { params }: Params) {
     if (message === "DRAFT_TOPIC_RESOLVE_BLOCKED") {
       return NextResponse.json(
         { ok: false, data: null, error: "초안 토픽(DRAFT)은 정산 처리할 수 없습니다." },
+        { status: 409 },
+      );
+    }
+
+    if (message === "NO_WINNER_CONFIRM_REQUIRED") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "선택한 결과에 승리 베팅이 없습니다. 0pt 지급 정산을 진행하려면 confirmNoWinner=true로 다시 요청하세요.",
+        },
         { status: 409 },
       );
     }

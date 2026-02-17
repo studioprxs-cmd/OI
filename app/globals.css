@@ -661,6 +661,23 @@ body::before {
   align-items: flex-start;
 }
 
+.resolve-confirm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  border: 1px solid #fbcaca;
+  background: #fff8f8;
+  color: #7f1d1d;
+  border-radius: 0.75rem;
+  padding: 0.62rem 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.resolve-confirm-check input {
+  margin-top: 0.14rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -792,6 +809,11 @@ body::before {
   .moderation-report-head {
     flex-direction: column;
     gap: 0.45rem;
+  }
+
+  .resolve-confirm-check {
+    font-size: 0.85rem;
+    padding: 0.58rem 0.62rem;
   }
 }
 
