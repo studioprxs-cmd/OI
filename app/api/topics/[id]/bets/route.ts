@@ -2,6 +2,7 @@ import { Choice } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
+import { BET_LIMITS, getBetLimitError } from "@/lib/betting-policy";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
@@ -45,8 +46,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ ok: false, data: null, error: "choice must be YES or NO" }, { status: 400 });
   }
 
-  if (!Number.isInteger(amount) || amount <= 0) {
-    return NextResponse.json({ ok: false, data: null, error: "amount must be a positive integer" }, { status: 400 });
+  const amountError = getBetLimitError(amount);
+  if (amountError) {
+    return NextResponse.json({ ok: false, data: null, error: amountError }, { status: 400 });
   }
 
   const dbUser = await db.user.findUnique({ where: { id: authUser.id } });
@@ -77,6 +79,39 @@ export async function POST(req: NextRequest, { params }: Params) {
       const latestParticipationBlockReason = getParticipationBlockReason(latestTopic);
       if (latestParticipationBlockReason) {
         throw new Error(`TOPIC_BLOCKED:${latestParticipationBlockReason}`);
+      }
+
+      const [userTopicTotal, topicPoolTotal, userTodayTotal] = await Promise.all([
+        tx.bet.aggregate({
+          _sum: { amount: true },
+          where: { topicId: id, userId: authUser.id },
+        }),
+        tx.bet.aggregate({
+          _sum: { amount: true },
+          where: { topicId: id },
+        }),
+        tx.bet.aggregate({
+          _sum: { amount: true },
+          where: {
+            userId: authUser.id,
+            createdAt: {
+              gte: new Date(new Date().setHours(0, 0, 0, 0)),
+              lt: new Date(new Date().setHours(24, 0, 0, 0)),
+            },
+          },
+        }),
+      ]);
+
+      const currentUserTopicTotal = userTopicTotal._sum.amount ?? 0;
+      const currentTopicPoolTotal = topicPoolTotal._sum.amount ?? 0;
+      const currentUserTodayTotal = userTodayTotal._sum.amount ?? 0;
+
+      if (currentUserTodayTotal + amount > BET_LIMITS.DAILY_LIMIT) {
+        throw new Error("DAILY_LIMIT_EXCEEDED");
+      }
+
+      if ((currentUserTopicTotal + amount) / (currentTopicPoolTotal + amount) > BET_LIMITS.MAX_POOL_SHARE) {
+        throw new Error("POOL_SHARE_EXCEEDED");
       }
 
       const balanceGuard = await tx.user.updateMany({
@@ -141,6 +176,17 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (message === "INSUFFICIENT_POINTS_RACE") {
       return NextResponse.json({ ok: false, data: null, error: "Insufficient points" }, { status: 400 });
+    }
+
+    if (message === "DAILY_LIMIT_EXCEEDED") {
+      return NextResponse.json({ ok: false, data: null, error: `일일 베팅 한도(${BET_LIMITS.DAILY_LIMIT}pt)를 초과했습니다.` }, { status: 409 });
+    }
+
+    if (message === "POOL_SHARE_EXCEEDED") {
+      return NextResponse.json(
+        { ok: false, data: null, error: `한 토픽에서 개인 베팅 점유율은 최대 ${Math.round(BET_LIMITS.MAX_POOL_SHARE * 100)}%입니다.` },
+        { status: 409 },
+      );
     }
 
     if (message === "USER_NOT_FOUND") {
