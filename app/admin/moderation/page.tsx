@@ -135,6 +135,18 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       .catch(() => 0)
     : 0;
 
+  const nonPositiveBetAmountCount = canUseDb
+    ? await db.bet
+      .count({
+        where: {
+          amount: {
+            lte: 0,
+          },
+        },
+      })
+      .catch(() => 0)
+    : 0;
+
   const unresolvedSettledBacklogTopics = canUseDb
     ? await db.topic
       .findMany({
@@ -244,14 +256,14 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const settlementGapAmount = totalSettledAmount - totalPayoutAmount;
   const settlementGapAbs = Math.abs(settlementGapAmount);
   const settlementBalanceLabel = settlementGapAbs === 0 ? "균형" : settlementGapAmount > 0 ? "미지급 여지" : "과지급 의심";
-  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
-  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0;
+  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount + nonPositiveBetAmountCount;
+  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || nonPositiveBetAmountCount > 0;
   const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
   const integritySeverityLabel = hasCriticalIntegrityIssue ? "긴급" : integrityIssueTotal > 0 ? "주의" : "안정";
-  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15));
+  const integrityRiskScore = Math.min(100, (settledWithNullPayoutCount * 40) + (unresolvedSettledBacklogCount * 25) + (resolvedWithoutResolutionCount * 15) + (nonPositiveBetAmountCount * 30));
   const queueStressScore = Math.min(100, (urgentReportCount * 10) + (superStaleActionableCount * 24) + (staleActionableCount * 8));
   const settlementConfidence = integrityRiskScore === 0 ? "높음" : integrityRiskScore <= 30 ? "보통" : "낮음";
   const priorityReports = filteredReports
@@ -291,6 +303,15 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       actionLabel: "결과 레코드 복구",
       tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
     },
+    {
+      key: "non-positive-amount",
+      label: "비정상 베팅 금액",
+      count: nonPositiveBetAmountCount,
+      description: "amount <= 0인 베팅 데이터",
+      href: "/admin/topics?status=ALL",
+      actionLabel: "베팅 데이터 점검",
+      tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
+    },
   ] as const;
 
   const nextActionLabel = urgentReportCount > 0
@@ -323,7 +344,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       label: "정산 무결성 잠금",
       value: `${integrityIssueTotal}건`,
       tone: hasCriticalIntegrityIssue ? "danger" : integrityIssueTotal > 0 ? "warning" : "ok",
-      hint: "누락 지급/백로그/결과 레코드 정합성 확인",
+      hint: "누락 지급/백로그/결과 레코드/비정상 금액 정합성 확인",
     },
   ] as const;
 
@@ -348,6 +369,13 @@ export default async function AdminModerationPage({ searchParams }: Props) {
       count: resolvedWithoutResolutionCount,
       helper: "RESOLVED + resolution null",
       tone: resolvedWithoutResolutionCount > 0 ? "warning" : "ok",
+    },
+    {
+      key: "bet-amount",
+      label: "비정상 베팅 금액 없음",
+      count: nonPositiveBetAmountCount,
+      helper: "bet.amount <= 0",
+      tone: nonPositiveBetAmountCount > 0 ? "danger" : "ok",
     },
   ] as const;
 
@@ -446,7 +474,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">정산 무결성</p>
             <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건</strong>
-            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 합계</span>
+            <span className="admin-kpi-meta">{integritySeverityLabel} · 누락 · 백로그 · 불일치 · 비정상 금액</span>
           </div>
           <div className="admin-pulse-card">
             <p className="admin-kpi-label">배당률</p>
@@ -488,7 +516,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className={`ops-health-item ${integrityRiskScore >= 45 ? "is-danger" : integrityRiskScore > 0 ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">Integrity Risk</span>
             <strong className="ops-health-value">{integrityRiskScore}</strong>
-            <small>누락/백로그/불일치 기반 산출</small>
+            <small>누락/백로그/불일치/비정상 금액 기반 산출</small>
           </div>
           <div className={`ops-health-item ${settlementConfidence === "낮음" ? "is-danger" : settlementConfidence === "보통" ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">Settlement Confidence</span>
@@ -571,7 +599,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           ? `지급값 누락 또는 정산 백로그가 ${integrityIssueTotal}건 감지되었습니다. 우선 정산 데이터 정합성을 확인한 뒤 후속 처리하세요.`
           : integrityIssueTotal > 0
             ? `치명 이슈는 없지만 결과 레코드 불일치 ${integrityIssueTotal}건이 있습니다. 다음 배치 전 정리 권장.`
-            : "누락·백로그·결과 불일치 이슈가 없습니다. 현재 정산 무결성 기준을 만족합니다."}
+            : "누락·백로그·결과 불일치·비정상 금액 이슈가 없습니다. 현재 정산 무결성 기준을 만족합니다."}
         tone={hasCriticalIntegrityIssue ? "warning" : integrityIssueTotal > 0 ? "warning" : "success"}
         actions={(
           <>
@@ -610,7 +638,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </li>
           <li>
             <strong>Step 2 · 무결성 리스크 잠금</strong>
-            <span>누락/백로그/불일치 {integrityIssueTotal}건 확인 후 정산 일관성 복구</span>
+            <span>누락/백로그/불일치/비정상 금액 {integrityIssueTotal}건 확인 후 정산 일관성 복구</span>
           </li>
           <li>
             <strong>Step 3 · 큐 정상화 확인</strong>
@@ -747,7 +775,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <div className={`ops-health-item ${integrityIssueTotal > 0 ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">정산 무결성</span>
             <strong className="ops-health-value">{integrityIssueTotal}건</strong>
-            <small>누락/백로그/불일치 합계</small>
+            <small>누락/백로그/불일치/비정상 금액 합계</small>
           </div>
         </div>
       </Card>
@@ -823,18 +851,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill tone={settledWithNullPayoutCount > 0 ? "danger" : "success"}>정산값 누락 {settledWithNullPayoutCount}</Pill>
           <Pill tone={unresolvedSettledBacklogCount > 0 ? "danger" : "success"}>정산 대기 백로그 {unresolvedSettledBacklogCount}</Pill>
           <Pill tone={resolvedWithoutResolutionCount > 0 ? "danger" : "success"}>해결-결과 불일치 {resolvedWithoutResolutionCount}</Pill>
+          <Pill tone={nonPositiveBetAmountCount > 0 ? "danger" : "success"}>비정상 베팅 금액 {nonPositiveBetAmountCount}</Pill>
         </div>
         <div className="admin-integrity-strip" style={{ marginTop: "0.7rem" }}>
           <span className={settledWithNullPayoutCount > 0 ? "is-danger" : "is-ok"}>지급값 누락</span>
           <span className={unresolvedSettledBacklogCount > 0 ? "is-danger" : "is-ok"}>백로그</span>
           <span className={resolvedWithoutResolutionCount > 0 ? "is-danger" : "is-ok"}>결과 레코드</span>
+          <span className={nonPositiveBetAmountCount > 0 ? "is-danger" : "is-ok"}>비정상 금액</span>
           <span className="is-neutral">모바일 우선 점검 추천</span>
         </div>
       </Card>
 
       <Card className="admin-surface-card admin-guardrail-card">
         <SectionTitle>Settlement guardrails</SectionTitle>
-        <p className="admin-muted-note">정산 배치 전 반드시 확인할 3가지 무결성 체크포인트입니다.</p>
+        <p className="admin-muted-note">정산 배치 전 반드시 확인할 4가지 무결성 체크포인트입니다.</p>
         <div className="admin-guardrail-grid" style={{ marginTop: "0.65rem" }}>
           {settlementGuardrails.map((item) => (
             <article key={item.key} className={`admin-guardrail-item is-${item.tone}`}>

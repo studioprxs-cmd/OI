@@ -7,6 +7,16 @@ type BetInput = {
   amount: number;
 };
 
+type SanitizedBet = BetInput & {
+  amount: number;
+};
+
+function normalizeBetAmount(amount: number): number {
+  if (!Number.isFinite(amount)) return 0;
+  if (amount <= 0) return 0;
+  return Math.floor(amount);
+}
+
 export type SettlementBetResult = {
   id: string;
   userId: string;
@@ -20,26 +30,37 @@ export type SettlementSummary = {
   settledCount: number;
   winnerCount: number;
   payoutTotal: number;
+  invalidAmountCount: number;
 };
 
 export function calculateSettlement(bets: BetInput[], result: Choice): {
   bets: SettlementBetResult[];
   summary: SettlementSummary;
 } {
-  const totalPool = bets.reduce((sum, bet) => sum + bet.amount, 0);
-  const winners = bets.filter((bet) => bet.choice === result);
+  const sanitizedBets: SanitizedBet[] = bets.map((bet) => ({
+    ...bet,
+    amount: normalizeBetAmount(bet.amount),
+  }));
+
+  const invalidAmountCount = bets.reduce((count, bet, index) => {
+    return count + (sanitizedBets[index].amount !== bet.amount ? 1 : 0);
+  }, 0);
+
+  const totalPool = sanitizedBets.reduce((sum, bet) => sum + bet.amount, 0);
+  const winners = sanitizedBets.filter((bet) => bet.choice === result);
   const winnerPool = winners.reduce((sum, bet) => sum + bet.amount, 0);
 
   if (winnerPool <= 0 || totalPool <= 0) {
-    const empty = bets.map((bet) => ({ id: bet.id, userId: bet.userId, won: false, payout: 0 }));
+    const empty = sanitizedBets.map((bet) => ({ id: bet.id, userId: bet.userId, won: false, payout: 0 }));
     return {
       bets: empty,
       summary: {
         totalPool,
         winnerPool,
-        settledCount: bets.length,
+        settledCount: sanitizedBets.length,
         winnerCount: 0,
         payoutTotal: 0,
+        invalidAmountCount,
       },
     };
   }
@@ -72,7 +93,7 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
     pointer = (pointer + 1) % fractionalRemainders.length;
   }
 
-  const settled = bets.map((bet) => {
+  const settled = sanitizedBets.map((bet) => {
     const payout = basePayoutById.get(bet.id) ?? 0;
     return {
       id: bet.id,
@@ -93,6 +114,7 @@ export function calculateSettlement(bets: BetInput[], result: Choice): {
       settledCount: settled.length,
       winnerCount,
       payoutTotal,
+      invalidAmountCount,
     },
   };
 }
