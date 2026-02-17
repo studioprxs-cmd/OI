@@ -244,6 +244,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });
     }
 
+    if (message === "WALLET_BALANCE_WRITE_RACE") {
+      return NextResponse.json(
+        { ok: false, data: null, error: "포인트 잔액 반영 중 동시성 충돌이 발생했습니다. 잠시 후 다시 시도해주세요." },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ ok: false, data: null, error: "Failed to place bet" }, { status: 500 });
   }
 }

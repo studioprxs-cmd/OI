@@ -436,6 +436,17 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
+    if (message === "WALLET_BALANCE_WRITE_RACE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "정산 지급 반영 중 동시성 충돌이 발생했습니다. 잠시 후 다시 시도하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json({ ok: false, data: null, error: "정산 처리 실패" }, { status: 500 });
   }
 }

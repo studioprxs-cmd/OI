@@ -45,53 +45,33 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
   // 지갑 원장 무결성을 위해 사용자 단위 직렬화 잠금을 건다.
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`wallet-user:${userId}`}))`;
 
-  if (normalizedAmount > 0) {
-    const updatedUser = await tx.user.update({
-      where: { id: userId },
-      data: { pointBalance: { increment: normalizedAmount } },
-      select: { pointBalance: true },
-    });
-
-    const transaction = await tx.walletTransaction.create({
-      data: {
-        userId,
-        type,
-        amount: normalizedAmount,
-        balanceAfter: updatedUser.pointBalance,
-        relatedBetId,
-        relatedVoteId,
-        note,
-      },
-    }).catch((error: unknown) => {
-      if (isUniqueConstraintError(error)) {
-        throw new Error("WALLET_TX_DUPLICATE_REFERENCE");
-      }
-      throw error;
-    });
-
-    return { balanceAfter: updatedUser.pointBalance, transaction };
-  }
-
-  const spendAmount = Math.abs(normalizedAmount);
-  const spendGuard = await tx.user.updateMany({
-    where: {
-      id: userId,
-      pointBalance: { gte: spendAmount },
-    },
-    data: { pointBalance: { decrement: spendAmount } },
+  const currentUser = await tx.user.findUnique({
+    where: { id: userId },
+    select: { id: true, pointBalance: true },
   });
 
-  if (spendGuard.count !== 1) {
+  if (!currentUser) {
+    throw new Error("WALLET_USER_NOT_FOUND");
+  }
+
+  const nextBalance = currentUser.pointBalance + normalizedAmount;
+
+  if (nextBalance < 0) {
     throw new Error("WALLET_INSUFFICIENT_BALANCE");
   }
 
-  const updatedUser = await tx.user.findUnique({
-    where: { id: userId },
-    select: { pointBalance: true },
+  const writeGuard = await tx.user.updateMany({
+    where: {
+      id: userId,
+      pointBalance: currentUser.pointBalance,
+    },
+    data: {
+      pointBalance: nextBalance,
+    },
   });
 
-  if (!updatedUser) {
-    throw new Error("WALLET_USER_NOT_FOUND");
+  if (writeGuard.count !== 1) {
+    throw new Error("WALLET_BALANCE_WRITE_RACE");
   }
 
   const transaction = await tx.walletTransaction.create({
@@ -99,7 +79,7 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
       userId,
       type,
       amount: normalizedAmount,
-      balanceAfter: updatedUser.pointBalance,
+      balanceAfter: nextBalance,
       relatedBetId,
       relatedVoteId,
       note,
@@ -111,5 +91,5 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
     throw error;
   });
 
-  return { balanceAfter: updatedUser.pointBalance, transaction };
+  return { balanceAfter: nextBalance, transaction };
 }
