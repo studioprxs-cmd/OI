@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { calculateSettlement } from "@/lib/settlement";
+import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -264,21 +265,13 @@ export async function POST(req: NextRequest, { params }: Params) {
       }
 
       if (bet.payout > 0) {
-        const updatedUser = await tx.user.update({
-          where: { id: bet.userId },
-          data: { pointBalance: { increment: bet.payout } },
-          select: { pointBalance: true },
-        });
-
-        await tx.walletTransaction.create({
-          data: {
-            userId: bet.userId,
-            type: "BET_SETTLE",
-            amount: bet.payout,
-            balanceAfter: updatedUser.pointBalance,
-            relatedBetId: bet.id,
-            note: `Settlement payout for topic:${id}`,
-          },
+        await applyWalletDelta({
+          tx,
+          userId: bet.userId,
+          amount: bet.payout,
+          type: "BET_SETTLE",
+          relatedBetId: bet.id,
+          note: `Settlement payout for topic:${id}`,
         });
       }
     }

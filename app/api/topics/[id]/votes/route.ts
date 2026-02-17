@@ -5,6 +5,7 @@ import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
+import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -84,20 +85,12 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw error;
       }
 
-      const updatedUser = await tx.user.update({
-        where: { id: authUser.id },
-        data: { pointBalance: { increment: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS } },
-        select: { pointBalance: true },
-      });
-
-      await tx.walletTransaction.create({
-        data: {
-          userId: authUser.id,
-          type: "VOTE_REWARD",
-          amount: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS,
-          balanceAfter: updatedUser.pointBalance,
-          note: `Vote reward topic:${id}`,
-        },
+      await applyWalletDelta({
+        tx,
+        userId: authUser.id,
+        amount: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS,
+        type: "VOTE_REWARD",
+        note: `Vote reward topic:${id}`,
       });
 
       return { vote, rewarded: true, reward: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS };

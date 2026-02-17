@@ -7,6 +7,7 @@ import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
+import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -158,26 +159,22 @@ export async function POST(req: NextRequest, { params }: Params) {
       const priceCents = choice === "YES" ? priceSnapshot.yesCents : priceSnapshot.noCents;
       const estimatedPayout = calcEstimatedPayout(amount, choice, beforeYesPool, beforeNoPool);
 
-      const balanceGuard = await tx.user.updateMany({
-        where: {
-          id: authUser.id,
-          pointBalance: { gte: amount },
-        },
-        data: { pointBalance: { decrement: amount } },
+      const walletBeforeBet = await applyWalletDelta({
+        tx,
+        userId: authUser.id,
+        amount: -amount,
+        type: "BET_PLACE",
+        note: `Bet on topic:${id}`,
+      }).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "WALLET_FAILURE";
+        if (message === "WALLET_INSUFFICIENT_BALANCE") {
+          throw new Error("INSUFFICIENT_POINTS_RACE");
+        }
+        if (message === "WALLET_USER_NOT_FOUND") {
+          throw new Error("USER_NOT_FOUND");
+        }
+        throw error;
       });
-
-      if (balanceGuard.count !== 1) {
-        throw new Error("INSUFFICIENT_POINTS_RACE");
-      }
-
-      const updatedUser = await tx.user.findUnique({
-        where: { id: authUser.id },
-        select: { pointBalance: true },
-      });
-
-      if (!updatedUser) {
-        throw new Error("USER_NOT_FOUND");
-      }
 
       const bet = await tx.bet.create({
         data: {
@@ -188,15 +185,9 @@ export async function POST(req: NextRequest, { params }: Params) {
         },
       });
 
-      const walletTx = await tx.walletTransaction.create({
-        data: {
-          userId: authUser.id,
-          type: "BET_PLACE",
-          amount: -amount,
-          balanceAfter: updatedUser.pointBalance,
-          relatedBetId: bet.id,
-          note: `Bet on topic:${id}`,
-        },
+      const walletTx = await tx.walletTransaction.update({
+        where: { id: walletBeforeBet.transaction.id },
+        data: { relatedBetId: bet.id },
       });
 
       const nextYesPool = choice === "YES" ? beforeYesPool + amount : beforeYesPool;
@@ -205,7 +196,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return {
         bet,
         walletTx,
-        balance: updatedUser.pointBalance,
+        balance: walletBeforeBet.balanceAfter,
         priceCents,
         estimatedPayout,
         newPoolStats: {
