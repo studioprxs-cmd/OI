@@ -56,6 +56,8 @@ function payoutMultiplier(summary?: SettlementPreviewSummary) {
 
 const NO_WINNER_CONFIRM_PHRASE = "0PT 지급 승인";
 const PAYOUT_DELTA_CONFIRM_PHRASE = "정산 차이 검토 완료";
+const MULTIPLIER_OUTLIER_CONFIRM_PHRASE = "고배당 검토 완료";
+const MULTIPLIER_OUTLIER_THRESHOLD = 10;
 const MIN_SUMMARY_LENGTH = 12;
 const SUMMARY_PRESETS = [
   { label: "공식 근거", text: "공식 발표 및 검증된 근거를 토대로 결과를 확정합니다." },
@@ -72,6 +74,8 @@ export function ResolveForm({ topicId }: Props) {
   const [noWinnerConfirmPhrase, setNoWinnerConfirmPhrase] = useState("");
   const [confirmPayoutDelta, setConfirmPayoutDelta] = useState(false);
   const [payoutDeltaConfirmPhrase, setPayoutDeltaConfirmPhrase] = useState("");
+  const [confirmMultiplierOutlier, setConfirmMultiplierOutlier] = useState(false);
+  const [multiplierOutlierConfirmPhrase, setMultiplierOutlierConfirmPhrase] = useState("");
 
   const [previewLoading, setPreviewLoading] = useState(true);
   const [previewError, setPreviewError] = useState("");
@@ -93,6 +97,9 @@ export function ResolveForm({ topicId }: Props) {
   const payoutDeltaPhraseMatched = payoutDeltaConfirmPhrase.trim() === PAYOUT_DELTA_CONFIRM_PHRASE;
   const summaryTrimmed = summary.trim();
   const summaryTooShort = summaryTrimmed.length > 0 && summaryTrimmed.length < MIN_SUMMARY_LENGTH;
+  const selectedMultiplier = payoutMultiplier(selectedPreview);
+  const hasMultiplierOutlier = unsettledCount > 0 && Number(selectedPreview?.winnerPool ?? 0) > 0 && selectedMultiplier >= MULTIPLIER_OUTLIER_THRESHOLD;
+  const multiplierOutlierPhraseMatched = multiplierOutlierConfirmPhrase.trim() === MULTIPLIER_OUTLIER_CONFIRM_PHRASE;
 
   const integrityChecklist = [
     {
@@ -120,6 +127,13 @@ export function ResolveForm({ topicId }: Props) {
       ok: !hasPayoutDelta,
     },
     {
+      label: "고배당 이상치 점검",
+      hint: hasMultiplierOutlier
+        ? `예상 배당 ${selectedMultiplier.toFixed(2)}x · 기준 ${MULTIPLIER_OUTLIER_THRESHOLD}x 이상`
+        : `예상 배당 ${selectedMultiplier > 0 ? `${selectedMultiplier.toFixed(2)}x` : "0x"}`,
+      ok: !hasMultiplierOutlier,
+    },
+    {
       label: "감사 로그 품질(요약 길이)",
       hint: summaryTrimmed.length >= MIN_SUMMARY_LENGTH ? "감사 최소 길이 충족" : `최소 ${MIN_SUMMARY_LENGTH}자 필요`,
       ok: summaryTrimmed.length >= MIN_SUMMARY_LENGTH,
@@ -139,6 +153,13 @@ export function ResolveForm({ topicId }: Props) {
       setPayoutDeltaConfirmPhrase("");
     }
   }, [hasPayoutDelta, result]);
+
+  useEffect(() => {
+    if (!hasMultiplierOutlier) {
+      setConfirmMultiplierOutlier(false);
+      setMultiplierOutlierConfirmPhrase("");
+    }
+  }, [hasMultiplierOutlier, result]);
 
   useEffect(() => {
     let isAlive = true;
@@ -214,6 +235,16 @@ export function ResolveForm({ topicId }: Props) {
 
     if (hasPayoutDelta && !payoutDeltaPhraseMatched) {
       setMessage(`정산 차이를 검토했으면 확인 문구 \"${PAYOUT_DELTA_CONFIRM_PHRASE}\" 를 정확히 입력하세요.`);
+      return;
+    }
+
+    if (hasMultiplierOutlier && !confirmMultiplierOutlier) {
+      setMessage(`예상 배당 ${selectedMultiplier.toFixed(2)}x는 고배당 이상치입니다. 검토 확인 체크가 필요합니다.`);
+      return;
+    }
+
+    if (hasMultiplierOutlier && !multiplierOutlierPhraseMatched) {
+      setMessage(`고배당 검토를 완료했으면 확인 문구 \"${MULTIPLIER_OUTLIER_CONFIRM_PHRASE}\" 를 정확히 입력하세요.`);
       return;
     }
 
@@ -371,6 +402,34 @@ export function ResolveForm({ topicId }: Props) {
                 </Field>
               </div>
             ) : null}
+            {hasMultiplierOutlier ? (
+              <>
+                <Message
+                  text={`예상 배당 ${selectedMultiplier.toFixed(2)}x는 고배당 이상치입니다. 토픽 근거/베팅 분포/악성 베팅 여부를 재확인하세요.`}
+                  tone="error"
+                />
+                <div className="list" style={{ gap: "0.52rem" }}>
+                  <label className="resolve-confirm-check">
+                    <input
+                      type="checkbox"
+                      checked={confirmMultiplierOutlier}
+                      onChange={(event) => setConfirmMultiplierOutlier(event.target.checked)}
+                    />
+                    <span>고배당({selectedMultiplier.toFixed(2)}x) 이상치를 검토했고 조작/오입력 가능성을 확인했습니다.</span>
+                  </label>
+                  <Field label={`확인 문구 입력 (${MULTIPLIER_OUTLIER_CONFIRM_PHRASE})`} htmlFor="multiplier-outlier-confirm-phrase">
+                    <input
+                      id="multiplier-outlier-confirm-phrase"
+                      className="input"
+                      value={multiplierOutlierConfirmPhrase}
+                      onChange={(event) => setMultiplierOutlierConfirmPhrase(event.target.value)}
+                      placeholder={MULTIPLIER_OUTLIER_CONFIRM_PHRASE}
+                      autoComplete="off"
+                    />
+                  </Field>
+                </div>
+              </>
+            ) : null}
             {requiresNoWinnerConfirm ? (
               <div className="list" style={{ gap: "0.52rem" }}>
                 <label className="resolve-confirm-check">
@@ -425,7 +484,7 @@ export function ResolveForm({ topicId }: Props) {
       <div className="resolve-submit-bar">
         <Button
           type="submit"
-          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched))}
+          disabled={isLoading || alreadyResolved || isBlockedStatus || !summaryTrimmed || summaryTrimmed.length < MIN_SUMMARY_LENGTH || (requiresNoWinnerConfirm && (!confirmNoWinner || !noWinnerPhraseMatched)) || (hasPayoutDelta && (!confirmPayoutDelta || !payoutDeltaPhraseMatched)) || (hasMultiplierOutlier && (!confirmMultiplierOutlier || !multiplierOutlierPhraseMatched))}
         >
           {isLoading ? "저장 중..." : alreadyResolved ? "이미 해결됨" : isBlockedStatus ? "정산 불가 상태" : "결과 확정"}
         </Button>
