@@ -7,6 +7,7 @@ import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 import { db } from "@/lib/db";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
+import { getKstDayRange } from "@/lib/time-window";
 import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         }
       }
 
+      const { start: todayStartKst, end: todayEndKst } = getKstDayRange();
+
       const [userTopicTotal, topicPoolTotal, userTodayTotal] = await Promise.all([
         tx.bet.aggregate({
           _sum: { amount: true },
@@ -123,8 +126,8 @@ export async function POST(req: NextRequest, { params }: Params) {
           where: {
             userId: authUser.id,
             createdAt: {
-              gte: new Date(new Date().setHours(0, 0, 0, 0)),
-              lt: new Date(new Date().setHours(24, 0, 0, 0)),
+              gte: todayStartKst,
+              lt: todayEndKst,
             },
           },
         }),
