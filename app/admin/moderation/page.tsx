@@ -809,6 +809,37 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const mobilePolishSignals = [
+    {
+      id: "hierarchy",
+      label: "Visual hierarchy",
+      value: urgentReportCount > 0 ? "Escalated" : "Calm",
+      hint: urgentReportCount > 0 ? `OPEN ${urgentReportCount}건이 상단 우선순위` : "핵심 카드 기준 상단-하단 리듬 유지",
+      tone: urgentReportCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "spacing",
+      label: "Spacing rhythm",
+      value: "8pt cadence",
+      hint: "카드 간격 · 타이포 스텝 · CTA 높이를 모바일 기준으로 정렬",
+      tone: "neutral",
+    },
+    {
+      id: "thumb",
+      label: "Thumb reach",
+      value: "Primary ready",
+      hint: nextPriorityReport ? "다음 처리 카드까지 한 번 스크롤 동선" : "즉시 처리 항목 없음",
+      tone: nextPriorityReport ? "warning" : "ok",
+    },
+    {
+      id: "states",
+      label: "State clarity",
+      value: hasCriticalIntegrityIssue ? "Alert" : "Stable",
+      hint: hasCriticalIntegrityIssue ? "무결성 경고 카드와 복구 액션 노출" : "Empty/Error/Stable 패턴 정돈",
+      tone: hasCriticalIntegrityIssue ? "danger" : "ok",
+    },
+  ] as const;
+
   return (
     <PageContainer>
       <section className="admin-hero-shell">
@@ -863,6 +894,22 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           { href: "/admin/moderation?status=OPEN", label: "긴급 OPEN", badge: urgentReportCount, active: false },
         ]}
       />
+
+      <Card className="admin-polish-strip-card" aria-label="모바일 제품 완성도 신호">
+        <div className="admin-polish-strip-head">
+          <p className="admin-jump-nav-label">Product polish benchmark</p>
+          <Pill tone={hasCriticalIntegrityIssue ? "danger" : "success"}>{hasCriticalIntegrityIssue ? "Needs attention" : "On track"}</Pill>
+        </div>
+        <div className="admin-polish-strip-grid">
+          {mobilePolishSignals.map((item) => (
+            <article key={item.id} className={`admin-polish-strip-item is-${item.tone}`}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.hint}</small>
+            </article>
+          ))}
+        </div>
+      </Card>
 
       <Card className="admin-segment-nav-card">
         <div className="admin-segment-nav-head">
