@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Button, Message, SelectField } from "@/components/ui";
+import { Button, InputField, Message, SelectField } from "@/components/ui";
 
 const BULK_STATUS_OPTIONS = [
   { value: "REVIEWING", label: "REVIEWING(검토중)으로 일괄 전환" },
@@ -24,6 +24,7 @@ export function BulkModerationActions({ openIds, reviewingIds, filteredCount }: 
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<BulkStatusValue>("REVIEWING");
   const [scope, setScope] = useState<"OPEN" | "OPEN_REVIEWING">("OPEN");
+  const [confirmText, setConfirmText] = useState("");
   const [message, setMessage] = useState("");
 
   const targetIds = useMemo(() => {
@@ -33,9 +34,18 @@ export function BulkModerationActions({ openIds, reviewingIds, filteredCount }: 
     return openIds;
   }, [openIds, reviewingIds, scope]);
 
+  const isTerminalBulkAction = status === "CLOSED" || status === "REJECTED";
+  const requireTypedConfirm = isTerminalBulkAction && targetIds.length >= 5;
+  const isTypedConfirmValid = confirmText.trim().toUpperCase() === "CLOSE";
+
   async function runBulkUpdate() {
     if (targetIds.length === 0) {
       setMessage("일괄 처리할 신고가 없습니다.");
+      return;
+    }
+
+    if (requireTypedConfirm && !isTypedConfirmValid) {
+      setMessage("대량 종결 작업 전 확인 문구 CLOSE를 입력하세요.");
       return;
     }
 
@@ -83,6 +93,7 @@ export function BulkModerationActions({ openIds, reviewingIds, filteredCount }: 
       ].filter(Boolean);
 
       setMessage(`일괄 처리 완료 · 성공 ${successCount}건${skipCount > 0 ? ` · 건너뜀 ${skipCount}건` : ""}${skipMessages.length > 0 ? ` (${skipMessages.join(" · ")})` : ""}`);
+      setConfirmText("");
       router.refresh();
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
@@ -115,10 +126,24 @@ export function BulkModerationActions({ openIds, reviewingIds, filteredCount }: 
             options={[...BULK_STATUS_OPTIONS]}
           />
         </div>
-        <Button type="button" onClick={runBulkUpdate} disabled={isLoading || targetIds.length === 0}>
+        <Button type="button" onClick={runBulkUpdate} disabled={isLoading || targetIds.length === 0 || (requireTypedConfirm && !isTypedConfirmValid)}>
           {isLoading ? "일괄 처리 중..." : `일괄 적용 (${targetIds.length}건)`}
         </Button>
       </div>
+      {requireTypedConfirm ? (
+        <div className="list" style={{ gap: "0.32rem" }}>
+          <small style={{ color: "#8b3a33", fontWeight: 600 }}>
+            대량 종결 안전장치: {targetIds.length}건을 {status}로 바꾸려면 확인 문구 CLOSE를 입력하세요.
+          </small>
+          <InputField
+            id="bulk-confirm"
+            name="bulk-confirm"
+            value={confirmText}
+            onChange={setConfirmText}
+            placeholder="확인 문구 입력: CLOSE"
+          />
+        </div>
+      ) : null}
       <small style={{ color: "#6b7280" }}>
         안전 모드: 일괄 처리는 상태값만 변경하며, 댓글 숨김/토픽 상태 변경/환불은 개별 신고 카드에서만 수행됩니다.
       </small>
