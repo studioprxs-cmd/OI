@@ -3334,12 +3334,148 @@ body::before {
     min-height: 44px;
   }
 
+  .admin-skeleton-grid {
+    grid-template-columns: 1fr;
+  }
+
   .resolve-submit-bar {
     bottom: calc(var(--mobile-safe-bottom) + var(--mobile-floating-layer-gap));
     min-height: var(--mobile-resolve-submit-height);
     padding: 0.42rem;
     border-radius: 12px;
   }
+}
+
+.admin-skeleton-shell {
+  overflow: hidden;
+}
+
+.admin-skeleton-eyebrow,
+.admin-skeleton-title,
+.admin-skeleton-subtitle,
+.admin-skeleton-block,
+.admin-skeleton-chip,
+.admin-skeleton-card,
+.admin-skeleton-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-skeleton-eyebrow,
+.admin-skeleton-title,
+.admin-skeleton-subtitle,
+.admin-skeleton-block,
+.admin-skeleton-chip,
+.admin-skeleton-card,
+.admin-skeleton-line {
+  background: linear-gradient(180deg, #f3f8f5 0%, #edf5f0 100%);
+  border: 1px solid #dce9e2;
+}
+
+.admin-skeleton-eyebrow {
+  width: 9rem;
+  height: 0.86rem;
+  border-radius: 999px;
+}
+
+.admin-skeleton-title {
+  width: min(28rem, 86%);
+  height: 1.45rem;
+  border-radius: 10px;
+  margin-top: 0.52rem;
+}
+
+.admin-skeleton-subtitle {
+  width: min(34rem, 100%);
+  height: 1.02rem;
+  border-radius: 10px;
+  margin-top: 0.55rem;
+}
+
+.admin-skeleton-chip-row {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+}
+
+.admin-skeleton-chip {
+  flex: 0 0 5.8rem;
+  height: 2rem;
+  border-radius: 999px;
+}
+
+.admin-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.admin-skeleton-card {
+  border-radius: 14px;
+  padding: 0.66rem;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.admin-skeleton-line {
+  display: block;
+  height: 0.85rem;
+  border-radius: 8px;
+}
+
+.admin-skeleton-line.short {
+  width: 55%;
+}
+
+.admin-skeleton-line.tiny {
+  width: 36%;
+}
+
+.admin-skeleton-eyebrow::after,
+.admin-skeleton-title::after,
+.admin-skeleton-subtitle::after,
+.admin-skeleton-block::after,
+.admin-skeleton-chip::after,
+.admin-skeleton-card::after,
+.admin-skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-110%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.68) 52%, transparent 100%);
+  animation: admin-skeleton-shimmer 1.5s var(--ease-standard) infinite;
+}
+
+@keyframes admin-skeleton-shimmer {
+  to {
+    transform: translateX(110%);
+  }
+}
+
+.admin-error-state {
+  border-color: #f1cbc8;
+  background: linear-gradient(180deg, #fffafa 0%, #fff5f4 100%);
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-error-title {
+  margin: 0;
+  font-size: clamp(1.08rem, 2.4vw, 1.32rem);
+  letter-spacing: -0.01em;
+  color: #5b1712;
+}
+
+.admin-error-description {
+  margin: 0;
+  color: #7a3e35;
+}
+
+.admin-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.15rem;
 }
 
 @media (max-width: 390px) {
