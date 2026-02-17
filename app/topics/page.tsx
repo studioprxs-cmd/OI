@@ -80,7 +80,7 @@ export default async function TopicsPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="content-grid">
+      <div className="content-grid topics-layout">
         <main className="main-column">
           <section className="hero-block compact">
             <OiBadge label="OI Topics" />

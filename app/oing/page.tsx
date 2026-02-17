@@ -96,7 +96,7 @@ export default async function OingPage() {
 
   return (
     <PageContainer>
-      <div className="content-grid">
+      <div className="content-grid oing-layout">
         <main className="main-column">
           <section className="hero-block compact">
             <OiBadge label="OING" />

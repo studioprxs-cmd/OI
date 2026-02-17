@@ -64,7 +64,7 @@ export default async function HomePage() {
 
   return (
     <PageContainer>
-      <div className="content-grid">
+      <div className="content-grid home-layout">
         <main className="main-column">
           <section className="hero-block">
             <OiBadge label="OI Brief" />
