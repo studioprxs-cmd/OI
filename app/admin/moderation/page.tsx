@@ -230,6 +230,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
   const totalSettledAmount = Number(settlement._sum.amount ?? 0);
   const totalPayoutAmount = Number(settlement._sum.payoutAmount ?? 0);
   const payoutRatio = totalSettledAmount > 0 ? Math.round((totalPayoutAmount / totalSettledAmount) * 100) : 0;
+  const integrityIssueTotal = settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount;
+  const hasCriticalIntegrityIssue = settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0;
+  const queueRiskLevel = superStaleActionableCount > 0 ? "high" : staleActionableCount > 0 ? "medium" : "low";
 
   return (
     <PageContainer>
@@ -269,6 +272,43 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           </div>
         </div>
       </section>
+
+      <StatePanel
+        title={hasCriticalIntegrityIssue ? "정산/무결성 긴급 점검" : "정산 무결성 상태 안정"}
+        description={hasCriticalIntegrityIssue
+          ? `지급값 누락 또는 정산 백로그가 ${integrityIssueTotal}건 감지되었습니다. 우선 정산 데이터 정합성을 확인한 뒤 후속 처리하세요.`
+          : integrityIssueTotal > 0
+            ? `치명 이슈는 없지만 결과 레코드 불일치 ${integrityIssueTotal}건이 있습니다. 다음 배치 전 정리 권장.`
+            : "누락·백로그·결과 불일치 이슈가 없습니다. 현재 정산 무결성 기준을 만족합니다."}
+        tone={hasCriticalIntegrityIssue ? "warning" : integrityIssueTotal > 0 ? "warning" : "success"}
+        actions={(
+          <>
+            <Link href="/admin/topics" className="btn btn-primary">토픽 정산 상태 점검</Link>
+            <Link href="/admin/moderation?status=OPEN" className="btn btn-secondary">OPEN 신고 먼저 처리</Link>
+          </>
+        )}
+      />
+
+      <Card>
+        <SectionTitle>모바일 빠른 실행</SectionTitle>
+        <p style={{ margin: "0.5rem 0 0", color: "#4b6355" }}>
+          엄지 동선 기준으로 자주 쓰는 운영 작업을 한 번에 배치했습니다.
+        </p>
+        <div className="admin-quick-action-grid" style={{ marginTop: "0.75rem" }}>
+          <Link href="/admin/moderation?status=OPEN" className="admin-quick-action-btn">
+            OPEN 즉시 처리 ({urgentReportCount})
+          </Link>
+          <Link href="/admin/moderation?status=REVIEWING" className="admin-quick-action-btn">
+            REVIEWING 이어서 처리 ({counts.REVIEWING})
+          </Link>
+          <Link href="/admin/topics" className="admin-quick-action-btn">
+            토픽 정산 점검
+          </Link>
+          <Link href="/admin/moderation?status=ALL&type=TOPIC" className="admin-quick-action-btn">
+            토픽 신고 집중 보기
+          </Link>
+        </div>
+      </Card>
 
       <Card>
         <SectionTitle>운영 컨트롤 타워</SectionTitle>
@@ -345,6 +385,9 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         <div className="row" style={{ marginTop: "0.65rem", flexWrap: "wrap", gap: "0.45rem" }}>
           <Pill tone={actionableReports.length > 0 ? "danger" : "success"}>처리 필요 {actionableReports.length}</Pill>
           <Pill tone={urgentReportCount > 0 ? "danger" : "neutral"}>긴급 OPEN {urgentReportCount}</Pill>
+          <Pill tone={queueRiskLevel === "high" ? "danger" : queueRiskLevel === "medium" ? "neutral" : "success"}>
+            SLA 위험도 {queueRiskLevel === "high" ? "높음" : queueRiskLevel === "medium" ? "주의" : "안정"}
+          </Pill>
           <Pill>숨김 댓글 {hiddenCommentReportCount}</Pill>
           <Pill>토픽 신고 {reports.filter((report) => !report.commentId).length}</Pill>
           <Pill>댓글 신고 {reports.filter((report) => Boolean(report.commentId)).length}</Pill>
@@ -411,15 +454,6 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         </Card>
       ) : null}
 
-      {(settledWithNullPayoutCount > 0 || unresolvedSettledBacklogCount > 0 || resolvedWithoutResolutionCount > 0) ? (
-        <StatePanel
-          title="정산 무결성 점검 필요"
-          description={`누락/백로그 이슈 ${settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건이 감지되었습니다. 해결 전 추가 정산을 보류하세요.`}
-          tone="warning"
-          actions={<Link href="/admin/topics" className="btn btn-primary">토픽 정산 상태 점검</Link>}
-        />
-      ) : null}
-
       <div className="list">
         <Card>
           <SectionTitle>일괄 트리아지</SectionTitle>
@@ -448,6 +482,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
         {filteredReports.map((report) => (
           <Card key={report.id}>
+            <article className="moderation-report-card">
             <div className="row moderation-report-head" style={{ justifyContent: "space-between", alignItems: "flex-start", gap: "0.8rem" }}>
               <div>
                 <strong>{report.reason}</strong>
@@ -489,6 +524,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
                 topicStatus={report.topicStatus}
               />
             </div>
+            </article>
           </Card>
         ))}
         {filteredReports.length === 0 ? (
