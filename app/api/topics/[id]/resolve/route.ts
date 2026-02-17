@@ -8,6 +8,7 @@ import { calculateSettlement } from "@/lib/settlement";
 type Params = { params: Promise<{ id: string }> };
 
 const MIN_RESOLUTION_SUMMARY_LENGTH = 12;
+const MAX_PAYOUT_DELTA_TOLERANCE = 0;
 
 async function requireAdminUser(req: NextRequest) {
   const user = await getAuthUser(req);
@@ -145,6 +146,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const result = String(body.result ?? "").toUpperCase() as Choice;
   const summary = String(body.summary ?? "").trim();
   const confirmNoWinner = Boolean(body.confirmNoWinner);
+  const confirmPayoutDelta = Boolean(body.confirmPayoutDelta);
 
   if (result !== "YES" && result !== "NO") {
     return NextResponse.json({ ok: false, data: null, error: "result must be YES or NO" }, { status: 400 });
@@ -207,6 +209,11 @@ export async function POST(req: NextRequest, { params }: Params) {
 
     if (bets.length > 0 && settlement.summary.winnerPool === 0 && !confirmNoWinner) {
       throw new Error("NO_WINNER_CONFIRM_REQUIRED");
+    }
+
+    const payoutDelta = settlement.summary.totalPool - settlement.summary.payoutTotal;
+    if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE && !confirmPayoutDelta) {
+      throw new Error("PAYOUT_DELTA_CONFIRM_REQUIRED");
     }
 
     const resolution = await tx.resolution.create({
@@ -301,6 +308,17 @@ export async function POST(req: NextRequest, { params }: Params) {
           ok: false,
           data: null,
           error: "선택한 결과에 승리 베팅이 없습니다. 0pt 지급 정산을 진행하려면 confirmNoWinner=true로 다시 요청하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "PAYOUT_DELTA_CONFIRM_REQUIRED") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "총 풀과 총 지급이 일치하지 않습니다. 정산 차이 검토 후 confirmPayoutDelta=true로 다시 요청하세요.",
         },
         { status: 409 },
       );

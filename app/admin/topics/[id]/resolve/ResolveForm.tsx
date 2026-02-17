@@ -225,7 +225,7 @@ export function ResolveForm({ topicId }: Props) {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify({ result, summary: summaryTrimmed, confirmNoWinner }),
+        body: JSON.stringify({ result, summary: summaryTrimmed, confirmNoWinner, confirmPayoutDelta }),
       });
 
       const data = (await res.json()) as {

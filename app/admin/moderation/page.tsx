@@ -400,6 +400,18 @@ export default async function AdminModerationPage({ searchParams }: Props) {
         ]}
       />
 
+      <Card className="admin-thumb-rail-card">
+        <p className="admin-jump-nav-label">Thumb rail · Next action</p>
+        <div className="admin-thumb-rail-scroll" aria-label="엄지 운영 바로가기">
+          <Link href="/admin/moderation?status=OPEN" className="admin-thumb-chip is-danger">OPEN {urgentReportCount}</Link>
+          <Link href="/admin/moderation?status=REVIEWING" className="admin-thumb-chip">REVIEW {counts.REVIEWING}</Link>
+          <a href="#urgent-inbox" className="admin-thumb-chip">긴급 인박스</a>
+          <a href="#integrity-watch" className="admin-thumb-chip">무결성 워치</a>
+          <a href="#report-list" className="admin-thumb-chip">리스트로 이동</a>
+        </div>
+        <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
       <Card className="admin-surface-card admin-surface-card-priority">
         <SectionTitle>운영 온도계</SectionTitle>
         <p className="admin-card-intro">큐 체류 시간과 정산 무결성을 점수로 요약해 즉시 대응 우선순위를 고정합니다.</p>
