@@ -12,10 +12,10 @@ type RailItem = {
 };
 
 const RAIL_ITEMS: RailItem[] = [
-  { href: "/", label: "대시보드", icon: "🏠" },
-  { href: "/topics", label: "토픽", icon: "💬" },
-  { href: "/me", label: "내 활동", icon: "🙋", authOnly: true },
-  { href: "/admin/topics", label: "관리", icon: "🛠️", adminOnly: true },
+  { href: "/", label: "홈", icon: "⌂" },
+  { href: "/topics", label: "토픽", icon: "◉" },
+  { href: "/me", label: "내 활동", icon: "◌", authOnly: true },
+  { href: "/admin/topics", label: "관리", icon: "▣", adminOnly: true },
 ];
 
 export function SideRail({ viewerRole }: { viewerRole?: string }) {

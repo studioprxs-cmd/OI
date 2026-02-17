@@ -15,15 +15,16 @@ type Viewer = {
 type NavItem = {
   href: "/" | "/topics" | "/me" | "/me/reports" | "/admin/topics";
   label: string;
+  icon: string;
   adminOnly?: boolean;
   authOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/", label: "홈" },
-  { href: "/topics", label: "토픽" },
-  { href: "/me", label: "내 활동", authOnly: true },
-  { href: "/admin/topics", label: "관리", adminOnly: true },
+  { href: "/", label: "홈", icon: "⌂" },
+  { href: "/topics", label: "토픽", icon: "◉" },
+  { href: "/me", label: "내 활동", icon: "◌", authOnly: true },
+  { href: "/admin/topics", label: "관리", icon: "▣", adminOnly: true },
 ];
 
 export function TopNav({ viewer }: { viewer: Viewer }) {
@@ -115,18 +116,21 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         </Link>
 
         <nav className="top-nav-links" aria-label="글로벌 탐색">
-          {NAV_ITEMS.filter((item) => {
-            if (item.adminOnly && viewer?.role !== "ADMIN") return false;
-            if (item.authOnly && !viewer) return false;
-            return true;
-          }).map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            return (
-              <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`}>
-                {item.label}
-              </Link>
-            );
-          })}
+          <div className="top-nav-tabs">
+            {NAV_ITEMS.filter((item) => {
+              if (item.adminOnly && viewer?.role !== "ADMIN") return false;
+              if (item.authOnly && !viewer) return false;
+              return true;
+            }).map((item) => {
+              const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              return (
+                <Link key={item.href} href={item.href} className={`top-nav-link ${active ? "is-active" : ""}`}>
+                  <span className="top-nav-link-icon" aria-hidden>{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </nav>
 
         <div className="top-nav-actions">
