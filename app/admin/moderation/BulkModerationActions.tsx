@@ -47,38 +47,48 @@ export function BulkModerationActions({ openIds, reviewingIds, filteredCount }: 
     setIsLoading(true);
     setMessage("");
 
-    let successCount = 0;
-    let failCount = 0;
+    try {
+      const res = await fetch("/api/admin/reports", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          ids: targetIds,
+          status,
+        }),
+      });
 
-    for (const reportId of targetIds) {
-      try {
-        const res = await fetch(`/api/admin/reports/${reportId}`, {
-          method: "PATCH",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            status,
-            commentVisibility: "KEEP",
-            topicAction: "KEEP",
-          }),
-        });
+      const data = (await res.json()) as {
+        error?: string;
+        data?: {
+          successCount?: number;
+          skipCount?: number;
+          missingCount?: number;
+          lockedSkipCount?: number;
+        };
+      };
 
-        if (!res.ok) {
-          failCount += 1;
-          continue;
-        }
-
-        successCount += 1;
-      } catch {
-        failCount += 1;
+      if (!res.ok) {
+        setMessage(data.error ?? "일괄 처리에 실패했습니다.");
+        return;
       }
+
+      const successCount = Number(data?.data?.successCount ?? 0);
+      const skipCount = Number(data?.data?.skipCount ?? 0);
+      const missingCount = Number(data?.data?.missingCount ?? 0);
+      const lockedSkipCount = Number(data?.data?.lockedSkipCount ?? 0);
+
+      const skipMessages = [
+        lockedSkipCount > 0 ? `완료 상태 건너뜀 ${lockedSkipCount}건` : null,
+        missingCount > 0 ? `존재하지 않는 신고 ${missingCount}건` : null,
+      ].filter(Boolean);
+
+      setMessage(`일괄 처리 완료 · 성공 ${successCount}건${skipCount > 0 ? ` · 건너뜀 ${skipCount}건` : ""}${skipMessages.length > 0 ? ` (${skipMessages.join(" · ")})` : ""}`);
+      router.refresh();
+    } catch {
+      setMessage("네트워크 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
     }
-
-    setMessage(
-      `일괄 처리 완료 · 성공 ${successCount}건${failCount > 0 ? ` · 실패 ${failCount}건` : ""}`,
-    );
-
-    router.refresh();
-    setIsLoading(false);
   }
 
   return (
