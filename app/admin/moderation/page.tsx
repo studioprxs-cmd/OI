@@ -233,17 +233,42 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
   return (
     <PageContainer>
-      <div className="row" style={{ justifyContent: "space-between", gap: "0.6rem", flexWrap: "wrap" }}>
-        <h1 style={{ margin: 0 }}>Admin · Moderation & Settlement</h1>
-        <div className="row" style={{ gap: "0.9rem" }}>
-          <Link className="text-link" href="/admin/topics">
-            토픽 관리로 이동
-          </Link>
-          <Link className="text-link" href="/admin/moderation?status=ALL">
-            필터 초기화
-          </Link>
+      <section className="admin-hero-shell">
+        <div className="row admin-header-row">
+          <h1 style={{ margin: 0 }}>Admin · Moderation & Settlement</h1>
+          <div className="row admin-header-links">
+            <Link className="text-link" href="/admin/topics">
+              토픽 관리로 이동
+            </Link>
+            <Link className="text-link" href="/admin/moderation?status=ALL">
+              필터 초기화
+            </Link>
+          </div>
         </div>
-      </div>
+
+        <div className="admin-pulse-grid" style={{ marginTop: "0.75rem" }}>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">즉시 대응 큐</p>
+            <strong className="admin-kpi-value">{actionableReports.length}건</strong>
+            <span className="admin-kpi-meta">OPEN · REVIEWING 묶음</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">SLA 위험</p>
+            <strong className="admin-kpi-value">{superStaleActionableCount}건</strong>
+            <span className="admin-kpi-meta">48시간 이상 미처리</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">정산 무결성</p>
+            <strong className="admin-kpi-value">{settledWithNullPayoutCount + unresolvedSettledBacklogCount + resolvedWithoutResolutionCount}건</strong>
+            <span className="admin-kpi-meta">누락 · 백로그 · 불일치 합계</span>
+          </div>
+          <div className="admin-pulse-card">
+            <p className="admin-kpi-label">배당률</p>
+            <strong className="admin-kpi-value">{payoutRatio}%</strong>
+            <span className="admin-kpi-meta">총 지급 / 총 베팅</span>
+          </div>
+        </div>
+      </section>
 
       <Card>
         <SectionTitle>운영 컨트롤 타워</SectionTitle>
@@ -338,6 +363,12 @@ export default async function AdminModerationPage({ searchParams }: Props) {
           <Pill tone={settledWithNullPayoutCount > 0 ? "danger" : "success"}>정산값 누락 {settledWithNullPayoutCount}</Pill>
           <Pill tone={unresolvedSettledBacklogCount > 0 ? "danger" : "success"}>정산 대기 백로그 {unresolvedSettledBacklogCount}</Pill>
           <Pill tone={resolvedWithoutResolutionCount > 0 ? "danger" : "success"}>해결-결과 불일치 {resolvedWithoutResolutionCount}</Pill>
+        </div>
+        <div className="admin-integrity-strip" style={{ marginTop: "0.7rem" }}>
+          <span className={settledWithNullPayoutCount > 0 ? "is-danger" : "is-ok"}>지급값 누락</span>
+          <span className={unresolvedSettledBacklogCount > 0 ? "is-danger" : "is-ok"}>백로그</span>
+          <span className={resolvedWithoutResolutionCount > 0 ? "is-danger" : "is-ok"}>결과 레코드</span>
+          <span className="is-neutral">모바일 우선 점검 추천</span>
         </div>
       </Card>
 
