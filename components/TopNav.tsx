@@ -87,11 +87,19 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     const syncFloatingLayerFlags = () => {
       if (!shell) return;
 
-      const hasAdminDock = Boolean(shell.querySelector(".admin-mobile-dock"));
-      const hasResolveSubmitBar = Boolean(shell.querySelector(".resolve-submit-bar"));
+      const adminDock = shell.querySelector<HTMLElement>(".admin-mobile-dock");
+      const resolveSubmitBar = shell.querySelector<HTMLElement>(".resolve-submit-bar");
+      const adminDockHeight = adminDock ? Math.ceil(adminDock.getBoundingClientRect().height) : 0;
+      const resolveSubmitHeight = resolveSubmitBar ? Math.ceil(resolveSubmitBar.getBoundingClientRect().height) : 0;
+
+      const hasAdminDock = adminDockHeight > 0;
+      const hasResolveSubmitBar = resolveSubmitHeight > 0;
 
       shell.dataset.hasAdminDock = hasAdminDock ? "true" : "false";
       shell.dataset.hasResolveSubmit = hasResolveSubmitBar ? "true" : "false";
+
+      root.style.setProperty("--mobile-admin-dock-runtime-height", `${adminDockHeight}px`);
+      root.style.setProperty("--mobile-resolve-submit-runtime-height", `${resolveSubmitHeight}px`);
     };
 
     const applyLayoutMetrics = () => {
@@ -149,6 +157,8 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       viewport?.removeEventListener("scroll", applyLayoutMetrics);
       root.style.removeProperty("--top-nav-height");
       root.style.removeProperty("--mobile-global-nav-height");
+      root.style.removeProperty("--mobile-admin-dock-runtime-height");
+      root.style.removeProperty("--mobile-resolve-submit-runtime-height");
       if (shell) {
         delete shell.dataset.hasAdminDock;
         delete shell.dataset.hasResolveSubmit;

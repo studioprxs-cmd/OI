@@ -151,6 +151,10 @@ export function ResolveForm({ topicId }: Props) {
 
   const integrityPassCount = integrityChecklist.filter((item) => item.ok).length;
   const integrityTotalCount = integrityChecklist.length;
+  const integrityBlockerCount = integrityTotalCount - integrityPassCount;
+  const readinessTone = integrityBlockerCount === 0 ? "is-ok" : integrityBlockerCount <= 2 ? "is-watch" : "is-danger";
+  const settlementGapTone = hasPayoutDelta ? "is-danger" : "is-ok";
+  const multiplierTone = hasMultiplierOutlier ? "is-watch" : "is-ok";
   const canSubmit = !isLoading
     && !alreadyResolved
     && !isBlockedStatus
@@ -362,6 +366,24 @@ export function ResolveForm({ topicId }: Props) {
                   </p>
                 </div>
               ))}
+            </div>
+
+            <div className="resolve-risk-strip" aria-live="polite">
+              <article className={`resolve-risk-card ${readinessTone}`}>
+                <small>Integrity readiness</small>
+                <strong>{integrityPassCount}/{integrityTotalCount}</strong>
+                <span>{integrityBlockerCount === 0 ? "정산 준비 완료" : `차단 요소 ${integrityBlockerCount}건`}</span>
+              </article>
+              <article className={`resolve-risk-card ${settlementGapTone}`}>
+                <small>Settlement gap</small>
+                <strong>{hasPayoutDelta ? `${payoutDelta > 0 ? "+" : ""}${payoutDelta.toLocaleString("ko-KR")}pt` : "0pt"}</strong>
+                <span>{hasPayoutDelta ? "총 풀/총 지급 차이 존재" : "보존식 일치"}</span>
+              </article>
+              <article className={`resolve-risk-card ${multiplierTone}`}>
+                <small>Payout multiplier</small>
+                <strong>{selectedMultiplier > 0 ? `${selectedMultiplier.toFixed(2)}x` : "0x"}</strong>
+                <span>{hasMultiplierOutlier ? `기준 ${MULTIPLIER_OUTLIER_THRESHOLD}x 초과` : "정상 배당 밴드"}</span>
+              </article>
             </div>
 
             {alreadyResolved && resolvedSettlement ? (

@@ -29,11 +29,13 @@
   --mobile-admin-dock-height: 4.6rem;
   --mobile-comment-cta-height: 3.1rem;
   --mobile-resolve-submit-height: 3.4rem;
+  --mobile-admin-dock-runtime-height: var(--mobile-admin-dock-height);
+  --mobile-resolve-submit-runtime-height: var(--mobile-resolve-submit-height);
   --mobile-floating-layer-gap: 0.42rem;
   --mobile-global-nav-height: 0px;
   --mobile-floating-bottom-anchor: calc(var(--mobile-safe-bottom) + var(--mobile-global-nav-height));
   --mobile-floating-stack-offset: var(--mobile-global-nav-height);
-  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-floating-stack-offset) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.95rem);
+  --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + var(--mobile-floating-stack-offset) + max(var(--mobile-admin-dock-runtime-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-runtime-height)) + (var(--mobile-floating-layer-gap) * 2) + 0.95rem);
   --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.95rem);
 }
 
@@ -3223,6 +3225,53 @@ body::before {
   padding: 0.48rem 0.52rem;
 }
 
+.resolve-risk-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.resolve-risk-card {
+  border-radius: 12px;
+  border: 1px solid #d7e6de;
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
+  padding: 0.58rem 0.62rem;
+  display: grid;
+  gap: 0.2rem;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+.resolve-risk-card small {
+  color: #617267;
+  font-size: 0.72rem;
+}
+
+.resolve-risk-card strong {
+  color: #133629;
+  letter-spacing: -0.01em;
+  font-size: 0.96rem;
+}
+
+.resolve-risk-card span {
+  color: #4f6258;
+  font-size: 0.75rem;
+}
+
+.resolve-risk-card.is-ok {
+  border-color: #bce3cd;
+  background: linear-gradient(180deg, #f8fdf9 0%, #eef9f3 100%);
+}
+
+.resolve-risk-card.is-watch {
+  border-color: #f1dfbc;
+  background: linear-gradient(180deg, #fffef9 0%, #fff9ef 100%);
+}
+
+.resolve-risk-card.is-danger {
+  border-color: #f2c4bc;
+  background: linear-gradient(180deg, #fff9f8 0%, #fff1ef 100%);
+}
+
 .resolve-decision-card {
   border-color: #d4e8dc;
   background: linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
@@ -4192,36 +4241,36 @@ body::before {
   }
 
   .app-shell[data-has-admin-dock="true"] {
-    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-runtime-height) + var(--mobile-floating-layer-gap));
   }
 
   .app-shell[data-has-resolve-submit="true"] {
-    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-runtime-height) + var(--mobile-floating-layer-gap));
   }
 
   .app-shell[data-has-admin-dock="true"] .resolve-submit-bar {
-    bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2));
+    bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-runtime-height) + (var(--mobile-floating-layer-gap) * 2));
   }
 
   .app-shell[data-has-admin-dock="true"][data-has-resolve-submit="true"] {
-    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
+    --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-runtime-height) + var(--mobile-resolve-submit-runtime-height) + (var(--mobile-floating-layer-gap) * 2));
   }
 
   @supports selector(:has(*)) {
     .app-shell:has(.admin-mobile-dock) {
-      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-floating-layer-gap));
+      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-runtime-height) + var(--mobile-floating-layer-gap));
     }
 
     .app-shell:has(.resolve-submit-bar) {
-      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-height) + var(--mobile-floating-layer-gap));
+      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-resolve-submit-runtime-height) + var(--mobile-floating-layer-gap));
     }
 
     .app-shell:has(.admin-mobile-dock):has(.resolve-submit-bar) {
-      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-height) + var(--mobile-resolve-submit-height) + (var(--mobile-floating-layer-gap) * 2));
+      --mobile-floating-stack-offset: calc(var(--mobile-global-nav-height) + var(--mobile-admin-dock-runtime-height) + var(--mobile-resolve-submit-runtime-height) + (var(--mobile-floating-layer-gap) * 2));
     }
 
     .app-shell:has(.admin-mobile-dock) .resolve-submit-bar {
-      bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-height) + (var(--mobile-floating-layer-gap) * 2));
+      bottom: calc(var(--mobile-floating-bottom-anchor) + var(--mobile-admin-dock-runtime-height) + (var(--mobile-floating-layer-gap) * 2));
     }
   }
 
@@ -4299,6 +4348,10 @@ body::before {
   }
 
   .resolve-decision-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .resolve-risk-strip {
     grid-template-columns: 1fr;
   }
 
@@ -4715,7 +4768,7 @@ body::before {
     --mobile-resolve-submit-height: 3.2rem;
     --mobile-floating-layer-gap: 0.32rem;
     --mobile-global-nav-height: 4.2rem;
-    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 0.86rem);
+    --mobile-floating-safe-clearance: calc(var(--mobile-safe-bottom) + max(var(--mobile-admin-dock-runtime-height), var(--mobile-comment-cta-height), var(--mobile-resolve-submit-runtime-height)) + var(--mobile-global-nav-height) + (var(--mobile-floating-layer-gap) * 3) + 0.86rem);
     --mobile-thumb-reach-padding: calc(var(--mobile-floating-safe-clearance) + 0.75rem);
   }
 
