@@ -201,17 +201,6 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
         </div>
       </div>
 
-      <nav className="mobile-bottom-nav" aria-label="모바일 빠른 탐색">
-        {visibleNavItems.map((item) => {
-          const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-          return (
-            <Link key={`mobile-${item.href}`} href={item.href} className={`mobile-bottom-nav-item ${active ? "is-active" : ""}`}>
-              <span className="mobile-bottom-nav-icon" aria-hidden>{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
     </header>
   );
 }

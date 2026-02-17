@@ -1051,6 +1051,47 @@ body::before {
   box-shadow: 0 6px 22px rgba(15, 23, 42, 0.06);
 }
 
+.admin-hero-eyebrow {
+  margin: 0;
+  font-size: 0.73rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5a6f64;
+  font-weight: 700;
+}
+
+.admin-hero-title {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.2rem, 2.3vw, 1.45rem);
+  letter-spacing: -0.02em;
+  color: #0f2f22;
+}
+
+.admin-hero-subtitle {
+  margin: 0.3rem 0 0;
+  color: #486053;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.admin-card-intro {
+  margin: 0.5rem 0 0;
+  color: #4b6355;
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
+.admin-muted-note {
+  margin: 0.65rem 0 0;
+  color: #6b7280;
+  font-size: 0.83rem;
+}
+
+.admin-list-footnote {
+  color: #6b7280;
+  font-size: 0.81rem;
+}
+
 .admin-pulse-grid {
   display: grid;
   gap: 0.58rem;
@@ -1582,53 +1623,7 @@ body::before {
     width: 100%;
   }
 
-  .mobile-bottom-nav {
-    position: fixed;
-    left: 0.7rem;
-    right: 0.7rem;
-    bottom: var(--mobile-bottom-nav-offset);
-    z-index: 57;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.35rem;
-    padding: 0.38rem;
-    border-radius: 16px;
-    border: 1px solid #d8e7de;
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
-    backdrop-filter: blur(10px);
-  }
-
-  .mobile-bottom-nav-item {
-    min-height: 50px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    color: #375244;
-    font-size: 0.72rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 0.16rem;
-    letter-spacing: -0.005em;
-    transition: transform 160ms var(--ease-standard), border-color 160ms var(--ease-standard), background-color 160ms var(--ease-standard), color 160ms var(--ease-standard);
-  }
-
-  .mobile-bottom-nav-icon {
-    font-size: 0.96rem;
-    line-height: 1;
-  }
-
-  .mobile-bottom-nav-item.is-active {
-    border-color: #9adfb6;
-    background: linear-gradient(180deg, #eefcf4 0%, #e3f8eb 100%);
-    color: #0b6437;
-  }
-
-  .mobile-bottom-nav-item:active {
-    transform: scale(0.98);
-  }
+  /* mobile bottom nav removed: use top fixed tabs instead */
 
   .content-grid,
   .main-column,
