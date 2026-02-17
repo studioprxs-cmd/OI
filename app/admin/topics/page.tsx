@@ -138,6 +138,46 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
   const topicIntegrityRiskScore = Math.min(100, (unresolvedSettledBacklogCount * 35) + (resolvedWithoutResolutionCount * 20));
   const topicConfidence = topicIntegrityRiskScore === 0 ? "높음" : topicIntegrityRiskScore <= 30 ? "보통" : "낮음";
   const dataModeLabel = canUseDb ? "Live DB" : "Local fallback";
+  const oldestPendingTopicHours = topics.length > 0
+    ? Math.max(
+      ...topics
+        .filter((topic) => topic.status === "OPEN" || topic.status === "LOCKED")
+        .map((topic) => Math.floor((Date.now() - new Date(topic.createdAt).getTime()) / (1000 * 60 * 60))),
+    )
+    : 0;
+
+  const northStarCards = [
+    {
+      id: "topic-latency",
+      label: "Topic latency",
+      value: `${Math.max(oldestPendingTopicHours, 0)}h`,
+      caption: staleOpenCount > 0 ? "24h+ OPEN 지연 존재 · 즉시 분류 필요" : "토픽 큐 응답 리듬 안정",
+      progress: Math.min(100, Math.max(12, Math.round((oldestPendingTopicHours / 48) * 100))),
+      tone: staleOpenCount > 0 ? "danger" : staleLockedCount > 0 ? "warning" : "ok",
+      href: "/admin/topics?status=OPEN",
+      cta: "인입 큐 열기",
+    },
+    {
+      id: "topic-integrity",
+      label: "Integrity posture",
+      value: `${topicIntegrityRiskScore}`,
+      caption: integrityIssueTotal > 0 ? `무결성 이슈 ${integrityIssueTotal}건` : "정산 무결성 안정",
+      progress: Math.min(100, Math.max(8, topicIntegrityRiskScore)),
+      tone: integrityIssueTotal > 0 ? "danger" : "ok",
+      href: "/admin/topics?status=RESOLVED",
+      cta: "무결성 워치 열기",
+    },
+    {
+      id: "topic-throughput",
+      label: "Topic throughput",
+      value: `${statusCounts.RESOLVED}/${topics.length}`,
+      caption: topics.length > 0 ? `해결률 ${Math.round((statusCounts.RESOLVED / topics.length) * 100)}%` : "토픽 없음",
+      progress: topics.length > 0 ? Math.max(10, Math.round((statusCounts.RESOLVED / topics.length) * 100)) : 100,
+      tone: pendingResolveCount > statusCounts.RESOLVED ? "warning" : "ok",
+      href: "/admin/topics?status=ALL",
+      cta: "리스트 품질 점검",
+    },
+  ] as const;
 
   const queueLaneItems = [
     {
@@ -364,6 +404,29 @@ export default async function AdminTopicsPage({ searchParams }: Props) {
           <a href="#topic-list" className="admin-thumb-chip">리스트로 이동</a>
         </div>
         <p className="admin-thumb-rail-note">{nextActionLabel}</p>
+      </Card>
+
+      <Card className="admin-northstar-card">
+        <div className="admin-northstar-head">
+          <div>
+            <p className="admin-jump-nav-label">Ops north star</p>
+            <h2 className="admin-command-title">토픽 운영 핵심 지표</h2>
+          </div>
+          <Pill tone={integrityIssueTotal > 0 ? "danger" : "success"}>{integrityIssueTotal > 0 ? "Attention" : "Stable"}</Pill>
+        </div>
+        <div className="admin-northstar-grid" style={{ marginTop: "0.65rem" }}>
+          {northStarCards.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-northstar-item is-${item.tone}`}>
+              <span className="admin-northstar-label">{item.label}</span>
+              <strong className="admin-northstar-value">{item.value}</strong>
+              <small>{item.caption}</small>
+              <div className="admin-northstar-meter" aria-hidden>
+                <span style={{ width: `${item.progress}%` }} />
+              </div>
+              <span className="admin-northstar-cta">{item.cta} →</span>
+            </Link>
+          ))}
+        </div>
       </Card>
 
       <Card className="admin-jump-nav-card admin-jump-nav-card-sticky">
