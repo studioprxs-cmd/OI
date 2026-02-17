@@ -411,6 +411,33 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     },
   ] as const;
 
+  const responseCadence = [
+    {
+      id: "critical",
+      label: "Critical",
+      metric: `${superStaleActionableCount}건`,
+      hint: "48h+ OPEN/REVIEWING 신고",
+      href: "/admin/moderation?status=OPEN",
+      tone: superStaleActionableCount > 0 ? "danger" : "ok",
+    },
+    {
+      id: "active",
+      label: "Active",
+      metric: `${staleActionableCount}건`,
+      hint: "24h+ 지연 신고",
+      href: "/admin/moderation?status=REVIEWING",
+      tone: staleActionableCount > 0 ? "warning" : "ok",
+    },
+    {
+      id: "healthy",
+      label: "Healthy",
+      metric: `${Math.max(actionableReports.length - staleActionableCount, 0)}건`,
+      hint: "24h 이내 처리 중",
+      href: "/admin/moderation?status=ALL",
+      tone: actionableReports.length > 0 ? "neutral" : "ok",
+    },
+  ] as const;
+
   const queueLaneItems = [
     {
       id: "lane-open",
@@ -588,6 +615,20 @@ export default async function AdminModerationPage({ searchParams }: Props) {
               <span className="admin-timeline-label">{item.label}</span>
               <strong>{item.title}</strong>
               <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="admin-cadence-card">
+        <SectionTitle>Response cadence</SectionTitle>
+        <p className="admin-card-intro">신고 대응 속도를 3단계로 분리해 지연 위험을 모바일에서 즉시 감지하고 우선순위를 고정합니다.</p>
+        <div className="admin-cadence-grid" style={{ marginTop: "0.68rem" }}>
+          {responseCadence.map((item) => (
+            <Link key={item.id} href={item.href} className={`admin-cadence-item is-${item.tone}`}>
+              <span className="admin-cadence-label">{item.label}</span>
+              <strong>{item.metric}</strong>
+              <small>{item.hint}</small>
             </Link>
           ))}
         </div>
