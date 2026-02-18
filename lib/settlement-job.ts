@@ -144,24 +144,20 @@ export async function processSettlementJob(input: SettlementJobInput) {
 
     const result = topic.resolution.result as Choice;
 
-    const unsettledBets = await tx.bet.findMany({
-      where: { topicId, settled: false },
-      select: { id: true, userId: true, choice: true, amount: true },
+    const topicBets = await tx.bet.findMany({
+      where: { topicId },
+      select: {
+        id: true,
+        userId: true,
+        choice: true,
+        amount: true,
+        settled: true,
+        payoutAmount: true,
+      },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
 
-    const settledBetCount = await tx.bet.count({
-      where: {
-        topicId,
-        settled: true,
-      },
-    });
-
-    if (unsettledBets.length === 0 && settledBetCount > 0) {
-      throw new Error("PARTIAL_SETTLEMENT_DETECTED");
-    }
-
-    const settlement = calculateSettlement(unsettledBets, result, { feeRate: SETTLEMENT_FEE_RATE });
+    const settlement = calculateSettlement(topicBets, result, { feeRate: SETTLEMENT_FEE_RATE });
 
     if (settlement.summary.invalidAmountCount > 0) {
       throw new Error("INVALID_BET_AMOUNT_DETECTED");
@@ -172,20 +168,46 @@ export async function processSettlementJob(input: SettlementJobInput) {
     }
 
     const payoutDelta = settlement.summary.netPool - settlement.summary.payoutTotal;
-    if (unsettledBets.length > 0 && payoutDelta !== 0) {
+    if (topicBets.length > 0 && payoutDelta !== 0) {
       throw new Error("PAYOUT_INTEGRITY_VIOLATION");
     }
 
+    const expectedPayoutByBetId = new Map(settlement.bets.map((bet) => [bet.id, bet]));
+
     let settledPayoutTotal = 0;
 
-    for (const bet of settlement.bets) {
+    for (const storedBet of topicBets) {
+      const expected = expectedPayoutByBetId.get(storedBet.id);
+      if (!expected) {
+        throw new Error("SETTLEMENT_BET_EXPECTATION_MISSING");
+      }
+
       const existingSettlementTx = await tx.walletTransaction.findFirst({
         where: {
-          relatedBetId: bet.id,
+          relatedBetId: storedBet.id,
           type: "BET_SETTLE",
         },
         select: { id: true },
       });
+
+      if (storedBet.settled) {
+        const storedPayout = storedBet.payoutAmount ?? 0;
+
+        if (storedPayout !== expected.payout) {
+          throw new Error("PARTIAL_SETTLEMENT_PAYOUT_MISMATCH");
+        }
+
+        if (storedPayout > 0 && !existingSettlementTx) {
+          throw new Error("PARTIAL_SETTLEMENT_LEDGER_MISSING");
+        }
+
+        if (storedPayout <= 0 && existingSettlementTx) {
+          throw new Error("PARTIAL_SETTLEMENT_LEDGER_UNEXPECTED");
+        }
+
+        settledPayoutTotal += storedPayout;
+        continue;
+      }
 
       if (existingSettlementTx) {
         throw new Error("DUPLICATE_SETTLEMENT_TX_DETECTED");
@@ -193,12 +215,12 @@ export async function processSettlementJob(input: SettlementJobInput) {
 
       const settlementUpdate = await tx.bet.updateMany({
         where: {
-          id: bet.id,
+          id: storedBet.id,
           settled: false,
         },
         data: {
           settled: true,
-          payoutAmount: bet.payout,
+          payoutAmount: expected.payout,
         },
       });
 
@@ -206,15 +228,15 @@ export async function processSettlementJob(input: SettlementJobInput) {
         throw new Error("BET_ALREADY_SETTLED_RACE");
       }
 
-      settledPayoutTotal += bet.payout;
+      settledPayoutTotal += expected.payout;
 
-      if (bet.payout > 0) {
+      if (expected.payout > 0) {
         await applyWalletDelta({
           tx,
-          userId: bet.userId,
-          amount: bet.payout,
+          userId: storedBet.userId,
+          amount: expected.payout,
           type: "BET_SETTLE",
-          relatedBetId: bet.id,
+          relatedBetId: storedBet.id,
           note: `Settlement payout for topic:${topicId}`,
         });
       }
