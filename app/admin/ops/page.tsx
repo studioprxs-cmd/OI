@@ -12,11 +12,13 @@ async function loadIntegritySummary() {
       duplicateSettleRefs: 0,
       duplicateRefundRefs: 0,
       duplicateVoteRefs: 0,
+      missingVoteRewardCount: 0,
+      orphanVoteRewardCount: 0,
       snapshotAt: new Date().toISOString(),
     };
   }
 
-  const [users, txAgg, duplicateSettle, duplicateRefund, duplicateVote] = await Promise.all([
+  const [users, txAgg, duplicateSettle, duplicateRefund, duplicateVote, voteIds, voteRewardRefs] = await Promise.all([
     db.user.findMany({
       select: { id: true, pointBalance: true },
     }),
@@ -45,10 +47,34 @@ async function loadIntegritySummary() {
         _count: { relatedVoteId: true },
       })
       .then((rows) => rows.filter((row) => (row._count.relatedVoteId ?? 0) > 1).length),
+    db.vote.findMany({
+      select: { id: true },
+    }),
+    db.walletTransaction.findMany({
+      where: { type: "VOTE_REWARD", relatedVoteId: { not: null } },
+      select: { relatedVoteId: true },
+    }),
   ]);
 
   const txMap = new Map(txAgg.map((row) => [row.userId, Number(row._sum.amount ?? 0)]));
   const driftUsers = users.filter((user) => user.pointBalance !== (txMap.get(user.id) ?? 0)).length;
+
+  const voteIdSet = new Set(voteIds.map((vote) => vote.id));
+  const voteRewardIdSet = new Set(voteRewardRefs.map((tx) => tx.relatedVoteId).filter((id): id is string => Boolean(id)));
+
+  let missingVoteRewardCount = 0;
+  for (const vote of voteIdSet) {
+    if (!voteRewardIdSet.has(vote)) {
+      missingVoteRewardCount += 1;
+    }
+  }
+
+  let orphanVoteRewardCount = 0;
+  for (const voteRewardId of voteRewardIdSet) {
+    if (!voteIdSet.has(voteRewardId)) {
+      orphanVoteRewardCount += 1;
+    }
+  }
 
   return {
     userCount: users.length,
@@ -56,6 +82,8 @@ async function loadIntegritySummary() {
     duplicateSettleRefs: duplicateSettle,
     duplicateRefundRefs: duplicateRefund,
     duplicateVoteRefs: duplicateVote,
+    missingVoteRewardCount,
+    orphanVoteRewardCount,
     snapshotAt: new Date().toISOString(),
   };
 }
@@ -77,6 +105,7 @@ export default async function AdminOpsPage() {
   const burnRatio14dPercent = Math.round(issueBurn14d.totals.burnToIssueRatio * 100);
 
   const duplicateRefTotal = integrity.duplicateSettleRefs + integrity.duplicateRefundRefs + integrity.duplicateVoteRefs;
+  const voteIntegrityGapTotal = integrity.missingVoteRewardCount + integrity.orphanVoteRewardCount;
 
   return (
     <PageContainer>
@@ -90,7 +119,11 @@ export default async function AdminOpsPage() {
         </div>
         <div className="admin-hero-actions">
           <Pill tone={toneByRatio(inflation7d.totals.burnToIssueRatio)}>{`7d Burn/Issue ${burnRatio7dPercent}%`}</Pill>
-          <Pill tone={duplicateRefTotal > 0 ? "danger" : "success"}>{duplicateRefTotal > 0 ? `중복 레퍼런스 ${duplicateRefTotal}건` : "레퍼런스 무결성 정상"}</Pill>
+          <Pill tone={duplicateRefTotal + voteIntegrityGapTotal > 0 ? "danger" : "success"}>
+            {duplicateRefTotal + voteIntegrityGapTotal > 0
+              ? `원장 경고 ${duplicateRefTotal + voteIntegrityGapTotal}건`
+              : "레퍼런스/보상 무결성 정상"}
+          </Pill>
         </div>
       </section>
 
@@ -150,6 +183,11 @@ export default async function AdminOpsPage() {
             <span className="ops-health-label">Duplicate refs</span>
             <strong className="ops-health-value">{duplicateRefTotal}건</strong>
             <small>SETTLE/REFUND/VOTE</small>
+          </div>
+          <div className={`ops-health-item ${voteIntegrityGapTotal > 0 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Vote reward gaps</span>
+            <strong className="ops-health-value">{voteIntegrityGapTotal}건</strong>
+            <small>누락 {integrity.missingVoteRewardCount} · 고아 {integrity.orphanVoteRewardCount}</small>
           </div>
           <div className={`ops-health-item ${integrity.driftUsers > 0 ? "is-warning" : "is-ok"}`}>
             <span className="ops-health-label">Drift users</span>
