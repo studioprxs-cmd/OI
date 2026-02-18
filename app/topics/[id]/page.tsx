@@ -15,6 +15,7 @@ import { WidgetCard } from "@/components/WidgetCard";
 import { OiBadge, PageContainer, Pill } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getLocalTopicInteractions } from "@/lib/local-topic-interactions";
 import { findMockTopic } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
@@ -64,23 +65,24 @@ export default async function TopicDetailPage({ params }: Props) {
     .catch(() => null) : null;
 
   const mockTopic = findMockTopic(id);
+  const localInteractions = !canUseDb && mockTopic ? await getLocalTopicInteractions(id) : null;
 
   if (!dbTopic && !mockTopic) return notFound();
 
   const yesVotes = dbTopic
     ? dbTopic.votes.filter((vote) => vote.choice === Choice.YES).length
-    : (mockTopic?.yesVotes ?? 0);
+    : (mockTopic?.yesVotes ?? 0) + (localInteractions?.votes.filter((vote) => vote.choice === "YES").length ?? 0);
   const noVotes = dbTopic
     ? dbTopic.votes.filter((vote) => vote.choice === Choice.NO).length
-    : (mockTopic?.noVotes ?? 0);
+    : (mockTopic?.noVotes ?? 0) + (localInteractions?.votes.filter((vote) => vote.choice === "NO").length ?? 0);
   const totalVotes = yesVotes + noVotes;
 
   const yesPool = dbTopic
     ? dbTopic.bets.filter((bet) => bet.choice === Choice.YES).reduce((sum, bet) => sum + bet.amount, 0)
-    : (mockTopic?.yesPool ?? 0);
+    : (mockTopic?.yesPool ?? 0) + (localInteractions?.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0) ?? 0);
   const noPool = dbTopic
     ? dbTopic.bets.filter((bet) => bet.choice === Choice.NO).reduce((sum, bet) => sum + bet.amount, 0)
-    : (mockTopic?.noPool ?? 0);
+    : (mockTopic?.noPool ?? 0) + (localInteractions?.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0) ?? 0);
   const totalPool = yesPool + noPool;
 
   const settledBetCount = dbTopic ? dbTopic.bets.filter((bet) => bet.settled).length : 0;
@@ -89,13 +91,11 @@ export default async function TopicDetailPage({ params }: Props) {
     : 0;
 
   const topicKind = parseTopicKindFromTitle(dbTopic?.title ?? mockTopic?.title ?? "");
-  const participationBlockReason = topicKind !== "BETTING"
-    ? "이 토픽은 베팅 없이 여론 투표만 가능합니다."
-    : dbTopic
-      ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
-      : "데모 토픽에서는 베팅이 제한됩니다.";
-  const canBet = topicKind === "BETTING" && canUseDb && !participationBlockReason;
-  const canVote = canUseDb && !participationBlockReason;
+  const participationBlockReason = dbTopic
+    ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
+    : null;
+  const canBet = topicKind === "BETTING" && !participationBlockReason;
+  const canVote = !participationBlockReason;
 
   const resolution = dbTopic?.resolution
     ? {
@@ -131,14 +131,24 @@ export default async function TopicDetailPage({ params }: Props) {
         ...comment,
         likeCount: comment._count.likes,
       }))
-      : mockTopic!.comments.map((comment) => ({
-        ...comment,
-        userId: null,
-        likeCount: 0,
-      })),
+      : [
+        ...(localInteractions?.comments.map((comment) => ({
+          ...comment,
+          likeCount: 0,
+        })) ?? []),
+        ...mockTopic!.comments.map((comment) => ({
+          ...comment,
+          userId: null,
+          likeCount: 0,
+        })),
+      ].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt)),
     counts: dbTopic
       ? { votes: dbTopic._count.votes, bets: dbTopic._count.bets, comments: dbTopic._count.comments }
-      : { votes: mockTopic!.voteCount, bets: mockTopic!.betCount, comments: mockTopic!.commentCount },
+      : {
+        votes: (mockTopic!.voteCount ?? 0) + (localInteractions?.votes.length ?? 0),
+        bets: (mockTopic!.betCount ?? 0) + (localInteractions?.bets.length ?? 0),
+        comments: (mockTopic!.commentCount ?? 0) + (localInteractions?.comments.length ?? 0),
+      },
   };
 
   return (

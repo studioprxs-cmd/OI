@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { localAdjustUserPoints } from "@/lib/auth-local";
 import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
+import { addLocalComment, getLocalTopicInteractions } from "@/lib/local-topic-interactions";
 import { findMockTopic } from "@/lib/mock-data";
 import { getKstDayRange } from "@/lib/time-window";
 
@@ -17,7 +19,13 @@ export async function GET(_: Request, { params }: Params) {
       return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ok: true, data: mockTopic.comments, error: null });
+    const local = await getLocalTopicInteractions(id);
+    const merged = [
+      ...local.comments.map((comment) => ({ ...comment, _count: { likes: 0 } })),
+      ...mockTopic.comments.map((comment) => ({ ...comment, _count: { likes: 0 } })),
+    ].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+
+    return NextResponse.json({ ok: true, data: merged, error: null });
   }
 
   const topic = await db.topic.findUnique({ where: { id }, select: { id: true } });
@@ -51,10 +59,34 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   if (!process.env.DATABASE_URL) {
-    return NextResponse.json(
-      { ok: false, data: null, error: "DB is not configured in local mode. comment write is disabled." },
-      { status: 503 },
-    );
+    const mockTopic = findMockTopic(id);
+    if (!mockTopic) {
+      return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const content = String(body.content ?? "").trim();
+    if (!content) {
+      return NextResponse.json({ ok: false, data: null, error: "content is required" }, { status: 400 });
+    }
+
+    const comment = await addLocalComment({ topicId: id, userId: user!.id, content });
+    const wallet = await localAdjustUserPoints(user!.id, ENGAGEMENT_POLICY.COMMENT_REWARD_POINTS).catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        comment,
+        reward: {
+          granted: true,
+          amount: ENGAGEMENT_POLICY.COMMENT_REWARD_POINTS,
+          reason: null,
+          remainingToday: null,
+        },
+        pointBalance: wallet?.pointBalance ?? null,
+      },
+      error: null,
+    }, { status: 201 });
   }
 
   const topic = await db.topic.findUnique({ where: { id }, select: { id: true } });

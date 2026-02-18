@@ -3,10 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { BET_LIMITS } from "@/lib/betting-policy";
+import { localAdjustUserPoints, localFindUserById } from "@/lib/auth-local";
 import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 import { setTopicPoolStatsCache } from "@/lib/betting/pool-cache";
 import { assertBetAmount, assertDailyLimit, assertLossCooldown, assertPoolShare } from "@/lib/betting/validation";
 import { db } from "@/lib/db";
+import { addLocalBet, getLocalTopicInteractions } from "@/lib/local-topic-interactions";
+import { findMockTopic } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 import { getKstDayRange } from "@/lib/time-window";
@@ -17,10 +20,15 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
 
-  const topic = await db.topic.findUnique({
-    where: { id },
-    select: { id: true, title: true, status: true, closeAt: true },
-  });
+  const useLocal = !process.env.DATABASE_URL;
+
+  const topic = useLocal
+    ? findMockTopic(id)
+    : await db.topic.findUnique({
+      where: { id },
+      select: { id: true, title: true, status: true, closeAt: true },
+    });
+
   if (!topic) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
   }
@@ -56,6 +64,53 @@ export async function POST(req: NextRequest, { params }: Params) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "BET_AMOUNT_INVALID:amount must be a positive integer";
     return NextResponse.json({ ok: false, data: null, error: message.replace("BET_AMOUNT_INVALID:", "") }, { status: 400 });
+  }
+
+  if (useLocal) {
+    const localUser = await localFindUserById(authUser.id);
+    if (!localUser) {
+      return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });
+    }
+
+    if (localUser.pointBalance < amount) {
+      return NextResponse.json({ ok: false, data: null, error: "Insufficient points" }, { status: 400 });
+    }
+
+    const local = await getLocalTopicInteractions(id);
+    const yesPool = local.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
+    const noPool = local.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
+
+    const priceSnapshot = calcPrices(yesPool, noPool);
+    const estimatedPayout = calcEstimatedPayout(amount, choice, yesPool, noPool);
+    const priceCents = choice === "YES" ? priceSnapshot.yesCents : priceSnapshot.noCents;
+
+    const wallet = await localAdjustUserPoints(authUser.id, -amount).catch(() => null);
+    if (!wallet) {
+      return NextResponse.json({ ok: false, data: null, error: "Insufficient points" }, { status: 400 });
+    }
+
+    const bet = await addLocalBet({ topicId: id, userId: authUser.id, choice, amount });
+
+    const nextYesPool = choice === "YES" ? yesPool + amount : yesPool;
+    const nextNoPool = choice === "NO" ? noPool + amount : noPool;
+
+    await setTopicPoolStatsCache(id, nextYesPool, nextNoPool);
+
+    return NextResponse.json({
+      ok: true,
+      data: {
+        bet,
+        balance: wallet.pointBalance,
+        priceCents,
+        estimatedPayout,
+        newPoolStats: {
+          yesPool: nextYesPool,
+          noPool: nextNoPool,
+          totalPool: nextYesPool + nextNoPool,
+        },
+      },
+      error: null,
+    }, { status: 201 });
   }
 
   const dbUser = await db.user.findUnique({ where: { id: authUser.id } });

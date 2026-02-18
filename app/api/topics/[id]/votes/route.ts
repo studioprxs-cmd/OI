@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { localAdjustUserPoints } from "@/lib/auth-local";
 import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
+import { addLocalVote } from "@/lib/local-topic-interactions";
+import { findMockTopic } from "@/lib/mock-data";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 import { applyWalletDelta } from "@/lib/wallet";
 
@@ -13,10 +16,15 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
 
-  const topic = await db.topic.findUnique({
-    where: { id },
-    select: { id: true, status: true, closeAt: true },
-  });
+  const useLocal = !process.env.DATABASE_URL;
+
+  const topic = useLocal
+    ? findMockTopic(id)
+    : await db.topic.findUnique({
+      where: { id },
+      select: { id: true, status: true, closeAt: true },
+    });
+
   if (!topic) {
     return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
   }
@@ -38,6 +46,27 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   if (choice !== "YES" && choice !== "NO") {
     return NextResponse.json({ ok: false, data: null, error: "choice must be YES or NO" }, { status: 400 });
+  }
+
+  if (useLocal) {
+    try {
+      const vote = await addLocalVote({ topicId: id, userId: authUser.id, choice });
+      const wallet = await localAdjustUserPoints(authUser.id, ENGAGEMENT_POLICY.VOTE_REWARD_POINTS).catch(() => null);
+      return NextResponse.json({
+        ok: true,
+        data: { vote, rewarded: true, reward: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS, pointBalance: wallet?.pointBalance ?? null },
+        error: null,
+      }, { status: 201 });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "LOCAL_VOTE_FAILED";
+      if (message === "LOCAL_VOTE_ALREADY_EXISTS") {
+        return NextResponse.json(
+          { ok: false, data: null, error: "이미 투표한 토픽입니다. 투표는 1회만 가능합니다." },
+          { status: 409 },
+        );
+      }
+      return NextResponse.json({ ok: false, data: null, error: "Failed to submit vote" }, { status: 500 });
+    }
   }
 
   try {
