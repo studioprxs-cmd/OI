@@ -3,6 +3,11 @@ import { getSuspiciousMultiAccountIps } from "@/lib/security/access-log";
 
 const BET_FEE_RATE = 0.05;
 
+const INFLATION_THRESHOLDS = {
+  HEALTHY: 0.7,
+  WARNING: 0.5,
+} as const;
+
 export type InflationDaySnapshot = {
   dateKey: string;
   issuedPoints: number;
@@ -41,6 +46,14 @@ export type MultiAccountRiskSnapshot = {
     events: number;
     lastSeenAt: string;
   }>;
+};
+
+export type InflationHealthSnapshot = {
+  ratio: number;
+  stage: "HEALTHY" | "WARNING" | "CRITICAL";
+  rewardScale: number;
+  marketPolicyHint: string;
+  message: string;
 };
 
 function toDateKey(value: Date) {
@@ -220,6 +233,38 @@ export async function getOpsIssueBurnSnapshot(windowDays = 14): Promise<OpsIssue
       ...totals,
       burnToIssueRatio: totals.issuedPoints > 0 ? totals.burnedPoints / totals.issuedPoints : 0,
     },
+  };
+}
+
+export function evaluateInflationHealth(ratio: number): InflationHealthSnapshot {
+  const safeRatio = Number.isFinite(ratio) ? Math.max(0, ratio) : 0;
+
+  if (safeRatio >= INFLATION_THRESHOLDS.HEALTHY) {
+    return {
+      ratio: safeRatio,
+      stage: "HEALTHY",
+      rewardScale: 1,
+      marketPolicyHint: "기본 보상 정책 유지",
+      message: "소각/발행 비율이 안정 구간입니다. 현재 보상/마켓 정책을 유지하세요.",
+    };
+  }
+
+  if (safeRatio >= INFLATION_THRESHOLDS.WARNING) {
+    return {
+      ratio: safeRatio,
+      stage: "WARNING",
+      rewardScale: 0.8,
+      marketPolicyHint: "보상 20% 축소 + 마켓 소각 프로모션 확대",
+      message: "주의 구간입니다. 단기 보상 강도를 낮추고 소각 유도 상품 노출을 강화하세요.",
+    };
+  }
+
+  return {
+    ratio: safeRatio,
+    stage: "CRITICAL",
+    rewardScale: 0,
+    marketPolicyHint: "비핵심 보상 동결 + 긴급 소각 이벤트",
+    message: "위험 구간입니다. 신규 보상 발행을 제한하고 긴급 소각 액션을 실행하세요.",
   };
 }
 

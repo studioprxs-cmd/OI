@@ -5,7 +5,7 @@ import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel }
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
-import { getInflationSnapshot, getMultiAccountRiskSnapshot, getOpsIssueBurnSnapshot } from "@/lib/ops-dashboard";
+import { evaluateInflationHealth, getInflationSnapshot, getMultiAccountRiskSnapshot, getOpsIssueBurnSnapshot } from "@/lib/ops-dashboard";
 
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 
@@ -119,6 +119,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
   const inflationSnapshot = await getInflationSnapshot(7);
   const opsIssueBurnSnapshot = await getOpsIssueBurnSnapshot(14);
+  const inflationHealth = evaluateInflationHealth(opsIssueBurnSnapshot.totals.burnToIssueRatio);
   const multiAccountRiskSnapshot = await getMultiAccountRiskSnapshot(7, 3);
 
   const unresolvedSettledBacklogCount = canUseDb
@@ -1230,6 +1231,31 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             최신 집계 API: <code>/api/admin/ops/issue-burn?days=14</code>
           </p>
         </div>
+      </Card>
+
+      <Card className="admin-surface-card admin-surface-card-priority">
+        <SectionTitle>Inflation posture</SectionTitle>
+        <p className="admin-card-intro">14일 발행/소각 비율을 기준으로 보상 강도와 마켓 운영 모드를 즉시 판단합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.72rem" }}>
+          <div className={`ops-health-item ${inflationHealth.stage === "CRITICAL" ? "is-danger" : inflationHealth.stage === "WARNING" ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Posture</span>
+            <strong className="ops-health-value">{inflationHealth.stage}</strong>
+            <small>{inflationHealth.message}</small>
+          </div>
+          <div className={`ops-health-item ${inflationHealth.stage === "CRITICAL" ? "is-danger" : inflationHealth.stage === "WARNING" ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Burn / Issue</span>
+            <strong className="ops-health-value">{Math.round(inflationHealth.ratio * 100)}%</strong>
+            <small>Issued {opsIssueBurnSnapshot.totals.issuedPoints.toLocaleString()}pt · Burned {opsIssueBurnSnapshot.totals.burnedPoints.toLocaleString()}pt</small>
+          </div>
+          <div className={`ops-health-item ${inflationHealth.rewardScale === 0 ? "is-danger" : inflationHealth.rewardScale < 1 ? "is-warning" : "is-ok"}`}>
+            <span className="ops-health-label">Reward scale</span>
+            <strong className="ops-health-value">x{inflationHealth.rewardScale.toFixed(2)}</strong>
+            <small>{inflationHealth.marketPolicyHint}</small>
+          </div>
+        </div>
+        <p style={{ marginTop: "0.62rem", marginBottom: 0, fontSize: "0.74rem", color: "var(--text-muted)" }}>
+          정책 API: <code>/api/admin/ops/inflation-health?days=14</code>
+        </p>
       </Card>
 
       {hasCriticalIntegrityIssue ? (
