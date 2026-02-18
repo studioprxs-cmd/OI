@@ -5,7 +5,7 @@ import { getAuthUser, requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localAdjustUserPoints } from "@/lib/auth-local";
 import { ENGAGEMENT_POLICY } from "@/lib/engagement-policy";
-import { addLocalVote } from "@/lib/local-topic-interactions";
+import { addLocalVote, removeLocalVoteById } from "@/lib/local-topic-interactions";
 import { findMockTopic } from "@/lib/mock-data";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
 import { applyWalletDelta } from "@/lib/wallet";
@@ -51,12 +51,31 @@ export async function POST(req: NextRequest, { params }: Params) {
   if (useLocal) {
     try {
       const vote = await addLocalVote({ topicId: id, userId: authUser.id, choice });
-      const wallet = await localAdjustUserPoints(authUser.id, ENGAGEMENT_POLICY.VOTE_REWARD_POINTS).catch(() => null);
-      return NextResponse.json({
-        ok: true,
-        data: { vote, rewarded: true, reward: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS, pointBalance: wallet?.pointBalance ?? null },
-        error: null,
-      }, { status: 201 });
+
+      try {
+        const wallet = await localAdjustUserPoints(authUser.id, ENGAGEMENT_POLICY.VOTE_REWARD_POINTS);
+        return NextResponse.json({
+          ok: true,
+          data: { vote, rewarded: true, reward: ENGAGEMENT_POLICY.VOTE_REWARD_POINTS, pointBalance: wallet.pointBalance },
+          error: null,
+        }, { status: 201 });
+      } catch (rewardError: unknown) {
+        await removeLocalVoteById(vote.id);
+
+        const rewardMessage = rewardError instanceof Error ? rewardError.message : "LOCAL_REWARD_FAILED";
+        if (rewardMessage === "LOCAL_USER_NOT_FOUND") {
+          return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });
+        }
+
+        if (rewardMessage === "LOCAL_POINT_DELTA_INVALID") {
+          return NextResponse.json({ ok: false, data: null, error: "Vote reward configuration is invalid" }, { status: 500 });
+        }
+
+        return NextResponse.json(
+          { ok: false, data: null, error: "투표 보상 지급 중 오류가 발생해 투표가 롤백되었습니다. 잠시 후 다시 시도해주세요." },
+          { status: 409 },
+        );
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "LOCAL_VOTE_FAILED";
       if (message === "LOCAL_VOTE_ALREADY_EXISTS") {

@@ -4,6 +4,19 @@ function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
+const ALLOWED_WALLET_TX_TYPES = new Set([
+  "SIGNUP_BONUS",
+  "DAILY_CHECKIN",
+  "VOTE_REWARD",
+  "COMMENT_REWARD",
+  "COMMENT_LIKE_REWARD",
+  "BET_PLACE",
+  "BET_SETTLE",
+  "BET_REFUND",
+  "MARKET_PURCHASE",
+  "ADMIN_ADJUST",
+]);
+
 type ApplyWalletDeltaInput = {
   tx: Prisma.TransactionClient;
   userId: string;
@@ -19,8 +32,13 @@ function ensureWalletInputIntegrity(input: ApplyWalletDeltaInput) {
     throw new Error("WALLET_USER_ID_REQUIRED");
   }
 
-  if (!input.type?.trim()) {
+  const normalizedType = input.type?.trim();
+  if (!normalizedType) {
     throw new Error("WALLET_TX_TYPE_REQUIRED");
+  }
+
+  if (!ALLOWED_WALLET_TX_TYPES.has(normalizedType)) {
+    throw new Error("WALLET_TX_TYPE_INVALID");
   }
 
   if (input.relatedBetId && input.relatedVoteId) {
@@ -41,6 +59,7 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
 
   const { tx, userId, amount, type, relatedBetId, relatedVoteId, note } = input;
   const normalizedAmount = amount;
+  const normalizedType = type.trim();
 
   // 지갑 원장 무결성을 위해 사용자 단위 직렬화 잠금을 건다.
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`wallet-user:${userId}`}))`;
@@ -77,7 +96,7 @@ export async function applyWalletDelta(input: ApplyWalletDeltaInput) {
   const transaction = await tx.walletTransaction.create({
     data: {
       userId,
-      type,
+      type: normalizedType,
       amount: normalizedAmount,
       balanceAfter: nextBalance,
       relatedBetId,
