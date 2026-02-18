@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthUser, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { enqueueSettlementJob } from "@/lib/settlement-job";
 import { calculateSettlement } from "@/lib/settlement";
-import { applyWalletDelta } from "@/lib/wallet";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -177,154 +177,104 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   try {
-    const resolved = await db.$transaction(async (tx) => {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`resolve-topic:${id}`}))`;
+    const queuedResolution = await db.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`resolve-topic:${id}`}))`;
 
-    const currentTopic = await tx.topic.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        status: true,
-        resolution: { select: { id: true } },
-        settlement: { select: { id: true } },
-      },
-    });
-
-    if (!currentTopic) {
-      throw new Error("TOPIC_NOT_FOUND");
-    }
-
-    if (currentTopic.status === TopicStatus.RESOLVED || currentTopic.resolution || currentTopic.settlement) {
-      throw new Error("ALREADY_RESOLVED");
-    }
-
-    if (currentTopic.status === TopicStatus.CANCELED) {
-      throw new Error("CANCELED_TOPIC_RESOLVE_BLOCKED");
-    }
-
-    if (currentTopic.status === TopicStatus.DRAFT) {
-      throw new Error("DRAFT_TOPIC_RESOLVE_BLOCKED");
-    }
-
-    const hasSettledBet = await tx.bet.findFirst({
-      where: { topicId: id, settled: true },
-      select: { id: true },
-    });
-
-    if (hasSettledBet) {
-      throw new Error("SETTLEMENT_ALREADY_PROCESSED");
-    }
-
-    const bets = await tx.bet.findMany({
-      where: { topicId: id, settled: false },
-      select: { id: true, userId: true, choice: true, amount: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    const settlement = calculateSettlement(bets, result, { feeRate: SETTLEMENT_FEE_RATE });
-
-    if (bets.length > 0 && settlement.summary.winnerPool === 0 && !confirmNoWinner) {
-      throw new Error("NO_WINNER_CONFIRM_REQUIRED");
-    }
-
-    if (settlement.summary.invalidAmountCount > 0) {
-      throw new Error("INVALID_BET_AMOUNT_DETECTED");
-    }
-
-    if (settlement.summary.duplicateBetIdCount > 0) {
-      throw new Error("DUPLICATE_BET_ID_DETECTED");
-    }
-
-    const payoutDelta = settlement.summary.netPool - settlement.summary.payoutTotal;
-    if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE) {
-      throw new Error("PAYOUT_INTEGRITY_VIOLATION");
-    }
-
-    const resolution = await tx.resolution.create({
-      data: {
-        topicId: id,
-        result,
-        summary,
-        resolverId: auth.user.id,
-      },
-    });
-
-    let settledPayoutTotal = 0;
-
-    for (const bet of settlement.bets) {
-      const existingSettlementTx = await tx.walletTransaction.findFirst({
-        where: {
-          relatedBetId: bet.id,
-          type: "BET_SETTLE",
+      const currentTopic = await tx.topic.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          status: true,
+          resolution: { select: { id: true } },
+          settlement: { select: { id: true } },
         },
+      });
+
+      if (!currentTopic) {
+        throw new Error("TOPIC_NOT_FOUND");
+      }
+
+      if (currentTopic.status === TopicStatus.RESOLVED || currentTopic.resolution || currentTopic.settlement) {
+        throw new Error("ALREADY_RESOLVED");
+      }
+
+      if (currentTopic.status === TopicStatus.CANCELED) {
+        throw new Error("CANCELED_TOPIC_RESOLVE_BLOCKED");
+      }
+
+      if (currentTopic.status === TopicStatus.DRAFT) {
+        throw new Error("DRAFT_TOPIC_RESOLVE_BLOCKED");
+      }
+
+      const hasSettledBet = await tx.bet.findFirst({
+        where: { topicId: id, settled: true },
         select: { id: true },
       });
 
-      if (existingSettlementTx) {
-        throw new Error("DUPLICATE_SETTLEMENT_TX_DETECTED");
+      if (hasSettledBet) {
+        throw new Error("SETTLEMENT_ALREADY_PROCESSED");
       }
 
-      const settlementUpdate = await tx.bet.updateMany({
-        where: {
-          id: bet.id,
-          settled: false,
-        },
+      const bets = await tx.bet.findMany({
+        where: { topicId: id, settled: false },
+        select: { id: true, userId: true, choice: true, amount: true },
+        orderBy: { createdAt: "asc" },
+      });
+
+      const settlement = calculateSettlement(bets, result, { feeRate: SETTLEMENT_FEE_RATE });
+
+      if (bets.length > 0 && settlement.summary.winnerPool === 0 && !confirmNoWinner) {
+        throw new Error("NO_WINNER_CONFIRM_REQUIRED");
+      }
+
+      if (settlement.summary.invalidAmountCount > 0) {
+        throw new Error("INVALID_BET_AMOUNT_DETECTED");
+      }
+
+      if (settlement.summary.duplicateBetIdCount > 0) {
+        throw new Error("DUPLICATE_BET_ID_DETECTED");
+      }
+
+      const payoutDelta = settlement.summary.netPool - settlement.summary.payoutTotal;
+      if (bets.length > 0 && Math.abs(payoutDelta) > MAX_PAYOUT_DELTA_TOLERANCE) {
+        throw new Error("PAYOUT_INTEGRITY_VIOLATION");
+      }
+
+      const resolution = await tx.resolution.create({
         data: {
-          settled: true,
-          payoutAmount: bet.payout,
+          topicId: id,
+          result,
+          summary,
+          resolverId: auth.user.id,
         },
       });
 
-      if (settlementUpdate.count !== 1) {
-        throw new Error("BET_ALREADY_SETTLED_RACE");
-      }
+      const lockedTopic = await tx.topic.update({
+        where: { id },
+        data: { status: TopicStatus.LOCKED },
+      });
 
-      settledPayoutTotal += bet.payout;
+      return {
+        resolution,
+        topic: lockedTopic,
+        settlementPreview: settlement.summary,
+      };
+    });
 
-      if (bet.payout > 0) {
-        await applyWalletDelta({
-          tx,
-          userId: bet.userId,
-          amount: bet.payout,
-          type: "BET_SETTLE",
-          relatedBetId: bet.id,
-          note: `Settlement payout for topic:${id}`,
-        });
-      }
-    }
+    const enqueueResult = enqueueSettlementJob({ topicId: id, settledById: auth.user.id });
 
-    if (settledPayoutTotal !== settlement.summary.payoutTotal) {
-      throw new Error("SETTLEMENT_PAYOUT_SUM_MISMATCH");
-    }
-
-    const settlementLedger = await tx.settlement.create({
-      data: {
-        topicId: id,
-        result,
-        totalPool: settlement.summary.totalPool,
-        feeRate: settlement.summary.feeRate,
-        feeCollected: settlement.summary.feeAmount,
-        netPool: settlement.summary.netPool,
-        payoutTotal: settlement.summary.payoutTotal,
-        winnerCount: settlement.summary.winnerCount,
-        settledById: auth.user.id,
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          ...queuedResolution,
+          settlementQueue: enqueueResult,
+          message: "Resolution saved. Settlement queued for worker processing.",
+        },
+        error: null,
       },
-    });
-
-    const updatedTopic = await tx.topic.update({
-      where: { id },
-      data: { status: TopicStatus.RESOLVED },
-    });
-
-    return {
-      resolution,
-      settlementLedger,
-      topic: updatedTopic,
-      settlement: settlement.summary,
-    };
-    });
-
-    return NextResponse.json({ ok: true, data: resolved, error: null }, { status: 201 });
+      { status: 202 },
+    );
   } catch (error: unknown) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json(
