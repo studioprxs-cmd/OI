@@ -288,6 +288,40 @@ export function createMarketProduct(input: NewMarketProductInput) {
   return created;
 }
 
+export type MarketProductPatch = {
+  stock?: number | null;
+  isActive?: boolean;
+  pricePoints?: number;
+  ctaLabel?: string;
+  availableFrom?: string | null;
+  availableUntil?: string | null;
+};
+
+export function updateMarketProduct(productId: string, patch: MarketProductPatch) {
+  const products = getRuntimeCatalog();
+  const index = products.findIndex((item) => item.id === productId);
+  if (index < 0) return null;
+
+  const current = products[index];
+  const updated: MarketProduct = {
+    ...current,
+    stock: patch.stock === undefined ? current.stock : patch.stock,
+    isActive: patch.isActive === undefined ? current.isActive : patch.isActive,
+    pricePoints: patch.pricePoints === undefined ? current.pricePoints : Math.max(100, Math.floor(patch.pricePoints)),
+    ctaLabel: patch.ctaLabel === undefined ? current.ctaLabel : patch.ctaLabel.trim() || undefined,
+    availableFrom: patch.availableFrom === undefined ? current.availableFrom : patch.availableFrom || undefined,
+    availableUntil: patch.availableUntil === undefined ? current.availableUntil : patch.availableUntil || undefined,
+  };
+
+  runtimeCatalog = [
+    ...products.slice(0, index),
+    updated,
+    ...products.slice(index + 1),
+  ];
+  persistCatalog(runtimeCatalog);
+  return updated;
+}
+
 export function calculateMarketOrderPoints(pricePoints: number, quantity: number) {
   return pricePoints * quantity;
 }

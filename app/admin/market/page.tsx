@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AdminMarketCatalogActions } from "./AdminMarketCatalogActions";
 import { AdminMarketComposer } from "./AdminMarketComposer";
 
 import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle } from "@/components/ui";
 import { getSessionUser } from "@/lib/auth";
-import { getMarketProducts, MARKET_ZONES } from "@/lib/market/catalog";
+import { getMarketProducts } from "@/lib/market/catalog";
 
 export default async function AdminMarketPage() {
   const viewer = await getSessionUser();
@@ -42,21 +43,8 @@ export default async function AdminMarketPage() {
 
       <Card>
         <SectionTitle>카탈로그 스냅샷</SectionTitle>
-        <div className="admin-market-list" style={{ marginTop: "0.7rem" }}>
-          {products.map((product) => (
-            <article key={product.id} className="admin-market-item">
-              <img src={product.imageUrl} alt="" />
-              <div>
-                <p className="admin-market-zone">{MARKET_ZONES[product.zone]}</p>
-                <strong>{product.name}</strong>
-                <p>{product.description}</p>
-                <small>
-                  {product.pricePoints.toLocaleString("ko-KR")}pt · 재고 {product.stock === null ? "무제한" : product.stock.toLocaleString("ko-KR")} · {product.isActive ? "판매중" : "비활성"}
-                </small>
-              </div>
-            </article>
-          ))}
-        </div>
+        <p className="admin-card-intro">상품별 판매 on/off와 재고를 즉시 조정해 마켓 운영 대응 속도를 높입니다.</p>
+        <AdminMarketCatalogActions products={products} />
       </Card>
 
       <Card>
