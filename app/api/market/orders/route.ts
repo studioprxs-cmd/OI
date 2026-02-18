@@ -7,6 +7,7 @@ import {
   reserveMarketProductStock,
   rollbackMarketProductStock,
 } from "@/lib/market/catalog";
+import { applyWalletDelta } from "@/lib/wallet";
 
 type CreateOrderBody = {
   productId?: string;
@@ -104,23 +105,43 @@ export async function POST(req: NextRequest) {
         };
       }
 
-      const updated = await tx.user.update({
-        where: { id: authUser.id },
-        data: { pointBalance: { decrement: totalPoints } },
-        select: { pointBalance: true },
-      });
-
       const orderRef = `market:${reservedProduct.id}:${Date.now()}`;
 
-      await tx.walletTransaction.create({
-        data: {
-          userId: authUser.id,
-          type: "MARKET_PURCHASE",
-          amount: -totalPoints,
-          balanceAfter: updated.pointBalance,
-          note: `Market order ${orderRef} qty:${quantity}`,
-        },
+      const wallet = await applyWalletDelta({
+        tx,
+        userId: authUser.id,
+        amount: -totalPoints,
+        type: "MARKET_PURCHASE",
+        note: `Market order ${orderRef} qty:${quantity}`,
+      }).catch(async (error: unknown) => {
+        const message = error instanceof Error ? error.message : "WALLET_FAILURE";
+
+        if (message === "WALLET_USER_NOT_FOUND") {
+          throw new Error("USER_NOT_FOUND");
+        }
+
+        if (message === "WALLET_INSUFFICIENT_BALANCE") {
+          const latestUser = await tx.user.findUnique({
+            where: { id: authUser.id },
+            select: { pointBalance: true },
+          });
+
+          return {
+            insufficient: true as const,
+            currentBalance: latestUser?.pointBalance ?? 0,
+          };
+        }
+
+        throw error;
       });
+
+      if (wallet && "insufficient" in wallet) {
+        return {
+          ok: false as const,
+          error: "INSUFFICIENT_POINTS",
+          currentBalance: wallet.currentBalance,
+        };
+      }
 
       return {
         ok: true as const,
@@ -131,12 +152,41 @@ export async function POST(req: NextRequest) {
           totalPoints,
           status: "COMPLETED",
         },
-        balanceAfter: updated.pointBalance,
+        balanceAfter: wallet.balanceAfter,
       };
     });
   } catch (error) {
     rollbackMarketProductStock(reservationResult.reservation);
-    throw error;
+
+    const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
+
+    if (message === "USER_NOT_FOUND") {
+      return NextResponse.json({ ok: false, data: null, error: "User not found" }, { status: 404 });
+    }
+
+    if (message === "WALLET_BALANCE_WRITE_RACE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "포인트 차감 반영 중 동시성 충돌이 발생했습니다. 잠시 후 다시 시도해주세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "WALLET_TX_DUPLICATE_REFERENCE") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "중복된 마켓 결제 원장 참조가 감지되어 주문을 중단했습니다.",
+        },
+        { status: 409 },
+      );
+    }
+
+    return NextResponse.json({ ok: false, data: null, error: "Failed to create market order" }, { status: 500 });
   }
 
   if (!result.ok) {

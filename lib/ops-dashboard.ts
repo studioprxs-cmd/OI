@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getSuspiciousMultiAccountIps } from "@/lib/security/access-log";
 
 const BET_FEE_RATE = 0.05;
 
@@ -27,6 +28,19 @@ export type OpsIssueBurnSnapshot = {
     netPoints: number;
     burnToIssueRatio: number;
   };
+};
+
+export type MultiAccountRiskSnapshot = {
+  windowDays: number;
+  minUsers: number;
+  suspicious: Array<{
+    ip: string;
+    userCount: number;
+    users: string[];
+    emails: string[];
+    events: number;
+    lastSeenAt: string;
+  }>;
 };
 
 function toDateKey(value: Date) {
@@ -206,5 +220,17 @@ export async function getOpsIssueBurnSnapshot(windowDays = 14): Promise<OpsIssue
       ...totals,
       burnToIssueRatio: totals.issuedPoints > 0 ? totals.burnedPoints / totals.issuedPoints : 0,
     },
+  };
+}
+
+export async function getMultiAccountRiskSnapshot(windowDays = 7, minUsers = 3): Promise<MultiAccountRiskSnapshot> {
+  const safeWindowDays = Math.max(1, Math.min(30, Math.floor(windowDays)));
+  const safeMinUsers = Math.max(2, Math.min(20, Math.floor(minUsers)));
+  const suspicious = await getSuspiciousMultiAccountIps(safeWindowDays, safeMinUsers);
+
+  return {
+    windowDays: safeWindowDays,
+    minUsers: safeMinUsers,
+    suspicious,
   };
 }

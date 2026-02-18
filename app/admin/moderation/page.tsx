@@ -5,7 +5,7 @@ import { AdminSectionTabs, Card, PageContainer, Pill, SectionTitle, StatePanel }
 import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { localListReports } from "@/lib/report-local";
-import { getInflationSnapshot, getOpsIssueBurnSnapshot } from "@/lib/ops-dashboard";
+import { getInflationSnapshot, getMultiAccountRiskSnapshot, getOpsIssueBurnSnapshot } from "@/lib/ops-dashboard";
 
 import { AdminEmptyState } from "@/components/admin/AdminEmptyState";
 
@@ -119,6 +119,7 @@ export default async function AdminModerationPage({ searchParams }: Props) {
 
   const inflationSnapshot = await getInflationSnapshot(7);
   const opsIssueBurnSnapshot = await getOpsIssueBurnSnapshot(14);
+  const multiAccountRiskSnapshot = await getMultiAccountRiskSnapshot(7, 3);
 
   const unresolvedSettledBacklogCount = canUseDb
     ? await db.bet
@@ -358,6 +359,8 @@ export default async function AdminModerationPage({ searchParams }: Props) {
     1,
     ...opsIssueBurnSnapshot.days.map((day) => Math.max(day.issuedPoints, day.burnedPoints, Math.abs(day.netPoints))),
   );
+  const multiAccountTopRisk = multiAccountRiskSnapshot.suspicious[0] ?? null;
+  const multiAccountRiskTone = multiAccountTopRisk ? (multiAccountTopRisk.userCount >= 5 ? "danger" : "warning") : "ok";
   const oldestActionableHours = actionableReports.length > 0
     ? Math.max(...actionableReports.map((report) => Math.floor((nowTs - new Date(report.createdAt).getTime()) / (1000 * 60 * 60))))
     : 0;
@@ -1123,6 +1126,42 @@ export default async function AdminModerationPage({ searchParams }: Props) {
             </Link>
           ))}
         </div>
+      </Card>
+
+      <Card className="admin-cadence-card" aria-label="다중 계정 이상 징후 모니터">
+        <SectionTitle>Multi-account risk monitor (7d)</SectionTitle>
+        <p className="admin-card-intro">최근 로그인/회원가입 접속 로그 기준으로 동일 IP 다중 계정 징후를 추적합니다.</p>
+        <div className="ops-health-strip" style={{ marginTop: "0.68rem" }}>
+          <div className={`ops-health-item is-${multiAccountRiskTone}`}>
+            <span className="ops-health-label">Suspicious IPs</span>
+            <strong className="ops-health-value">{multiAccountRiskSnapshot.suspicious.length}건</strong>
+            <small>{multiAccountTopRisk ? `최고 위험 ${multiAccountTopRisk.userCount}계정 / ${multiAccountTopRisk.ip}` : "현재 경고 없음"}</small>
+          </div>
+          <div className="ops-health-item is-warning">
+            <span className="ops-health-label">Rule</span>
+            <strong className="ops-health-value">IP 당 {multiAccountRiskSnapshot.minUsers}+ 계정</strong>
+            <small>감시 범위 {multiAccountRiskSnapshot.windowDays}일</small>
+          </div>
+          <div className="ops-health-item is-ok">
+            <span className="ops-health-label">API</span>
+            <strong className="ops-health-value">/api/admin/ops/multi-account</strong>
+            <small>days/minUsers 파라미터 지원</small>
+          </div>
+        </div>
+        {multiAccountRiskSnapshot.suspicious.length > 0 ? (
+          <div style={{ marginTop: "0.72rem", display: "grid", gap: "0.44rem" }}>
+            {multiAccountRiskSnapshot.suspicious.slice(0, 5).map((row) => (
+              <article key={row.ip} style={{ border: "1px solid var(--line)", borderRadius: "0.9rem", padding: "0.58rem 0.7rem", display: "grid", gap: "0.24rem", background: "color-mix(in srgb, var(--surface) 90%, #0f172a)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", fontSize: "0.8rem" }}>
+                  <strong>{row.ip}</strong>
+                  <span style={{ color: "var(--text-muted)" }}>{row.userCount}계정 · {row.events} events</span>
+                </div>
+                <small style={{ color: "var(--text-muted)" }}>마지막 감지 {new Date(row.lastSeenAt).toLocaleString("ko-KR")}</small>
+                <small style={{ color: "var(--text-muted)" }}>{row.emails.slice(0, 3).join(" · ")}{row.emails.length > 3 ? ` 외 ${row.emails.length - 3}건` : ""}</small>
+              </article>
+            ))}
+          </div>
+        ) : null}
       </Card>
 
       <Card className="admin-cadence-card" aria-label="포인트 인플레이션 모니터">

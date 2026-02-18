@@ -4,6 +4,7 @@ import { applySessionCookie, createPasswordHash } from "@/lib/auth";
 import { localCreateUser, localFindUserByEmail } from "@/lib/auth-local";
 import { db } from "@/lib/db";
 import { ONBOARDING_POLICY } from "@/lib/onboarding-policy";
+import { recordAuthAccessEvent, resolveRequestIp } from "@/lib/security/access-log";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -50,6 +51,13 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     );
     applySessionCookie(response, user.id);
+    void recordAuthAccessEvent({
+      userId: user.id,
+      email: user.email,
+      action: "SIGNUP_SUCCESS",
+      ip: resolveRequestIp(req.headers),
+      userAgent: req.headers.get("user-agent"),
+    });
     return response;
   }
 
@@ -99,5 +107,12 @@ export async function POST(req: NextRequest) {
     { status: 201 },
   );
   applySessionCookie(response, user.id);
+  void recordAuthAccessEvent({
+    userId: user.id,
+    email: user.email,
+    action: "SIGNUP_SUCCESS",
+    ip: resolveRequestIp(req.headers),
+    userAgent: req.headers.get("user-agent"),
+  });
   return response;
 }
