@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button, Message } from "@/components/ui";
 import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
@@ -19,6 +20,7 @@ type Props = {
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
 export function BetTicket({ topicId, yesPool, noPool, canBet, isAuthenticated, blockReason }: Props) {
+  const router = useRouter();
   const [choice, setChoice] = useState<Choice>("YES");
   const [amount, setAmount] = useState("500");
   const [message, setMessage] = useState("");
@@ -61,7 +63,8 @@ export function BetTicket({ topicId, yesPool, noPool, canBet, isAuthenticated, b
         return;
       }
 
-      setMessage("베팅이 접수되었습니다. 새로고침하면 풀/내역이 반영됩니다.");
+      setMessage("베팅이 접수되었습니다.");
+      router.refresh();
     } catch {
       setMessage("네트워크 오류가 발생했습니다.");
     } finally {

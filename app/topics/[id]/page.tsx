@@ -8,6 +8,7 @@ import { CommentLikeButton } from "./CommentLikeButton";
 import { CommentReportButton } from "./CommentReportButton";
 import { TopicReportButton } from "./TopicReportButton";
 import { TopicLivePulse } from "./TopicLivePulse";
+import { VotePanel } from "./VotePanel";
 
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
@@ -94,6 +95,7 @@ export default async function TopicDetailPage({ params }: Props) {
       ? getParticipationBlockReason({ status: dbTopic.status, closeAt: dbTopic.closeAt })
       : "데모 토픽에서는 베팅이 제한됩니다.";
   const canBet = topicKind === "BETTING" && canUseDb && !participationBlockReason;
+  const canVote = canUseDb && !participationBlockReason;
 
   const resolution = dbTopic?.resolution
     ? {
@@ -191,6 +193,15 @@ export default async function TopicDetailPage({ params }: Props) {
               ) : null}
             </div>
           </section>
+
+          <FeedCard title="실시간 투표" meta="YES / NO 의견을 한 번만 투표할 수 있고, 참여 시 보상이 지급됩니다.">
+            <VotePanel
+              topicId={topic.id}
+              canVote={Boolean(canVote)}
+              isAuthenticated={Boolean(viewer)}
+              blockReason={participationBlockReason ?? undefined}
+            />
+          </FeedCard>
 
           {topicKind === "BETTING" ? (
             <div id="bet-ticket">
