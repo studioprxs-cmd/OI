@@ -249,6 +249,8 @@ export async function POST(req: NextRequest, { params }: Params) {
       },
     });
 
+    let settledPayoutTotal = 0;
+
     for (const bet of settlement.bets) {
       const existingSettlementTx = await tx.walletTransaction.findFirst({
         where: {
@@ -277,6 +279,8 @@ export async function POST(req: NextRequest, { params }: Params) {
         throw new Error("BET_ALREADY_SETTLED_RACE");
       }
 
+      settledPayoutTotal += bet.payout;
+
       if (bet.payout > 0) {
         await applyWalletDelta({
           tx,
@@ -287,6 +291,10 @@ export async function POST(req: NextRequest, { params }: Params) {
           note: `Settlement payout for topic:${id}`,
         });
       }
+    }
+
+    if (settledPayoutTotal !== settlement.summary.payoutTotal) {
+      throw new Error("SETTLEMENT_PAYOUT_SUM_MISMATCH");
     }
 
     const settlementLedger = await tx.settlement.create({
@@ -431,6 +439,17 @@ export async function POST(req: NextRequest, { params }: Params) {
           ok: false,
           data: null,
           error: "정산 처리 중 동시성 충돌이 발생해 일부 베팅이 이미 정산되었습니다. 잠시 후 다시 시도하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
+    if (message === "SETTLEMENT_PAYOUT_SUM_MISMATCH") {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "정산 지급 합계 검증에 실패하여 정산을 중단했습니다. 데이터 정합성을 점검한 뒤 다시 시도하세요.",
         },
         { status: 409 },
       );

@@ -107,6 +107,7 @@ model Bet {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([topicId, userId])
+  @@index([topicId, choice])
 }
 
 model Comment {
