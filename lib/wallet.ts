@@ -17,6 +17,19 @@ const ALLOWED_WALLET_TX_TYPES = new Set([
   "ADMIN_ADJUST",
 ]);
 
+const WALLET_TX_REFERENCE_RULES: Record<string, { requires?: "bet" | "vote"; allows?: Array<"bet" | "vote"> }> = {
+  VOTE_REWARD: { requires: "vote", allows: ["vote"] },
+  BET_PLACE: { requires: "bet", allows: ["bet"] },
+  BET_SETTLE: { requires: "bet", allows: ["bet"] },
+  BET_REFUND: { requires: "bet", allows: ["bet"] },
+  SIGNUP_BONUS: { allows: [] },
+  DAILY_CHECKIN: { allows: [] },
+  COMMENT_REWARD: { allows: [] },
+  COMMENT_LIKE_REWARD: { allows: [] },
+  MARKET_PURCHASE: { allows: [] },
+  ADMIN_ADJUST: { allows: ["bet", "vote"] },
+};
+
 type ApplyWalletDeltaInput = {
   tx: Prisma.TransactionClient;
   userId: string;
@@ -43,6 +56,32 @@ function ensureWalletInputIntegrity(input: ApplyWalletDeltaInput) {
 
   if (input.relatedBetId && input.relatedVoteId) {
     throw new Error("WALLET_RELATED_REFERENCE_CONFLICT");
+  }
+
+  const referenceRule = WALLET_TX_REFERENCE_RULES[normalizedType];
+  if (!referenceRule) {
+    throw new Error("WALLET_TX_TYPE_RULE_NOT_FOUND");
+  }
+
+  const hasBetReference = Boolean(input.relatedBetId);
+  const hasVoteReference = Boolean(input.relatedVoteId);
+  const allowsBetReference = referenceRule.allows?.includes("bet") ?? false;
+  const allowsVoteReference = referenceRule.allows?.includes("vote") ?? false;
+
+  if (hasBetReference && !allowsBetReference) {
+    throw new Error("WALLET_BET_REFERENCE_NOT_ALLOWED");
+  }
+
+  if (hasVoteReference && !allowsVoteReference) {
+    throw new Error("WALLET_VOTE_REFERENCE_NOT_ALLOWED");
+  }
+
+  if (referenceRule.requires === "bet" && !hasBetReference) {
+    throw new Error("WALLET_BET_REFERENCE_REQUIRED");
+  }
+
+  if (referenceRule.requires === "vote" && !hasVoteReference) {
+    throw new Error("WALLET_VOTE_REFERENCE_REQUIRED");
   }
 
   if (!Number.isFinite(input.amount) || !Number.isInteger(input.amount)) {
