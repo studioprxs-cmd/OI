@@ -18,7 +18,6 @@ type IntegrityUserRow = {
 };
 
 const MAX_SAMPLE_USERS = 30;
-const MAX_RECENT_TX_SCAN = 5000;
 const MAX_VOTE_REWARD_REPAIR_BATCH = 200;
 
 async function requireAdminUser(req: NextRequest) {
@@ -61,27 +60,18 @@ export async function GET(req: NextRequest) {
     txByUser.map((row) => [row.userId, { count: row._count._all, sum: Number(row._sum.amount ?? 0) }]),
   );
 
-  const recentTransactions = await db.walletTransaction.findMany({
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  const latestTransactionsByUser = await db.walletTransaction.findMany({
+    distinct: ["userId"],
+    orderBy: [{ userId: "asc" }, { createdAt: "desc" }, { id: "desc" }],
     select: {
-      id: true,
       userId: true,
-      type: true,
-      amount: true,
       balanceAfter: true,
-      createdAt: true,
-      relatedBetId: true,
-      relatedVoteId: true,
     },
-    take: MAX_RECENT_TX_SCAN,
   });
 
-  const latestBalanceByUser = new Map<string, number>();
-  for (const tx of recentTransactions) {
-    if (!latestBalanceByUser.has(tx.userId)) {
-      latestBalanceByUser.set(tx.userId, tx.balanceAfter);
-    }
-  }
+  const latestBalanceByUser = new Map(
+    latestTransactionsByUser.map((tx) => [tx.userId, tx.balanceAfter]),
+  );
 
   const rows: IntegrityUserRow[] = users.map((member) => {
     const tx = txTotals.get(member.id);
@@ -141,7 +131,7 @@ export async function GET(req: NextRequest) {
     data: {
       summary: {
         userCount: users.length,
-        walletTxCount: recentTransactions.length,
+        walletTxCount: txByUser.reduce((sum, row) => sum + row._count._all, 0),
         driftByLedgerTotalCount: driftByLedgerTotal.length,
         driftByLatestLedgerCount: driftByLatestLedger.length,
         usersWithoutLedgerCount: usersWithoutLedger.length,
