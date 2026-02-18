@@ -261,8 +261,18 @@ export async function enqueueSettlementJob(input: SettlementJobInput) {
     const existing = await queue.getJob(input.topicId);
     if (existing) {
       const state = await existing.getState();
+
       if (state === "waiting" || state === "active" || state === "delayed") {
         return { queued: false as const, reason: "ALREADY_QUEUED" as const, mode: "bullmq" as const };
+      }
+
+      // removeOnComplete/removeOnFail 보존 구간에서는 동일 jobId 재등록이 실패하므로
+      // 완료/실패/정지된 잡은 명시적으로 제거 후 재큐잉한다.
+      if (state === "completed" || state === "failed") {
+        await existing.remove();
+      } else {
+        // unknown state일 때는 중복 enqueue를 피한다.
+        return { queued: false as const, reason: "UNEXPECTED_JOB_STATE" as const, mode: "bullmq" as const, state };
       }
     }
 
