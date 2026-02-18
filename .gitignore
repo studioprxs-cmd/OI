@@ -2,7 +2,6 @@ node_modules
 .next
 .env
 .env.local
-prisma/migrations
 .data
 
 .vercel

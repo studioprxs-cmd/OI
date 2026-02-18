@@ -99,6 +99,7 @@ model Bet {
   userId        String
   choice        Choice
   amount        Int
+  priceCents    Int      @default(50)
   settled       Boolean  @default(false)
   payoutAmount  Int?
   createdAt     DateTime @default(now())

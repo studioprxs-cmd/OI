@@ -139,7 +139,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       return NextResponse.json({ ok: false, data: null, error: "Insufficient points" }, { status: 400 });
     }
 
-    const bet = await addLocalBet({ topicId: id, userId: authUser.id, choice, amount });
+    const bet = await addLocalBet({ topicId: id, userId: authUser.id, choice, amount, priceCents });
 
     const nextYesPool = choice === "YES" ? yesPool + amount : yesPool;
     const nextNoPool = choice === "NO" ? noPool + amount : noPool;
@@ -278,6 +278,7 @@ export async function POST(req: NextRequest, { params }: Params) {
           userId: authUser.id,
           choice,
           amount,
+          priceCents,
         },
       });
 

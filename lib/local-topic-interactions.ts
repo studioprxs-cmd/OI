@@ -24,6 +24,7 @@ type LocalBet = {
   userId: string;
   choice: "YES" | "NO";
   amount: number;
+  priceCents: number;
   settled: boolean;
   payoutAmount: number | null;
   createdAt: string;
@@ -56,7 +57,10 @@ async function readData(): Promise<LocalTopicInteractions> {
     return {
       comments: parsed.comments ?? [],
       votes: parsed.votes ?? [],
-      bets: parsed.bets ?? [],
+      bets: (parsed.bets ?? []).map((bet) => ({
+        ...bet,
+        priceCents: typeof bet.priceCents === "number" ? bet.priceCents : 50,
+      })),
     };
   } catch {
     return { comments: [], votes: [], bets: [] };
@@ -135,7 +139,7 @@ export async function listLocalBets(filter?: { topicId?: string; userId?: string
   });
 }
 
-export async function addLocalBet(input: { topicId: string; userId: string; choice: "YES" | "NO"; amount: number }) {
+export async function addLocalBet(input: { topicId: string; userId: string; choice: "YES" | "NO"; amount: number; priceCents: number }) {
   const data = await readData();
   const bet: LocalBet = {
     id: randomUUID(),
@@ -143,6 +147,7 @@ export async function addLocalBet(input: { topicId: string; userId: string; choi
     userId: input.userId,
     choice: input.choice,
     amount: input.amount,
+    priceCents: input.priceCents,
     settled: false,
     payoutAmount: null,
     createdAt: new Date().toISOString(),
