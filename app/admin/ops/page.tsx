@@ -199,6 +199,7 @@ export default async function AdminOpsPage() {
             <strong className="ops-health-value">Integrity API</strong>
             <small>
               <Link href="/api/admin/integrity/points" className="text-link">/api/admin/integrity/points</Link>
+              {" · vote reward backfill: action=repair-missing-vote-rewards"}
             </small>
           </div>
         </div>
