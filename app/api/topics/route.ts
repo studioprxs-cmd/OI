@@ -6,6 +6,10 @@ import { db } from "@/lib/db";
 import { ensureTopicPrefix, TopicKind } from "@/lib/topic";
 
 export async function GET() {
+  if (!process.env.DATABASE_URL) {
+    return NextResponse.json({ ok: true, data: [], error: null });
+  }
+
   const topics = await db.topic.findMany({
     orderBy: { createdAt: "desc" },
     include: {
