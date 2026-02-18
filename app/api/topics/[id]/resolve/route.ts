@@ -261,7 +261,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       };
     });
 
-    const enqueueResult = enqueueSettlementJob({ topicId: id, settledById: auth.user.id });
+    const enqueueResult = await enqueueSettlementJob({ topicId: id, settledById: auth.user.id });
 
     return NextResponse.json(
       {

@@ -1,4 +1,5 @@
 import { Choice, Prisma, TopicStatus } from "@prisma/client";
+import { Queue, Worker } from "bullmq";
 
 import { db } from "@/lib/db";
 import { calculateSettlement } from "@/lib/settlement";
@@ -9,6 +10,64 @@ const SETTLEMENT_MAX_RETRIES = 3;
 const SETTLEMENT_RETRY_DELAY_MS = 250;
 
 const inFlightTopics = new Set<string>();
+const SETTLEMENT_QUEUE_NAME = "oi:settlement";
+
+let settlementQueue: Queue | null = null;
+let settlementWorker: Worker | null = null;
+
+function getRedisConnection() {
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) return null;
+
+  return {
+    url: redisUrl,
+  };
+}
+
+function getSettlementQueue() {
+  const connection = getRedisConnection();
+  if (!connection) return null;
+
+  if (!settlementQueue) {
+    settlementQueue = new Queue(SETTLEMENT_QUEUE_NAME, {
+      connection,
+      defaultJobOptions: {
+        attempts: SETTLEMENT_MAX_RETRIES,
+        backoff: {
+          type: "fixed",
+          delay: SETTLEMENT_RETRY_DELAY_MS,
+        },
+        removeOnComplete: 200,
+        removeOnFail: 500,
+      },
+    });
+  }
+
+  return settlementQueue;
+}
+
+function ensureSettlementWorker() {
+  const connection = getRedisConnection();
+  if (!connection || settlementWorker) return settlementWorker;
+
+  settlementWorker = new Worker(
+    SETTLEMENT_QUEUE_NAME,
+    async (job) => processSettlementWithRetry(job.data as SettlementJobInput),
+    {
+      connection,
+      concurrency: 4,
+    },
+  );
+
+  settlementWorker.on("failed", (job, error) => {
+    const topicId = job?.data?.topicId ?? "unknown";
+    const settledById = job?.data?.settledById ?? "unknown";
+    const message = error instanceof Error ? error.message : String(error ?? "UNKNOWN");
+    console.error(`[settlement-worker] failed topic=${topicId} settledBy=${settledById} error=${message}`);
+  });
+
+  return settlementWorker;
+}
 
 type SettlementJobInput = {
   topicId: string;
@@ -180,11 +239,30 @@ export async function processSettlementJob(input: SettlementJobInput) {
   });
 }
 
-export function enqueueSettlementJob(input: SettlementJobInput) {
+export async function enqueueSettlementJob(input: SettlementJobInput) {
   ensureJobInput(input);
 
+  const queue = getSettlementQueue();
+  if (queue) {
+    ensureSettlementWorker();
+
+    const existing = await queue.getJob(input.topicId);
+    if (existing) {
+      const state = await existing.getState();
+      if (state === "waiting" || state === "active" || state === "delayed") {
+        return { queued: false as const, reason: "ALREADY_QUEUED" as const, mode: "bullmq" as const };
+      }
+    }
+
+    await queue.add("settle-topic", input, {
+      jobId: input.topicId,
+    });
+
+    return { queued: true as const, mode: "bullmq" as const };
+  }
+
   if (inFlightTopics.has(input.topicId)) {
-    return { queued: false as const, reason: "ALREADY_QUEUED" as const };
+    return { queued: false as const, reason: "ALREADY_QUEUED" as const, mode: "memory" as const };
   }
 
   inFlightTopics.add(input.topicId);
@@ -204,7 +282,7 @@ export function enqueueSettlementJob(input: SettlementJobInput) {
     }
   }, 0);
 
-  return { queued: true as const };
+  return { queued: true as const, mode: "memory" as const };
 }
 
 export async function processPendingSettlements(limit = 20) {
