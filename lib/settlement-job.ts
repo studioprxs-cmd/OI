@@ -147,7 +147,7 @@ export async function processSettlementJob(input: SettlementJobInput) {
     const unsettledBets = await tx.bet.findMany({
       where: { topicId, settled: false },
       select: { id: true, userId: true, choice: true, amount: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     });
 
     const settledBetCount = await tx.bet.count({

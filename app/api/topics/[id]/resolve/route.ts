@@ -68,7 +68,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   const unsettledBets = await db.bet.findMany({
     where: { topicId: id, settled: false },
     select: { id: true, userId: true, choice: true, amount: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
 
   const yesPreview = calculateSettlement(unsettledBets, "YES", { feeRate: SETTLEMENT_FEE_RATE });
@@ -218,7 +218,7 @@ export async function POST(req: NextRequest, { params }: Params) {
       const bets = await tx.bet.findMany({
         where: { topicId: id, settled: false },
         select: { id: true, userId: true, choice: true, amount: true },
-        orderBy: { createdAt: "asc" },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       });
 
       const settlement = calculateSettlement(bets, result, { feeRate: SETTLEMENT_FEE_RATE });
