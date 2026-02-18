@@ -133,13 +133,49 @@ export async function processSettlementJob(input: SettlementJobInput) {
             result: true,
           },
         },
-        settlement: { select: { id: true } },
+        settlement: {
+          select: {
+            id: true,
+            result: true,
+            totalPool: true,
+            feeRate: true,
+            feeCollected: true,
+            netPool: true,
+            payoutTotal: true,
+            winnerCount: true,
+            settledAt: true,
+          },
+        },
       },
     });
 
     if (!topic) throw new Error("TOPIC_NOT_FOUND");
     if (!topic.resolution) throw new Error("RESOLUTION_NOT_FOUND");
-    if (topic.settlement) throw new Error("SETTLEMENT_ALREADY_PROCESSED");
+
+    // 이미 정산 레코드가 있으면 재처리하지 않고 멱등 성공으로 반환한다.
+    if (topic.settlement) {
+      return {
+        topic: {
+          id: topic.id,
+          status: topic.status,
+        },
+        settlementLedger: topic.settlement,
+        settlement: {
+          totalPool: topic.settlement.totalPool,
+          winnerPool: 0,
+          settledCount: 0,
+          winnerCount: topic.settlement.winnerCount,
+          feeRate: topic.settlement.feeRate,
+          feeAmount: topic.settlement.feeCollected,
+          netPool: topic.settlement.netPool,
+          payoutTotal: topic.settlement.payoutTotal,
+          invalidAmountCount: 0,
+          duplicateBetIdCount: 0,
+        },
+        idempotent: true,
+      };
+    }
+
     if (topic.status !== TopicStatus.LOCKED) throw new Error("TOPIC_STATUS_INVALID_FOR_SETTLEMENT");
 
     const result = topic.resolution.result as Choice;
@@ -187,7 +223,12 @@ export async function processSettlementJob(input: SettlementJobInput) {
           relatedBetId: storedBet.id,
           type: "BET_SETTLE",
         },
-        select: { id: true },
+        select: {
+          id: true,
+          userId: true,
+          amount: true,
+          type: true,
+        },
       });
 
       if (storedBet.settled) {
@@ -203,6 +244,20 @@ export async function processSettlementJob(input: SettlementJobInput) {
 
         if (storedPayout <= 0 && existingSettlementTx) {
           throw new Error("PARTIAL_SETTLEMENT_LEDGER_UNEXPECTED");
+        }
+
+        if (storedPayout > 0 && existingSettlementTx) {
+          if (existingSettlementTx.userId !== storedBet.userId) {
+            throw new Error("PARTIAL_SETTLEMENT_LEDGER_USER_MISMATCH");
+          }
+
+          if (existingSettlementTx.amount !== storedPayout) {
+            throw new Error("PARTIAL_SETTLEMENT_LEDGER_AMOUNT_MISMATCH");
+          }
+
+          if (existingSettlementTx.type !== "BET_SETTLE") {
+            throw new Error("PARTIAL_SETTLEMENT_LEDGER_TYPE_MISMATCH");
+          }
         }
 
         settledPayoutTotal += storedPayout;

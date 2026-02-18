@@ -405,6 +405,24 @@ export async function POST(req: NextRequest, { params }: Params) {
       );
     }
 
+    if (
+      message === "PARTIAL_SETTLEMENT_LEDGER_MISSING"
+      || message === "PARTIAL_SETTLEMENT_LEDGER_UNEXPECTED"
+      || message === "PARTIAL_SETTLEMENT_LEDGER_USER_MISMATCH"
+      || message === "PARTIAL_SETTLEMENT_LEDGER_AMOUNT_MISMATCH"
+      || message === "PARTIAL_SETTLEMENT_LEDGER_TYPE_MISMATCH"
+      || message === "PARTIAL_SETTLEMENT_PAYOUT_MISMATCH"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          data: null,
+          error: "기존 부분 정산 원장과 현재 정산 계산 결과가 일치하지 않아 정산을 중단했습니다. 원장 정합성을 점검한 뒤 다시 시도하세요.",
+        },
+        { status: 409 },
+      );
+    }
+
     if (message === "WALLET_BALANCE_WRITE_RACE") {
       return NextResponse.json(
         {
