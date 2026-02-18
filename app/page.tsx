@@ -3,8 +3,7 @@ import Link from "next/link";
 import { FeedCard } from "@/components/FeedCard";
 import { WidgetCard } from "@/components/WidgetCard";
 import { OiBadge, Pill, PageContainer } from "@/components/ui";
-import { db } from "@/lib/db";
-import { mockTopicSummaries } from "@/lib/mock-data";
+import { fetchHomeFeedData } from "@/lib/home-feed";
 import { getTopicThumbnail } from "@/lib/topic-thumbnail";
 
 function statusTone(status: string): "neutral" | "success" | "danger" {
@@ -14,44 +13,8 @@ function statusTone(status: string): "neutral" | "success" | "danger" {
 }
 
 export default async function HomePage() {
-  const mock = mockTopicSummaries();
-  const canUseDb = Boolean(process.env.DATABASE_URL);
-
-  const topics = canUseDb ? await db.topic
-    .findMany({
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      include: { _count: { select: { votes: true, bets: true, comments: true } } },
-    })
-    .then((rows) =>
-      rows.map((row) => ({
-        id: row.id,
-        title: row.title,
-        description: row.description,
-        status: row.status,
-        createdAt: row.createdAt,
-        closeAt: row.closeAt,
-        voteCount: row._count.votes,
-        betCount: row._count.bets,
-        commentCount: row._count.comments,
-        totalPool: 0,
-      })),
-    )
-    .catch(() => []) : [];
-
-  const combined = [...topics, ...mock.filter((item) => !topics.some((topic) => topic.id === item.id))];
-  const latest = combined
-    .slice()
-    .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-    .slice(0, 5);
-  const trending = combined
-    .slice()
-    .sort((a, b) => b.voteCount + b.commentCount - (a.voteCount + a.commentCount))
-    .slice(0, 5);
-
-  const totalVotes = combined.reduce((sum, topic) => sum + topic.voteCount, 0);
-  const totalBets = combined.reduce((sum, topic) => sum + topic.betCount, 0);
-  const openCount = combined.filter((topic) => topic.status === "OPEN").length;
+  const { combined, latest, trending, stats, recentMembers } = await fetchHomeFeedData();
+  const { openTopics: openCount, totalVotes, totalBets } = stats;
 
   const visualSpotlights = combined
     .filter((topic) => topic.status === "OPEN")
@@ -283,10 +246,9 @@ export default async function HomePage() {
 
           <WidgetCard title="New Members">
             <ul className="simple-list muted">
-              <li>@mint_jiyoon · 방금 참여</li>
-              <li>@policy_woo · 5분 전</li>
-              <li>@alpha_hyeri · 17분 전</li>
-              <li>@market_doyoung · 28분 전</li>
+              {recentMembers.slice(0, 4).map((member) => (
+                <li key={member.id}>@{member.nickname} · {member.activityLabel}</li>
+              ))}
             </ul>
           </WidgetCard>
         </aside>
