@@ -5,6 +5,8 @@ import { calculateSettlement } from "@/lib/settlement";
 import { applyWalletDelta } from "@/lib/wallet";
 
 const SETTLEMENT_FEE_RATE = 0.05;
+const SETTLEMENT_MAX_RETRIES = 3;
+const SETTLEMENT_RETRY_DELAY_MS = 250;
 
 const inFlightTopics = new Set<string>();
 
@@ -16,6 +18,41 @@ type SettlementJobInput = {
 function ensureJobInput(input: SettlementJobInput) {
   if (!input.topicId) throw new Error("SETTLEMENT_TOPIC_ID_REQUIRED");
   if (!input.settledById) throw new Error("SETTLEMENT_SETTLER_REQUIRED");
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableSettlementError(message: string) {
+  return [
+    "WALLET_BALANCE_WRITE_RACE",
+    "BET_ALREADY_SETTLED_RACE",
+    "P2028",
+    "P2034",
+  ].some((token) => message.includes(token));
+}
+
+async function processSettlementWithRetry(input: SettlementJobInput) {
+  let attempt = 0;
+
+  while (attempt < SETTLEMENT_MAX_RETRIES) {
+    attempt += 1;
+
+    try {
+      return await processSettlementJob(input);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "UNKNOWN";
+
+      if (!isRetryableSettlementError(message) || attempt >= SETTLEMENT_MAX_RETRIES) {
+        throw error;
+      }
+
+      await sleep(SETTLEMENT_RETRY_DELAY_MS * attempt);
+    }
+  }
+
+  throw new Error("SETTLEMENT_RETRY_EXHAUSTED");
 }
 
 export async function processSettlementJob(input: SettlementJobInput) {
@@ -154,11 +191,14 @@ export function enqueueSettlementJob(input: SettlementJobInput) {
 
   setTimeout(async () => {
     try {
-      await processSettlementJob(input);
+      await processSettlementWithRetry(input);
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         return;
       }
+
+      const message = error instanceof Error ? error.message : "UNKNOWN";
+      console.error(`[settlement-job] failed topic=${input.topicId} settledBy=${input.settledById} error=${message}`);
     } finally {
       inFlightTopics.delete(input.topicId);
     }
@@ -192,7 +232,7 @@ export async function processPendingSettlements(limit = 20) {
     }
 
     try {
-      await processSettlementJob({ topicId: topic.id, settledById: resolverId });
+      await processSettlementWithRetry({ topicId: topic.id, settledById: resolverId });
       results.push({ topicId: topic.id, ok: true });
     } catch (error: unknown) {
       results.push({ topicId: topic.id, ok: false, error: error instanceof Error ? error.message : "UNKNOWN" });
