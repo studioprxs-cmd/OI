@@ -10,13 +10,18 @@ import { getKstDayRange } from "@/lib/time-window";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   const { id } = await params;
+  const { searchParams } = new URL(req.url);
+  const page = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const rawLimit = Number.parseInt(searchParams.get("limit") ?? "20", 10) || 20;
+  const limit = Math.min(100, Math.max(1, rawLimit));
+  const skip = (page - 1) * limit;
 
   if (!process.env.DATABASE_URL) {
     const mockTopic = findMockTopic(id);
     if (!mockTopic) {
-      return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+      return NextResponse.json({ ok: false, data: null, total: 0, page, limit, error: "Topic not found" }, { status: 404 });
     }
 
     const local = await getLocalTopicInteractions(id);
@@ -25,28 +30,39 @@ export async function GET(_: Request, { params }: Params) {
       ...mockTopic.comments.map((comment) => ({ ...comment, _count: { likes: 0 } })),
     ].sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
 
-    return NextResponse.json({ ok: true, data: merged, error: null });
+    return NextResponse.json({
+      ok: true,
+      data: merged.slice(skip, skip + limit),
+      total: merged.length,
+      page,
+      limit,
+      error: null,
+    });
   }
 
   const topic = await db.topic.findUnique({ where: { id }, select: { id: true } });
   if (!topic) {
-    return NextResponse.json({ ok: false, data: null, error: "Topic not found" }, { status: 404 });
+    return NextResponse.json({ ok: false, data: null, total: 0, page, limit, error: "Topic not found" }, { status: 404 });
   }
 
-  const comments = await db.comment.findMany({
-    where: { topicId: id, isHidden: false },
-    orderBy: { createdAt: "desc" },
-    take: 100,
-    select: {
-      id: true,
-      content: true,
-      createdAt: true,
-      userId: true,
-      _count: { select: { likes: true } },
-    },
-  });
+  const [comments, total] = await Promise.all([
+    db.comment.findMany({
+      where: { topicId: id, isHidden: false },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        userId: true,
+        _count: { select: { likes: true } },
+      },
+    }),
+    db.comment.count({ where: { topicId: id, isHidden: false } }),
+  ]);
 
-  return NextResponse.json({ ok: true, data: comments, error: null });
+  return NextResponse.json({ ok: true, data: comments, total, page, limit, error: null });
 }
 
 export async function POST(req: NextRequest, { params }: Params) {
