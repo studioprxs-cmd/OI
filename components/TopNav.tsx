@@ -9,6 +9,10 @@ type Viewer = {
   role: string;
 } | null;
 
+type ViewerWallet = {
+  pointBalance: number;
+};
+
 type NavItem = {
   href: string;
   label: string;
@@ -44,6 +48,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   const [popularTopics, setPopularTopics] = useState<TopicPreview[]>([]);
+  const [wallet, setWallet] = useState<ViewerWallet | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -225,6 +230,34 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, []);
 
   useEffect(() => {
+    if (!viewer) {
+      setWallet(null);
+      return;
+    }
+
+    let aborted = false;
+
+    async function loadWallet() {
+      try {
+        const res = await fetch("/api/users/me", { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok || !json?.ok || !json?.data || aborted) return;
+        const pointBalance = Number(json.data.pointBalance);
+        if (!Number.isFinite(pointBalance)) return;
+        if (!aborted) setWallet({ pointBalance: Math.max(0, Math.floor(pointBalance)) });
+      } catch {
+        if (!aborted) setWallet(null);
+      }
+    }
+
+    loadWallet();
+
+    return () => {
+      aborted = true;
+    };
+  }, [viewer, pathname]);
+
+  useEffect(() => {
     if (!searchOpen || popularTopics.length > 0) return;
 
     let aborted = false;
@@ -319,7 +352,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
           <div className="top-search-actions">
             <Link href="/wallet" className="top-wallet-chip" aria-label="포인트 지갑">
               <span aria-hidden>◌</span>
-              <span>지갑</span>
+              <span>{viewer && wallet ? `${wallet.pointBalance.toLocaleString("ko-KR")}P` : "지갑"}</span>
             </Link>
 
             <div className="profile-menu-wrap" ref={profileMenuRef}>
