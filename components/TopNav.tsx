@@ -13,6 +13,17 @@ type ViewerWallet = {
   pointBalance: number;
 };
 
+type SettlementNotice = {
+  topicId: string;
+  topicTitle: string;
+  result: "YES" | "NO";
+  resolvedAt: string;
+  betTotal: number;
+  payoutTotal: number;
+  profit: number;
+  settledBetCount: number;
+};
+
 type NavItem = {
   href: string;
   label: string;
@@ -38,6 +49,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const RECENT_SEARCH_KEY = "oi:recent-searches";
+const SETTLEMENT_SEEN_AT_KEY = "oi:settlement-seen-at";
 
 export function TopNav({ viewer }: { viewer: Viewer }) {
   const pathname = usePathname();
@@ -49,7 +61,11 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   const [recentKeywords, setRecentKeywords] = useState<string[]>([]);
   const [popularTopics, setPopularTopics] = useState<TopicPreview[]>([]);
   const [wallet, setWallet] = useState<ViewerWallet | null>(null);
+  const [settlementNotices, setSettlementNotices] = useState<SettlementNotice[]>([]);
+  const [settlementPanelOpen, setSettlementPanelOpen] = useState(false);
+  const [settlementSeenAt, setSettlementSeenAt] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const settlementPanelRef = useRef<HTMLDivElement | null>(null);
   const searchPanelRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -74,20 +90,23 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, [initialSearch]);
 
   useEffect(() => {
-    if (!profileMenuOpen && !searchOpen) return;
+    if (!profileMenuOpen && !searchOpen && !settlementPanelOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
       const inProfile = profileMenuRef.current?.contains(target);
+      const inSettlement = settlementPanelRef.current?.contains(target);
       const inSearch = searchPanelRef.current?.contains(target);
-      if (inProfile || inSearch) return;
+      if (inProfile || inSettlement || inSearch) return;
       setProfileMenuOpen(false);
+      setSettlementPanelOpen(false);
       setSearchOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileMenuOpen(false);
+        setSettlementPanelOpen(false);
         setSearchOpen(false);
       }
     }
@@ -98,7 +117,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       window.removeEventListener("pointerdown", handlePointerDown);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [profileMenuOpen, searchOpen]);
+  }, [profileMenuOpen, searchOpen, settlementPanelOpen]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -230,6 +249,17 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
   }, []);
 
   useEffect(() => {
+    try {
+      const rawSeenAt = window.localStorage.getItem(SETTLEMENT_SEEN_AT_KEY);
+      if (rawSeenAt) {
+        setSettlementSeenAt(rawSeenAt);
+      }
+    } catch {
+      setSettlementSeenAt(null);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!viewer) {
       setWallet(null);
       return;
@@ -251,6 +281,34 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
     }
 
     loadWallet();
+
+    return () => {
+      aborted = true;
+    };
+  }, [viewer, pathname]);
+
+  useEffect(() => {
+    if (!viewer) {
+      setSettlementNotices([]);
+      return;
+    }
+
+    let aborted = false;
+
+    async function loadSettlementNotices() {
+      try {
+        const res = await fetch("/api/users/me/settlement-notifications?limit=6", { cache: "no-store" });
+        const json = await res.json();
+        if (!res.ok || !json?.ok || !Array.isArray(json?.data?.items) || aborted) return;
+        if (!aborted) {
+          setSettlementNotices(json.data.items as SettlementNotice[]);
+        }
+      } catch {
+        if (!aborted) setSettlementNotices([]);
+      }
+    }
+
+    loadSettlementNotices();
 
     return () => {
       aborted = true;
@@ -290,6 +348,24 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
       aborted = true;
     };
   }, [searchOpen, popularTopics.length]);
+
+  const unseenSettlementCount = useMemo(() => {
+    if (!settlementNotices.length) return 0;
+    if (!settlementSeenAt) return settlementNotices.length;
+    const seenMs = +new Date(settlementSeenAt);
+    if (!Number.isFinite(seenMs) || seenMs <= 0) return settlementNotices.length;
+    return settlementNotices.filter((item) => +new Date(item.resolvedAt) > seenMs).length;
+  }, [settlementNotices, settlementSeenAt]);
+
+  function markSettlementNoticesAsSeen() {
+    const latest = settlementNotices[0]?.resolvedAt ?? new Date().toISOString();
+    setSettlementSeenAt(latest);
+    try {
+      window.localStorage.setItem(SETTLEMENT_SEEN_AT_KEY, latest);
+    } catch {
+      // noop
+    }
+  }
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -344,6 +420,7 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
             onClick={() => {
               setSearchOpen(true);
               setProfileMenuOpen(false);
+              setSettlementPanelOpen(false);
             }}
           >
             ⌕
@@ -354,6 +431,55 @@ export function TopNav({ viewer }: { viewer: Viewer }) {
               <span aria-hidden>◌</span>
               <span>{viewer && wallet ? `${wallet.pointBalance.toLocaleString("ko-KR")}P` : "지갑"}</span>
             </Link>
+
+            {viewer ? (
+              <div className="settlement-notice-wrap" ref={settlementPanelRef}>
+                <button
+                  type="button"
+                  className={`settlement-notice-trigger ${settlementPanelOpen ? "is-active" : ""}`}
+                  aria-label="정산 알림"
+                  onClick={() => {
+                    setSettlementPanelOpen((prev) => {
+                      const next = !prev;
+                      if (next) {
+                        setProfileMenuOpen(false);
+                        markSettlementNoticesAsSeen();
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  <span aria-hidden>🔔</span>
+                  <span>정산</span>
+                  {unseenSettlementCount > 0 ? <span className="settlement-notice-badge">{Math.min(unseenSettlementCount, 9)}+</span> : null}
+                </button>
+
+                {settlementPanelOpen ? (
+                  <div className="settlement-notice-panel" role="dialog" aria-label="정산 결과 알림">
+                    <div className="settlement-notice-header">
+                      <strong>최근 정산 결과</strong>
+                      <small>{settlementNotices.length}건</small>
+                    </div>
+                    {settlementNotices.length === 0 ? (
+                      <p className="settlement-notice-empty">아직 정산 완료된 참여 이력이 없습니다.</p>
+                    ) : (
+                      <ul className="settlement-notice-list">
+                        {settlementNotices.map((notice) => (
+                          <li key={`${notice.topicId}-${notice.resolvedAt}`}>
+                            <Link href={`/topics/${notice.topicId}`} onClick={() => setSettlementPanelOpen(false)}>
+                              <p>{notice.topicTitle}</p>
+                              <small>
+                                결과 {notice.result} · 손익 {notice.profit >= 0 ? "+" : ""}{notice.profit.toLocaleString("ko-KR")}pt · {new Date(notice.resolvedAt).toLocaleDateString("ko-KR")}
+                              </small>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="profile-menu-wrap" ref={profileMenuRef}>
               <button
