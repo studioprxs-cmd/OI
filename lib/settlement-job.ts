@@ -140,6 +140,7 @@ export async function processSettlementJob(input: SettlementJobInput) {
     if (!topic) throw new Error("TOPIC_NOT_FOUND");
     if (!topic.resolution) throw new Error("RESOLUTION_NOT_FOUND");
     if (topic.settlement) throw new Error("SETTLEMENT_ALREADY_PROCESSED");
+    if (topic.status !== TopicStatus.LOCKED) throw new Error("TOPIC_STATUS_INVALID_FOR_SETTLEMENT");
 
     const result = topic.resolution.result as Choice;
 
@@ -148,6 +149,17 @@ export async function processSettlementJob(input: SettlementJobInput) {
       select: { id: true, userId: true, choice: true, amount: true },
       orderBy: { createdAt: "asc" },
     });
+
+    const settledBetCount = await tx.bet.count({
+      where: {
+        topicId,
+        settled: true,
+      },
+    });
+
+    if (unsettledBets.length === 0 && settledBetCount > 0) {
+      throw new Error("PARTIAL_SETTLEMENT_DETECTED");
+    }
 
     const settlement = calculateSettlement(unsettledBets, result, { feeRate: SETTLEMENT_FEE_RATE });
 
