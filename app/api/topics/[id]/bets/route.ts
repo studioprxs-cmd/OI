@@ -8,7 +8,7 @@ import { calcEstimatedPayout, calcPrices } from "@/lib/betting/price";
 import { setTopicPoolStatsCache } from "@/lib/betting/pool-cache";
 import { assertBetAmount, assertDailyLimit, assertLossCooldown, assertPoolShare } from "@/lib/betting/validation";
 import { db } from "@/lib/db";
-import { addLocalBet, getLocalTopicInteractions } from "@/lib/local-topic-interactions";
+import { addLocalBet, getLocalTopicInteractions, listLocalBets } from "@/lib/local-topic-interactions";
 import { findMockTopic } from "@/lib/mock-data";
 import { parseTopicKindFromTitle } from "@/lib/topic";
 import { getParticipationBlockReason } from "@/lib/topic-policy";
@@ -79,6 +79,56 @@ export async function POST(req: NextRequest, { params }: Params) {
     const local = await getLocalTopicInteractions(id);
     const yesPool = local.bets.filter((bet) => bet.choice === "YES").reduce((sum, bet) => sum + bet.amount, 0);
     const noPool = local.bets.filter((bet) => bet.choice === "NO").reduce((sum, bet) => sum + bet.amount, 0);
+
+    const localUserTopicTotal = local.bets
+      .filter((bet) => bet.userId === authUser.id)
+      .reduce((sum, bet) => sum + bet.amount, 0);
+    const localPoolTotal = yesPool + noPool;
+
+    const allLocalUserBets = await listLocalBets({ userId: authUser.id });
+    const { start: todayStartKst, end: todayEndKst } = getKstDayRange();
+    const localUserTodayTotal = allLocalUserBets
+      .filter((bet) => {
+        const createdAt = new Date(bet.createdAt);
+        return createdAt >= todayStartKst && createdAt < todayEndKst;
+      })
+      .reduce((sum, bet) => sum + bet.amount, 0);
+
+    const localRecentSettledBets = allLocalUserBets
+      .filter((bet) => bet.settled)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, BET_LIMITS.COOLDOWN_AFTER_LOSSES)
+      .map((bet) => ({ payoutAmount: bet.payoutAmount, createdAt: new Date(bet.createdAt) }));
+
+    try {
+      assertDailyLimit(localUserTodayTotal, amount);
+      assertPoolShare(localPoolTotal, localUserTopicTotal, amount);
+      assertLossCooldown(localRecentSettledBets);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "BET_VALIDATION_FAILED";
+
+      if (message === "DAILY_LIMIT_EXCEEDED") {
+        return NextResponse.json({ ok: false, data: null, error: `일일 베팅 한도(${BET_LIMITS.DAILY_LIMIT}pt)를 초과했습니다.` }, { status: 409 });
+      }
+
+      if (message === "POOL_SHARE_EXCEEDED") {
+        return NextResponse.json(
+          { ok: false, data: null, error: `한 토픽에서 개인 베팅 점유율은 최대 ${Math.round(BET_LIMITS.MAX_POOL_SHARE * 100)}%입니다.` },
+          { status: 409 },
+        );
+      }
+
+      if (message.startsWith("COOLDOWN_ACTIVE:")) {
+        const remainingMs = Number(message.split(":")[1] ?? 0);
+        const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+        return NextResponse.json(
+          { ok: false, data: null, error: `연속 손실 보호가 적용되어 있습니다. 약 ${remainingMinutes}분 후 다시 시도해주세요.` },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json({ ok: false, data: null, error: "Failed to validate bet limits" }, { status: 409 });
+    }
 
     const priceSnapshot = calcPrices(yesPool, noPool);
     const estimatedPayout = calcEstimatedPayout(amount, choice, yesPool, noPool);

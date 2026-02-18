@@ -125,6 +125,16 @@ export async function removeLocalVoteById(voteId: string) {
   return true;
 }
 
+export async function listLocalBets(filter?: { topicId?: string; userId?: string }) {
+  const data = await readData();
+
+  return data.bets.filter((bet) => {
+    if (filter?.topicId && bet.topicId !== filter.topicId) return false;
+    if (filter?.userId && bet.userId !== filter.userId) return false;
+    return true;
+  });
+}
+
 export async function addLocalBet(input: { topicId: string; userId: string; choice: "YES" | "NO"; amount: number }) {
   const data = await readData();
   const bet: LocalBet = {
